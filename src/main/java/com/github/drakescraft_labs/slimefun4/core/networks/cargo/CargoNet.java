@@ -111,6 +111,10 @@ public class CargoNet extends AbstractItemNetwork implements HologramOwner {
         if (from == NetworkComponent.TERMINUS) {
             inputNodes.remove(l);
             outputNodes.remove(l);
+            ItemStack pending = pendingOverflow.remove(l);
+            if (pending != null && pending.getAmount() > 0 && l.getWorld() != null) {
+                l.getWorld().dropItemNaturally(l, pending);
+            }
         }
 
         if (to == NetworkComponent.TERMINUS) {
@@ -217,6 +221,24 @@ public class CargoNet extends AbstractItemNetwork implements HologramOwner {
      * 
      * @return The frequency of the given node
      */
+    private final Map<Location, ItemStack> pendingOverflow = new HashMap<>();
+
+    public @Nullable ItemStack getPendingOverflow(@Nonnull Location inputNode) {
+        return pendingOverflow.get(inputNode);
+    }
+
+    public void setPendingOverflow(@Nonnull Location inputNode, @Nullable ItemStack item) {
+        if (item == null || item.getAmount() <= 0) {
+            pendingOverflow.remove(inputNode);
+        } else {
+            pendingOverflow.put(inputNode, item);
+        }
+    }
+
+    public void clearPendingOverflow(@Nonnull Location inputNode) {
+        pendingOverflow.remove(inputNode);
+    }
+
     private static int getFrequency(@Nonnull Location node) {
         String frequency = BlockStorage.getLocationInfo(node, "frequency");
 

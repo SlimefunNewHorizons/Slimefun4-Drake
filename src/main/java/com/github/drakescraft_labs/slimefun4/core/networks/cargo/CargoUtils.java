@@ -1,6 +1,9 @@
 package com.github.drakescraft_labs.slimefun4.core.networks.cargo;
 
+import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -17,14 +20,14 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
 import dev.drake.dough.inventory.InvUtils;
+import com.github.drakescraft_labs.slimefun4.api.items.SlimefunItem;
 import com.github.drakescraft_labs.slimefun4.core.debug.Debug;
 import com.github.drakescraft_labs.slimefun4.core.debug.TestCase;
 import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
+import com.github.drakescraft_labs.slimefun4.utils.PaperLibUtils;
 import com.github.drakescraft_labs.slimefun4.utils.SlimefunUtils;
 import com.github.drakescraft_labs.slimefun4.utils.itemstack.ItemStackWrapper;
 import com.github.drakescraft_labs.slimefun4.utils.tags.SlimefunTag;
-import io.papermc.lib.PaperLib;
-import com.github.drakescraft_labs.slimefun4.utils.PaperLibUtils;
 
 import com.github.drakescraft_labs.slimefun4.legacy.api.BlockStorage;
 import com.github.drakescraft_labs.slimefun4.legacy.api.inventory.BlockMenu;
@@ -33,15 +36,41 @@ import com.github.drakescraft_labs.slimefun4.legacy.api.item_transport.ItemTrans
 
 /**
  * This is a helper class for the {@link CargoNet} which provides
- * a free static utility methods to let the {@link CargoNet} interact with
+ * static utility methods to let the {@link CargoNet} interact with
  * an {@link Inventory} or {@link BlockMenu}.
+ * 
+ * Includes direct compatibility with Slimefun Barrels (FluffyMachines) and
+ * InfinityExpansion Storage Units (InfinityBarrels), safe simulation peeking,
+ * and accurate space calculation.
  * 
  * @author TheBusyBiscuit
  * @author Walshy
  * @author DNx5
+ * @author DrakesCraft-Labs
  *
  */
 final class CargoUtils {
+
+    /**
+     * Represents the result of peeking a candidate item for withdrawal without mutating slots.
+     */
+    static final class PeekResult {
+        private final int slot;
+        private final ItemStack item;
+
+        PeekResult(int slot, ItemStack item) {
+            this.slot = slot;
+            this.item = item;
+        }
+
+        public int getSlot() {
+            return slot;
+        }
+
+        public ItemStack getItem() {
+            return item;
+        }
+    }
 
     /**
      * These are the slots where our filter items sit.
@@ -65,7 +94,6 @@ final class CargoUtils {
      */
     static boolean hasInventory(@Nullable Block block) {
         if (block == null) {
-            // No block, no inventory
             return false;
         }
 
@@ -78,7 +106,6 @@ final class CargoUtils {
         if (inv instanceof FurnaceInventory) {
             if (item != null && item.getType().isFuel()) {
                 if (isSmeltable(item, true)) {
-                    // Any non-smeltable items should not land in the upper slot
                     return new int[] { 0, 2 };
                 } else {
                     return new int[] { 1, 2 };
@@ -88,17 +115,13 @@ final class CargoUtils {
             }
         } else if (inv instanceof BrewerInventory) {
             if (isPotion(item)) {
-                // Slots for potions
                 return new int[] { 0, 3 };
             } else if (item != null && item.getType() == Material.BLAZE_POWDER) {
-                // Blaze Powder slot
                 return new int[] { 4, 5 };
             } else {
-                // Input slot
                 return new int[] { 3, 4 };
             }
         } else {
-            // Slot 0-size
             return new int[] { 0, inv.getSize() };
         }
     }
@@ -106,19 +129,194 @@ final class CargoUtils {
     @Nonnull
     static int[] getOutputSlotRange(@Nonnull Inventory inv) {
         if (inv instanceof FurnaceInventory) {
-            // Slot 2-3
             return new int[] { 2, 3 };
         } else if (inv instanceof BrewerInventory) {
-            // Slot 0-3
             return new int[] { 0, 3 };
         } else {
-            // Slot 0-size
             return new int[] { 0, inv.getSize() };
         }
     }
 
+    /**
+     * Peeks an eligible candidate item from the target block without removing it.
+     */
+    @Nullable
+    static PeekResult peekCandidate(@Nonnull AbstractItemNetwork network, @Nonnull Map<Location, Inventory> inventories, @Nonnull Block node, @Nonnull Block target) {
+        prepareTargetBeforeWithdraw(target);
+
+        DirtyChestMenu menu = getChestMenu(target);
+        if (menu != null) {
+            for (int slot : menu.getPreset().getSlotsAccessedByItemTransport(menu, ItemTransportFlow.WITHDRAW, null)) {
+                ItemStack is = menu.getItemInSlot(slot);
+                if (is != null && is.getType() != Material.AIR && matchesFilter(network, node, is)) {
+                    return new PeekResult(slot, is.clone());
+                }
+            }
+        } else if (hasInventory(target)) {
+            Inventory inventory = inventories.get(target.getLocation());
+            if (inventory == null) {
+                BlockState state = PaperLibUtils.getBlockState(target, false).getState();
+                if (state instanceof InventoryHolder inventoryHolder) {
+                    inventory = inventoryHolder.getInventory();
+                    inventories.put(target.getLocation(), inventory);
+                }
+            }
+            if (inventory != null) {
+                ItemStack[] contents = inventory.getContents();
+                int[] range = getOutputSlotRange(inventory);
+                int minSlot = range[0];
+                int maxSlot = range[1];
+                for (int slot = minSlot; slot < maxSlot; slot++) {
+                    ItemStack item = contents[slot];
+                    if (item != null && item.getType() != Material.AIR && matchesFilter(network, node, item)) {
+                        return new PeekResult(slot, item.clone());
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Safely withdraws up to amountToWithdraw from the specified slot of target.
+     */
+    @Nullable
+    static ItemStack withdrawAmount(@Nonnull AbstractItemNetwork network, @Nonnull Map<Location, Inventory> inventories, @Nonnull Block node, @Nonnull Block target, int slot, int amountToWithdraw) {
+        DirtyChestMenu menu = getChestMenu(target);
+        if (menu != null) {
+            ItemStack is = menu.getItemInSlot(slot);
+            if (is == null || is.getType() == Material.AIR || !matchesFilter(network, node, is)) {
+                return null;
+            }
+            int withdrawCount = Math.min(amountToWithdraw, is.getAmount());
+            ItemStack result = is.clone();
+            result.setAmount(withdrawCount);
+            if (is.getAmount() <= withdrawCount) {
+                menu.replaceExistingItem(slot, null);
+            } else {
+                is.setAmount(is.getAmount() - withdrawCount);
+                menu.replaceExistingItem(slot, is);
+            }
+            return result;
+        } else if (hasInventory(target)) {
+            Inventory inventory = inventories.get(target.getLocation());
+            if (inventory == null) {
+                BlockState state = PaperLibUtils.getBlockState(target, false).getState();
+                if (state instanceof InventoryHolder inventoryHolder) {
+                    inventory = inventoryHolder.getInventory();
+                    inventories.put(target.getLocation(), inventory);
+                }
+            }
+            if (inventory != null) {
+                ItemStack is = inventory.getItem(slot);
+                if (is == null || is.getType() == Material.AIR || !matchesFilter(network, node, is)) {
+                    return null;
+                }
+                int withdrawCount = Math.min(amountToWithdraw, is.getAmount());
+                ItemStack result = is.clone();
+                result.setAmount(withdrawCount);
+                if (is.getAmount() <= withdrawCount) {
+                    inventory.setItem(slot, null);
+                } else {
+                    is.setAmount(is.getAmount() - withdrawCount);
+                    inventory.setItem(slot, is);
+                }
+                return result;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Calculates total available space across all given destination locations for the candidate item.
+     */
+    static int calculateAvailableSpace(@Nonnull AbstractItemNetwork network, @Nonnull Map<Location, Inventory> inventories, @Nonnull Collection<Location> destinations, @Nonnull ItemStack candidate) {
+        ItemStackWrapper wrapper = ItemStackWrapper.wrap(candidate);
+        int totalCapacity = 0;
+        int maxNeeded = candidate.getAmount();
+
+        for (Location output : destinations) {
+            Optional<Block> targetOpt = network.getAttachedBlock(output);
+            if (targetOpt.isEmpty()) {
+                continue;
+            }
+            Block outputNodeBlock = output.getBlock();
+            if (!matchesFilter(network, outputNodeBlock, candidate)) {
+                continue;
+            }
+            Block target = targetOpt.get();
+            int space = getAvailableSpaceInTarget(inventories, outputNodeBlock, target, candidate, wrapper);
+            totalCapacity += space;
+            if (totalCapacity >= maxNeeded) {
+                return maxNeeded;
+            }
+        }
+        return totalCapacity;
+    }
+
+    /**
+     * Calculates available space in a single destination block for the specified item.
+     */
+    static int getAvailableSpaceInTarget(@Nonnull Map<Location, Inventory> inventories, @Nonnull Block node, @Nonnull Block target, @Nonnull ItemStack item, @Nonnull ItemStackWrapper wrapper) {
+        prepareTargetBeforeInsert(target, item);
+
+        DirtyChestMenu menu = getChestMenu(target);
+        int space = 0;
+        int maxStack = item.getType().getMaxStackSize();
+
+        if (menu != null) {
+            for (int slot : menu.getPreset().getSlotsAccessedByItemTransport(menu, ItemTransportFlow.INSERT, wrapper)) {
+                ItemStack inSlot = menu.getItemInSlot(slot);
+                if (inSlot == null || inSlot.getType() == Material.AIR) {
+                    space += maxStack;
+                } else if (SlimefunUtils.isItemSimilar(inSlot, wrapper, true, false)) {
+                    int room = maxStack - inSlot.getAmount();
+                    if (room > 0) {
+                        space += room;
+                    }
+                }
+                if (space >= item.getAmount()) {
+                    return space;
+                }
+            }
+        } else if (hasInventory(target)) {
+            Inventory inv = inventories.get(target.getLocation());
+            if (inv == null) {
+                BlockState state = PaperLibUtils.getBlockState(target, false).getState();
+                if (state instanceof InventoryHolder inventoryHolder) {
+                    inv = inventoryHolder.getInventory();
+                    inventories.put(target.getLocation(), inv);
+                }
+            }
+            if (inv != null) {
+                if (!InvUtils.isItemAllowed(item.getType(), inv.getType())) {
+                    return 0;
+                }
+                ItemStack[] contents = inv.getContents();
+                int[] range = getInputSlotRange(inv, item);
+                for (int slot = range[0]; slot < range[1]; slot++) {
+                    ItemStack inSlot = contents[slot];
+                    if (inSlot == null || inSlot.getType() == Material.AIR) {
+                        space += maxStack;
+                    } else if (SlimefunUtils.isItemSimilar(inSlot, wrapper, true, false)) {
+                        int room = maxStack - inSlot.getAmount();
+                        if (room > 0) {
+                            space += room;
+                        }
+                    }
+                    if (space >= item.getAmount()) {
+                        return space;
+                    }
+                }
+            }
+        }
+        return space;
+    }
+
     @Nullable
     static ItemStack withdraw(AbstractItemNetwork network, Map<Location, Inventory> inventories, Block node, Block target, ItemStack template) {
+        prepareTargetBeforeWithdraw(target);
+
         DirtyChestMenu menu = getChestMenu(target);
 
         if (menu == null) {
@@ -145,6 +343,9 @@ final class CargoUtils {
 
         for (int slot : menu.getPreset().getSlotsAccessedByItemTransport(menu, ItemTransportFlow.WITHDRAW, null)) {
             ItemStack is = menu.getItemInSlot(slot);
+            if (is == null || is.getType() == Material.AIR) {
+                continue;
+            }
             ItemStackWrapper wrapperItemInSlot = ItemStackWrapper.wrap(is);
 
             if (SlimefunUtils.isItemSimilar(wrapperItemInSlot, wrapperTemplate, true) && matchesFilter(network, node, wrapperItemInSlot)) {
@@ -172,7 +373,6 @@ final class CargoUtils {
         ItemStackWrapper wrapper = ItemStackWrapper.wrap(template);
 
         for (int slot = minSlot; slot < maxSlot; slot++) {
-            // Changes to these ItemStacks are synchronized with the Item in the Inventory
             ItemStack itemInSlot = contents[slot];
             if (itemInSlot == null || itemInSlot.getType().isAir()) {
                 continue;
@@ -196,13 +396,15 @@ final class CargoUtils {
 
     @Nullable
     static ItemStackAndInteger withdraw(AbstractItemNetwork network, Map<Location, Inventory> inventories, Block node, Block target) {
+        prepareTargetBeforeWithdraw(target);
+
         DirtyChestMenu menu = getChestMenu(target);
 
         if (menu != null) {
             for (int slot : menu.getPreset().getSlotsAccessedByItemTransport(menu, ItemTransportFlow.WITHDRAW, null)) {
                 ItemStack is = menu.getItemInSlot(slot);
 
-                if (matchesFilter(network, node, is)) {
+                if (is != null && is.getType() != Material.AIR && matchesFilter(network, node, is)) {
                     menu.replaceExistingItem(slot, null);
                     return new ItemStackAndInteger(is, slot);
                 }
@@ -236,7 +438,7 @@ final class CargoUtils {
         for (int slot = minSlot; slot < maxSlot; slot++) {
             ItemStack item = contents[slot];
 
-            if (matchesFilter(network, node, item)) {
+            if (item != null && item.getType() != Material.AIR && matchesFilter(network, node, item)) {
                 inv.setItem(slot, null);
                 return new ItemStackAndInteger(item, slot);
             }
@@ -274,11 +476,14 @@ final class CargoUtils {
             return stack;
         }
 
+        prepareTargetBeforeInsert(target, stack);
+
         for (int slot : menu.getPreset().getSlotsAccessedByItemTransport(menu, ItemTransportFlow.INSERT, wrapper)) {
             ItemStack itemInSlot = menu.getItemInSlot(slot);
 
-            if (itemInSlot == null) {
+            if (itemInSlot == null || itemInSlot.getType() == Material.AIR) {
                 menu.replaceExistingItem(slot, stack);
+                postProcessTargetAfterInsert(target);
                 return null;
             }
 
@@ -302,6 +507,7 @@ final class CargoUtils {
                     }
 
                     menu.replaceExistingItem(slot, itemInSlot);
+                    postProcessTargetAfterInsert(target);
                     return stack;
                 } else if (smartFill) {
                     return stack;
@@ -314,10 +520,6 @@ final class CargoUtils {
 
     @Nullable
     private static ItemStack insertIntoVanillaInventory(@Nonnull ItemStack stack, @Nonnull ItemStackWrapper wrapper, boolean smartFill, @Nonnull Inventory inv) {
-        /*
-         * If the Inventory does not accept this Item Type, bounce the item back.
-         * Example: Shulker boxes within shulker boxes (fixes #2662)
-         */
         if (!InvUtils.isItemAllowed(stack.getType(), inv.getType())) {
             return stack;
         }
@@ -328,10 +530,9 @@ final class CargoUtils {
         int maxSlot = range[1];
 
         for (int slot = minSlot; slot < maxSlot; slot++) {
-            // Changes to this ItemStack are synchronized with the Item in the Inventory
             ItemStack itemInSlot = contents[slot];
 
-            if (itemInSlot == null) {
+            if (itemInSlot == null || itemInSlot.getType() == Material.AIR) {
                 inv.setItem(slot, stack);
                 return null;
             } else {
@@ -339,7 +540,6 @@ final class CargoUtils {
                 int maxStackSize = itemInSlot.getType().getMaxStackSize();
 
                 if (!smartFill && currentAmount == maxStackSize) {
-                    // Skip full stacks - Performance optimization for non-smartfill nodes
                     continue;
                 }
 
@@ -365,6 +565,108 @@ final class CargoUtils {
         return stack;
     }
 
+    /**
+     * Hook called before withdrawal from target to replenish output slots if target is a barrel or storage unit.
+     */
+    static void prepareTargetBeforeWithdraw(@Nonnull Block target) {
+        String sfId = BlockStorage.checkID(target);
+        if (sfId == null) {
+            return;
+        }
+        SlimefunItem sfItem = SlimefunItem.getById(sfId);
+        if (sfItem == null) {
+            return;
+        }
+
+        // 1. InfinityExpansion StorageUnit
+        if (sfItem.getClass().getName().contains("StorageUnit")) {
+            try {
+                Method getCacheMethod = sfItem.getClass().getDeclaredMethod("getCache", Location.class);
+                getCacheMethod.setAccessible(true);
+                Object cache = getCacheMethod.invoke(sfItem, target.getLocation());
+                if (cache != null) {
+                    Method outputMethod = cache.getClass().getDeclaredMethod("output");
+                    outputMethod.setAccessible(true);
+                    outputMethod.invoke(cache);
+                }
+            } catch (Exception ignored) {
+            }
+            return;
+        }
+
+        // 2. FluffyMachines Barrel
+        if (sfItem.getClass().getName().contains("Barrel")) {
+            try {
+                DirtyChestMenu menu = getChestMenu(target);
+                if (menu instanceof BlockMenu blockMenu) {
+                    Method getCapacityMethod = sfItem.getClass().getDeclaredMethod("getCapacity", Block.class);
+                    getCapacityMethod.setAccessible(true);
+                    int cap = (Integer) getCapacityMethod.invoke(sfItem, target);
+
+                    Method pushOutputMethod = sfItem.getClass().getDeclaredMethod("pushOutput", BlockMenu.class, Block.class, int.class);
+                    pushOutputMethod.setAccessible(true);
+                    pushOutputMethod.invoke(sfItem, blockMenu, target, cap);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    /**
+     * Hook called before inserting to empty input buffer slots into storage if target is a barrel or storage unit.
+     */
+    static void prepareTargetBeforeInsert(@Nonnull Block target, @Nullable ItemStack item) {
+        String sfId = BlockStorage.checkID(target);
+        if (sfId == null) {
+            return;
+        }
+        SlimefunItem sfItem = SlimefunItem.getById(sfId);
+        if (sfItem == null) {
+            return;
+        }
+
+        // 1. InfinityExpansion StorageUnit
+        if (sfItem.getClass().getName().contains("StorageUnit")) {
+            try {
+                Method getCacheMethod = sfItem.getClass().getDeclaredMethod("getCache", Location.class);
+                getCacheMethod.setAccessible(true);
+                Object cache = getCacheMethod.invoke(sfItem, target.getLocation());
+                if (cache != null) {
+                    Method inputMethod = cache.getClass().getDeclaredMethod("input");
+                    inputMethod.setAccessible(true);
+                    inputMethod.invoke(cache);
+                }
+            } catch (Exception ignored) {
+            }
+            return;
+        }
+
+        // 2. FluffyMachines Barrel
+        if (sfItem.getClass().getName().contains("Barrel")) {
+            try {
+                DirtyChestMenu menu = getChestMenu(target);
+                if (menu instanceof BlockMenu blockMenu) {
+                    Method getCapacityMethod = sfItem.getClass().getDeclaredMethod("getCapacity", Block.class);
+                    getCapacityMethod.setAccessible(true);
+                    int cap = (Integer) getCapacityMethod.invoke(sfItem, target);
+
+                    Method acceptInputMethod = sfItem.getClass().getDeclaredMethod("acceptInput", BlockMenu.class, Block.class, int.class, int.class);
+                    acceptInputMethod.setAccessible(true);
+                    acceptInputMethod.invoke(sfItem, blockMenu, target, 19, cap);
+                    acceptInputMethod.invoke(sfItem, blockMenu, target, 20, cap);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    /**
+     * Hook called after insertion to absorb items immediately from input slots into the storage cache.
+     */
+    static void postProcessTargetAfterInsert(@Nonnull Block target) {
+        prepareTargetBeforeInsert(target, null);
+    }
+
     @Nullable
     static DirtyChestMenu getChestMenu(@Nonnull Block block) {
         if (BlockStorage.hasInventory(block)) {
@@ -382,19 +684,6 @@ final class CargoUtils {
         return network.getItemFilter(node).test(item);
     }
 
-    /**
-     * This method checks if a given {@link ItemStack} is smeltable or not.
-     * The lazy-option is a performance-saver since actually calculating this can be quite expensive.
-     * For the current applicational purposes a quick check for any wooden logs is sufficient.
-     * Otherwise the "lazyness" can be turned off in the future.
-     * 
-     * @param stack
-     *            The {@link ItemStack} to test
-     * @param lazy
-     *            Whether or not to perform a "lazy" but performance-saving check
-     * 
-     * @return Whether the given {@link ItemStack} can be smelted or not
-     */
     private static boolean isSmeltable(@Nullable ItemStack stack, boolean lazy) {
         if (lazy) {
             return stack != null && Tag.LOGS.isTagged(stack.getType());
@@ -412,12 +701,6 @@ final class CargoUtils {
         }
     }
 
-    /**
-     * Gets the {@link ItemFilter} slots for a Cargo Node. If you wish to access the items
-     * in the cargo (without hardcoding the slots in case of change) then you can use this method.
-     *
-     * @return The slots where the {@link ItemFilter} section for a cargo node sits
-     */
     @Nonnull
     public static int[] getFilteringSlots() {
         return FILTER_SLOTS;

@@ -112,4 +112,30 @@ class TestCargoNodeListener {
         Assertions.assertFalse(event.isCancelled());
     }
 
+    @Test
+    @DisplayName("Test chunk limiter when max nodes reached")
+    void testChunkLimit() {
+        org.bukkit.World world = TestUtilities.createWorld(server);
+        Player player = server.addPlayer();
+        Location l = new Location(world, 500, 60, 500);
+
+        for (int y = 1; y <= 32; y++) {
+            Location nodeLoc = new Location(world, 500, y, 500);
+            com.github.drakescraft_labs.slimefun4.legacy.api.BlockStorage.store(nodeLoc.getBlock(), "CARGO_NODE_INPUT");
+        }
+
+        Assertions.assertTrue(CargoNodeListener.countCargoNodesInChunk(l.getChunk()) >= 32);
+
+        ItemGroup itemGroup = TestUtilities.getItemGroup(plugin, "cargo_test_limit");
+        SlimefunItemStack item = new SlimefunItemStack("MOCK_CARGO_LIMIT", new CustomItemStack(Material.PLAYER_HEAD, "&4Cargo limit node!"));
+        CargoInputNode node = new CargoInputNode(itemGroup, item, RecipeType.NULL, new ItemStack[9], null);
+        node.register(plugin);
+
+        Block b = l.getBlock();
+        Block against = b.getRelative(BlockFace.NORTH);
+
+        BlockPlaceEvent event = new BlockPlaceEvent(b, b.getState(), against, item, player, true, EquipmentSlot.HAND);
+        listener.onCargoNodePlace(event);
+        Assertions.assertTrue(event.isCancelled(), "Placement should be cancelled when chunk limit is reached");
+    }
 }
