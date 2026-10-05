@@ -44,7 +44,10 @@ public abstract class BlockTicker implements ItemHandler {
     public abstract boolean isSynchronized();
 
     /**
-     * This method is called every tick for every block
+     * This method is called every tick for every block.
+     * Implementations can override this method. Providing a default empty implementation
+     * prevents AbstractMethodError at runtime when modern or bridged addons only override
+     * alternative or modernized ticker signatures.
      * 
      * @param b
      *            The {@link Block} that was ticked
@@ -53,7 +56,9 @@ public abstract class BlockTicker implements ItemHandler {
      * @param data
      *            The data stored in this {@link Block}
      */
-    public abstract void tick(Block b, SlimefunItem item, Config data);
+    public void tick(Block b, SlimefunItem item, Config data) {
+        // Default empty implementation to prevent AbstractMethodError
+    }
 
     /**
      * This method is called every tick but not per-block and only once.
