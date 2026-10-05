@@ -186,4 +186,51 @@ class TestEnchanterPersistenceAndDowngrade {
             "Valuable book must be refunded to BlockMenu on shutdown"
         );
     }
+
+    @Test
+    @DisplayName("Ticket #55: machines that keep their ingredients in the input slots are never refunded (no dupes)")
+    void testNoRefundWhenIngredientsAreNotConsumed() {
+        // Mirrors GCE PrivateCoop: the recipe lookup leaves the ingredients in the input slots
+        AutoEnchanter keepsInputs = new AutoEnchanter(
+            new ItemGroup(org.bukkit.NamespacedKey.minecraft("test_keep_group"), new ItemStack(Material.BOOK)),
+            new SlimefunItemStack("TEST_KEEP_INPUTS_MACHINE", Material.ENCHANTING_TABLE, "&cTest Keep Inputs"),
+            RecipeType.ENHANCED_CRAFTING_TABLE,
+            new ItemStack[] { new ItemStack(Material.DIRT) }
+        ) {
+            @Override
+            protected MachineRecipe findNextRecipe(BlockMenu menu) {
+                return null;
+            }
+        };
+        keepsInputs.setCapacity(100);
+        keepsInputs.setEnergyConsumption(10);
+        keepsInputs.setProcessingSpeed(1);
+        keepsInputs.register(plugin);
+
+        Assertions.assertFalse(keepsInputs.canRefundInFlightOperation());
+
+        Block block = world.getBlockAt(40, 64, 40);
+        block.setType(Material.ENCHANTING_TABLE);
+        BlockStorage.store(block, keepsInputs.getId());
+
+        BlockMenu menu = BlockStorage.getInventory(block);
+        Assertions.assertNotNull(menu);
+
+        ItemStack parent = new ItemStack(Material.EGG);
+        menu.replaceExistingItem(19, parent.clone());
+
+        MachineProcessor<CraftingOperation> processor = keepsInputs.getMachineProcessor();
+        processor.startOperation(block, new CraftingOperation(new ItemStack[] { parent }, new ItemStack[] { new ItemStack(Material.CHICKEN_SPAWN_EGG) }, 100));
+
+        // Aborting mid-craft must not hand out a copy of the ingredient
+        processor.endOperation(block);
+        Assertions.assertEquals(1, menu.getItemInSlot(19).getAmount());
+        Assertions.assertNull(menu.getItemInSlot(20));
+
+        // Neither may the shutdown refund
+        processor.startOperation(block, new CraftingOperation(new ItemStack[] { parent }, new ItemStack[] { new ItemStack(Material.CHICKEN_SPAWN_EGG) }, 100));
+        MachineProcessor.refundAllActiveProcessors();
+        Assertions.assertEquals(1, menu.getItemInSlot(19).getAmount());
+        Assertions.assertNull(menu.getItemInSlot(20));
+    }
 }

@@ -19,6 +19,7 @@ import dev.drake.dough.blocks.BlockPosition;
 import com.github.drakescraft_labs.slimefun4.api.events.AsyncMachineOperationFinishEvent;
 import com.github.drakescraft_labs.slimefun4.core.attributes.MachineProcessHolder;
 import com.github.drakescraft_labs.slimefun4.implementation.operations.CraftingOperation;
+import com.github.drakescraft_labs.slimefun4.legacy.Objects.SlimefunItem.abstractItems.AContainer;
 import com.github.drakescraft_labs.slimefun4.legacy.Objects.SlimefunItem.interfaces.InventoryBlock;
 import com.github.drakescraft_labs.slimefun4.legacy.api.BlockStorage;
 import com.github.drakescraft_labs.slimefun4.legacy.api.inventory.BlockMenu;
@@ -283,9 +284,11 @@ public class MachineProcessor<T extends MachineOperation> {
 
     /**
      * Refunds all active operations handled by this processor.
+     * Only machines whose ingredients are known to be consumed when the operation starts are refunded,
+     * see {@link AContainer#canRefundInFlightOperation()}; any other processor is left untouched.
      */
     public void refundActiveOperations() {
-        if (machines.isEmpty()) {
+        if (machines.isEmpty() || !(owner instanceof AContainer container) || !container.canRefundInFlightOperation()) {
             return;
         }
 
@@ -367,8 +370,6 @@ public class MachineProcessor<T extends MachineOperation> {
                 }
             }
         }
-
-        operation.onCancel(pos);
     }
 
 }

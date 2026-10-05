@@ -29,6 +29,9 @@ import com.github.drakescraft_labs.slimefun4.core.handlers.BlockBreakHandler;
 import com.github.drakescraft_labs.slimefun4.core.machines.MachineProcessor;
 import com.github.drakescraft_labs.slimefun4.core.networks.energy.EnergyNetComponentType;
 import com.github.drakescraft_labs.slimefun4.implementation.handlers.SimpleBlockBreakHandler;
+import com.github.drakescraft_labs.slimefun4.implementation.items.electric.machines.enchanting.AutoDisenchanter;
+import com.github.drakescraft_labs.slimefun4.implementation.items.electric.machines.enchanting.AutoEnchanter;
+import com.github.drakescraft_labs.slimefun4.implementation.items.electric.machines.enchanting.BookBinder;
 import com.github.drakescraft_labs.slimefun4.implementation.operations.CraftingOperation;
 import com.github.drakescraft_labs.slimefun4.utils.ChestMenuUtils;
 import com.github.drakescraft_labs.slimefun4.utils.SlimefunUtils;
@@ -54,6 +57,7 @@ public abstract class AContainer extends SlimefunItem implements InventoryBlock,
     private int energyConsumedPerTick = -1;
     private int energyCapacity = -1;
     private int processingSpeed = -1;
+    private Boolean inFlightRefundable;
 
     @ParametersAreNonnullByDefault
     protected AContainer(ItemGroup itemGroup, SlimefunItemStack item, RecipeType recipeType, ItemStack[] recipe) {
@@ -79,7 +83,7 @@ public abstract class AContainer extends SlimefunItem implements InventoryBlock,
                 }
 
                 CraftingOperation currentOp = processor.getOperation(b);
-                if (currentOp != null && currentOp.markRefunded()) {
+                if (currentOp != null && canRefundInFlightOperation() && currentOp.markRefunded()) {
                     if (currentOp.isFinished()) {
                         for (ItemStack result : currentOp.getResults()) {
                             if (result != null && !result.getType().isAir()) {
@@ -110,6 +114,38 @@ public abstract class AContainer extends SlimefunItem implements InventoryBlock,
     @Override
     public MachineProcessor<CraftingOperation> getMachineProcessor() {
         return processor;
+    }
+
+    /**
+     * Ticket #55: the items of an in-flight {@link CraftingOperation} may only be handed back (block break,
+     * shutdown) when they were taken out of the input slots as the operation started. That holds for
+     * {@link #findNextRecipe(BlockMenu)} and the core enchanting machines; addons that override {@code tick}
+     * or {@code findNextRecipe} (e.g. GCE PrivateCoop keeps the parent chickens in the input slots)
+     * would get their items duplicated, so they are excluded.
+     *
+     * @return Whether an in-flight operation of this machine can be refunded without duplicating items
+     */
+    public final boolean canRefundInFlightOperation() {
+        if (inFlightRefundable == null) {
+            Class<?> recipeOwner = declaringClass("findNextRecipe", BlockMenu.class);
+            boolean consumesOnStart = recipeOwner == AContainer.class || recipeOwner == AutoEnchanter.class || recipeOwner == AutoDisenchanter.class || recipeOwner == BookBinder.class;
+            inFlightRefundable = consumesOnStart && declaringClass("tick", Block.class) == AContainer.class;
+        }
+
+        return inFlightRefundable;
+    }
+
+    private Class<?> declaringClass(String method, Class<?>... parameters) {
+        for (Class<?> type = getClass(); type != null; type = type.getSuperclass()) {
+            try {
+                type.getDeclaredMethod(method, parameters);
+                return type;
+            } catch (NoSuchMethodException x) {
+                // Keep looking in the superclass
+            }
+        }
+
+        return null;
     }
 
     protected void constructMenu(BlockMenuPreset preset) {
@@ -361,6 +397,11 @@ public abstract class AContainer extends SlimefunItem implements InventoryBlock,
                     processor.updateProgressBar(inv, 22, currentOperation);
                     currentOperation.addProgress(1);
                 } else {
+                    // Ticket #55: claim the results so a concurrent shutdown refund cannot hand them out twice
+                    if (!currentOperation.markRefunded()) {
+                        return;
+                    }
+
                     inv.replaceExistingItem(22, new CustomItemStack(Material.BLACK_STAINED_GLASS_PANE, " "));
 
                     for (ItemStack output : currentOperation.getResults()) {
