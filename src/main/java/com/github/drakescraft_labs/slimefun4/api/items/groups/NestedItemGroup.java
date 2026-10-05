@@ -66,7 +66,7 @@ public class NestedItemGroup extends FlexItemGroup {
     @Override
     @ParametersAreNonnullByDefault
     public boolean isVisible(Player p, PlayerProfile profile, SlimefunGuideMode mode) {
-        return mode == SlimefunGuideMode.SURVIVAL_MODE || mode == SlimefunGuideMode.CHEAT_MODE;
+        return mode == SlimefunGuideMode.SURVIVAL_MODE;
     }
 
     @Override
