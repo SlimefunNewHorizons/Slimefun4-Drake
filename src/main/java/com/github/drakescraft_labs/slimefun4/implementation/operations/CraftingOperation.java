@@ -5,9 +5,14 @@ import javax.annotation.Nonnull;
 import org.apache.commons.lang.Validate;
 import org.bukkit.inventory.ItemStack;
 
+import dev.drake.dough.blocks.BlockPosition;
 import com.github.drakescraft_labs.slimefun4.core.machines.MachineOperation;
-
 import com.github.drakescraft_labs.slimefun4.legacy.Objects.SlimefunItem.abstractItems.MachineRecipe;
+import com.github.drakescraft_labs.slimefun4.legacy.api.BlockStorage;
+import com.github.drakescraft_labs.slimefun4.legacy.api.inventory.BlockMenu;
+
+import org.bukkit.Location;
+import org.bukkit.World;
 
 /**
  * This {@link MachineOperation} represents a crafting process.
@@ -22,6 +27,7 @@ public class CraftingOperation implements MachineOperation {
 
     private final int totalTicks;
     private int currentTicks = 0;
+    private volatile boolean refunded = false;
 
     public CraftingOperation(@Nonnull MachineRecipe recipe) {
         this(recipe.getInput(), recipe.getOutput(), recipe.getTicks());
@@ -35,6 +41,23 @@ public class CraftingOperation implements MachineOperation {
         this.ingredients = ingredients;
         this.results = results;
         this.totalTicks = totalTicks;
+    }
+
+    /**
+     * Atomically marks this operation as refunded so ingredients are never refunded or dropped twice.
+     *
+     * @return true if this call transitioned refunded from false to true; false if already refunded.
+     */
+    public synchronized boolean markRefunded() {
+        if (refunded) {
+            return false;
+        }
+        refunded = true;
+        return true;
+    }
+
+    public boolean isRefunded() {
+        return refunded;
     }
 
     @Override
@@ -59,6 +82,44 @@ public class CraftingOperation implements MachineOperation {
     @Override
     public int getTotalTicks() {
         return totalTicks;
+    }
+
+    @Override
+    public void onCancel(BlockPosition position) {
+        if (!markRefunded()) {
+            return;
+        }
+
+        try {
+            World world = position.getWorld();
+            if (world == null) {
+                return;
+            }
+
+            Location loc = new Location(world, position.getX(), position.getY(), position.getZ());
+            BlockMenu menu = BlockStorage.getInventory(loc);
+
+            for (ItemStack ingredient : ingredients) {
+                if (ingredient != null && !ingredient.getType().isAir()) {
+                    if (menu != null) {
+                        ItemStack remaining = menu.pushItem(ingredient.clone(), 19, 20);
+                        if (remaining != null && remaining.getAmount() > 0) {
+                            remaining = menu.pushItem(remaining, 24, 25);
+                            if (remaining != null && remaining.getAmount() > 0) {
+                                world.dropItemNaturally(loc, remaining);
+                            }
+                        }
+                    } else {
+                        world.dropItemNaturally(loc, ingredient.clone());
+                    }
+                }
+            }
+            if (menu != null) {
+                menu.markDirty();
+            }
+        } catch (Throwable ignored) {
+            // Ignore exceptions if world is unloaded
+        }
     }
 
 }

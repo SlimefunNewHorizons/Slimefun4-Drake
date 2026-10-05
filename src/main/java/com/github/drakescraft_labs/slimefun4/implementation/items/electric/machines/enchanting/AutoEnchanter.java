@@ -101,20 +101,22 @@ public class AutoEnchanter extends AbstractEnchantmentMachine {
             if (entry.getKey().canEnchantItem(target)) {
                 if (isEnchantmentLevelAllowed(entry.getValue())) {
                     enchantments.put(entry.getKey(), entry.getValue());
-                } else if (!menu.toInventory().getViewers().isEmpty()) {
-                    showEnchantmentLevelWarning(menu);
+                } else {
+                    if (!menu.toInventory().getViewers().isEmpty()) {
+                        showEnchantmentLevelWarning(menu);
+                    }
                     return null;
                 }
             }
         }
 
         /*
-         * If override is false, remove those with lower level so we don't override existing enchants
-         * This also removes those with the same level so they aren't accounted for enchanting time
+         * Never downgrade an enchantment under ANY circumstance.
+         * If the target already has an enchantment with a level greater than or equal to
+         * the level provided by the book, remove it from the candidate enchantments.
+         * If the book has a strictly higher level (upgrade), it is kept and will upgrade the item.
          */
-        if (!overrideExistingEnchantsLvl.getValue()) {
-            enchantments.entrySet().removeIf(e -> target.getEnchantmentLevel(e.getKey()) >= e.getValue());
-        }
+        enchantments.entrySet().removeIf(e -> target.getEnchantmentLevel(e.getKey()) >= e.getValue());
 
         /*
          * When maxEnchants is set to -1 it will be ignored. When it's set to 0 it will not allow any enchants to go

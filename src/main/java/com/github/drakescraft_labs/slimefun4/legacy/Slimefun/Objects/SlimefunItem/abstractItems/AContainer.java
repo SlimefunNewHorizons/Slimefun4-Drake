@@ -78,6 +78,23 @@ public abstract class AContainer extends SlimefunItem implements InventoryBlock,
                     inv.dropItems(b.getLocation(), getOutputSlots());
                 }
 
+                CraftingOperation currentOp = processor.getOperation(b);
+                if (currentOp != null && currentOp.markRefunded()) {
+                    if (currentOp.isFinished()) {
+                        for (ItemStack result : currentOp.getResults()) {
+                            if (result != null && !result.getType().isAir()) {
+                                b.getWorld().dropItemNaturally(b.getLocation(), result.clone());
+                            }
+                        }
+                    } else {
+                        for (ItemStack ingredient : currentOp.getIngredients()) {
+                            if (ingredient != null && !ingredient.getType().isAir()) {
+                                b.getWorld().dropItemNaturally(b.getLocation(), ingredient.clone());
+                            }
+                        }
+                    }
+                }
+
                 processor.endOperation(b);
             }
 

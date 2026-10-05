@@ -91,8 +91,10 @@ public class AutoDisenchanter extends AbstractEnchantmentMachine {
         for (Map.Entry<Enchantment, Integer> entry : item.getEnchantments().entrySet()) {
             if (isEnchantmentLevelAllowed(entry.getValue())) {
                 enchantments.put(entry.getKey(), entry.getValue());
-            } else if (!menu.toInventory().getViewers().isEmpty()) {
-                showEnchantmentLevelWarning(menu);
+            } else {
+                if (!menu.toInventory().getViewers().isEmpty()) {
+                    showEnchantmentLevelWarning(menu);
+                }
                 return null;
             }
         }

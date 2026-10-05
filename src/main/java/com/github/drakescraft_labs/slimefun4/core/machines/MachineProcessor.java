@@ -1,6 +1,7 @@
 package com.github.drakescraft_labs.slimefun4.core.machines;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
@@ -9,6 +10,7 @@ import javax.annotation.Nullable;
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.event.Event;
 import org.bukkit.inventory.ItemStack;
@@ -16,9 +18,11 @@ import org.bukkit.inventory.ItemStack;
 import dev.drake.dough.blocks.BlockPosition;
 import com.github.drakescraft_labs.slimefun4.api.events.AsyncMachineOperationFinishEvent;
 import com.github.drakescraft_labs.slimefun4.core.attributes.MachineProcessHolder;
-import com.github.drakescraft_labs.slimefun4.utils.ChestMenuUtils;
-
+import com.github.drakescraft_labs.slimefun4.implementation.operations.CraftingOperation;
+import com.github.drakescraft_labs.slimefun4.legacy.Objects.SlimefunItem.interfaces.InventoryBlock;
+import com.github.drakescraft_labs.slimefun4.legacy.api.BlockStorage;
 import com.github.drakescraft_labs.slimefun4.legacy.api.inventory.BlockMenu;
+import com.github.drakescraft_labs.slimefun4.utils.ChestMenuUtils;
 
 /**
  * A {@link MachineProcessor} manages different {@link MachineOperation}s and handles
@@ -33,6 +37,8 @@ import com.github.drakescraft_labs.slimefun4.legacy.api.inventory.BlockMenu;
  * @see MachineProcessHolder
  */
 public class MachineProcessor<T extends MachineOperation> {
+
+    private static final Set<MachineProcessor<?>> ALL_PROCESSORS = ConcurrentHashMap.newKeySet();
 
     private final Map<BlockPosition, T> machines = new ConcurrentHashMap<>();
     private final MachineProcessHolder<T> owner;
@@ -49,6 +55,7 @@ public class MachineProcessor<T extends MachineOperation> {
         Validate.notNull(owner, "The MachineProcessHolder cannot be null.");
 
         this.owner = owner;
+        ALL_PROCESSORS.add(this);
     }
 
     /**
@@ -256,6 +263,112 @@ public class MachineProcessor<T extends MachineOperation> {
         if (remainingTicks > 0 || totalTicks > 0) {
             ChestMenuUtils.updateProgressbar(inv, slot, remainingTicks, totalTicks, getProgressBar());
         }
+    }
+
+    /**
+     * Refunds all in-flight items currently being processed in all active MachineProcessors
+     * back to their respective BlockMenus.
+     * This method is called during Slimefun onDisable (prior to AutoSavingService and BlockStorage save)
+     * to ensure that all items in-flight survive server restarts and shutdowns with zero data loss.
+     */
+    public static void refundAllActiveProcessors() {
+        for (MachineProcessor<?> processor : ALL_PROCESSORS) {
+            try {
+                processor.refundActiveOperations();
+            } catch (Throwable t) {
+                Bukkit.getLogger().log(java.util.logging.Level.SEVERE, "Failed to refund active operations for processor " + processor.getOwner(), t);
+            }
+        }
+    }
+
+    /**
+     * Refunds all active operations handled by this processor.
+     */
+    public void refundActiveOperations() {
+        if (machines.isEmpty()) {
+            return;
+        }
+
+        for (Map.Entry<BlockPosition, T> entry : machines.entrySet()) {
+            BlockPosition pos = entry.getKey();
+            T operation = entry.getValue();
+            if (operation != null) {
+                try {
+                    refundOperation(pos, operation);
+                } catch (Throwable t) {
+                    Bukkit.getLogger().log(java.util.logging.Level.SEVERE, "Error refunding operation at " + pos, t);
+                }
+            }
+        }
+        machines.clear();
+    }
+
+    private void refundOperation(@Nonnull BlockPosition pos, @Nonnull T operation) {
+        World world;
+        try {
+            world = pos.getWorld();
+        } catch (IllegalStateException e) {
+            return;
+        }
+
+        if (world == null) {
+            return;
+        }
+
+        Location loc = new Location(world, pos.getX(), pos.getY(), pos.getZ());
+        BlockMenu menu = BlockStorage.getInventory(loc);
+
+        if (operation instanceof CraftingOperation craftingOp) {
+            if (craftingOp.markRefunded()) {
+                if (craftingOp.isFinished()) {
+                    int[] outputSlots = (owner instanceof InventoryBlock ib) ? ib.getOutputSlots() : new int[] { 24, 25 };
+                    for (ItemStack result : craftingOp.getResults()) {
+                        if (result != null && !result.getType().isAir()) {
+                            if (menu != null) {
+                                ItemStack remaining = menu.pushItem(result.clone(), outputSlots);
+                                if (remaining != null && remaining.getAmount() > 0) {
+                                    world.dropItemNaturally(loc, remaining);
+                                }
+                            } else {
+                                world.dropItemNaturally(loc, result.clone());
+                            }
+                        }
+                    }
+                    if (menu != null) {
+                        menu.replaceExistingItem(22, new com.github.drakescraft_labs.slimefun4.api.items.SlimefunItemStack(
+                            "_UI_BLANK", org.bukkit.Material.BLACK_STAINED_GLASS_PANE, " "
+                        ));
+                        menu.markDirty();
+                    }
+                } else {
+                    int[] inputSlots = (owner instanceof InventoryBlock ib) ? ib.getInputSlots() : new int[] { 19, 20 };
+                    for (ItemStack ingredient : craftingOp.getIngredients()) {
+                        if (ingredient != null && !ingredient.getType().isAir()) {
+                            if (menu != null) {
+                                ItemStack remaining = menu.pushItem(ingredient.clone(), inputSlots);
+                                if (remaining != null && remaining.getAmount() > 0) {
+                                    int[] outputSlots = (owner instanceof InventoryBlock ib) ? ib.getOutputSlots() : new int[] { 24, 25 };
+                                    remaining = menu.pushItem(remaining, outputSlots);
+                                    if (remaining != null && remaining.getAmount() > 0) {
+                                        world.dropItemNaturally(loc, remaining);
+                                    }
+                                }
+                            } else {
+                                world.dropItemNaturally(loc, ingredient.clone());
+                            }
+                        }
+                    }
+                    if (menu != null) {
+                        menu.replaceExistingItem(22, new com.github.drakescraft_labs.slimefun4.api.items.SlimefunItemStack(
+                            "_UI_BLANK", org.bukkit.Material.BLACK_STAINED_GLASS_PANE, " "
+                        ));
+                        menu.markDirty();
+                    }
+                }
+            }
+        }
+
+        operation.onCancel(pos);
     }
 
 }

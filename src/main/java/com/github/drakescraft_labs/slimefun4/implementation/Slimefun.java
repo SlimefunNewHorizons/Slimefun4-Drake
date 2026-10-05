@@ -41,6 +41,7 @@ import com.github.drakescraft_labs.slimefun4.api.items.SlimefunItem;
 import com.github.drakescraft_labs.slimefun4.api.player.PlayerProfile;
 import com.github.drakescraft_labs.slimefun4.core.SlimefunRegistry;
 import com.github.drakescraft_labs.slimefun4.core.commands.SlimefunCommand;
+import com.github.drakescraft_labs.slimefun4.core.machines.MachineProcessor;
 import com.github.drakescraft_labs.slimefun4.core.networks.NetworkManager;
 import com.github.drakescraft_labs.slimefun4.core.services.AnalyticsService;
 import com.github.drakescraft_labs.slimefun4.core.services.AutoSavingService;
@@ -447,6 +448,13 @@ public class Slimefun extends JavaPlugin implements SlimefunAddon {
 
         // Kill our Profiler Threads
         profiler.kill();
+
+        // Reembolsar todas las operaciones activas de máquinas antes de guardar inventarios a disco (Ticket #55)
+        try {
+            MachineProcessor.refundAllActiveProcessors();
+        } catch (Throwable t) {
+            getLogger().log(Level.SEVERE, "An Error occurred while refunding active machine processors during onDisable", t);
+        }
 
         // Guardado completo al apagar: todos los perfiles en memoria + bloques pendientes (evita pérdidas)
         autoSavingService.shutdownSave();
