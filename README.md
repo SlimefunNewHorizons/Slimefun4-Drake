@@ -92,7 +92,7 @@ registry bootstrap failure is infrastructure debt, not a valid SFMaster result.
 ## Guías DrakesCraft
 
 - [Progresión y automatización](docs/GUIA_DE_PROGRESION_Y_AUTOMATIZACION.md)
-- [Integridad de redes](https://github.com/DrakesCraft-Labs/NetworksV6-drake/blob/main/docs/INTEGRIDAD_DE_RED_DRAKESCRAFT.md)
+- [Integridad de redes](https://github.com/SlimefunNewHorizons/NetworksV6-drake/blob/main/docs/INTEGRIDAD_DE_RED_DRAKESCRAFT.md)
 
 ## Maintainers
 
@@ -109,7 +109,7 @@ paths, plugin inventories or other operational metadata.
 
 ## 📄 License & Upstream Attribution
 
-This project is a sovereign fork maintained by [**JackStar6677-1**](https://github.com/JackStar6677-1) under [**DrakesCraft Labs**](https://github.com/DrakesCraft-Labs).
+This project is a sovereign fork maintained by [**JackStar6677-1**](https://github.com/JackStar6677-1) under [**DrakesCraft Labs**](https://github.com/SlimefunNewHorizons).
 
 - **Original Project:** Created by the upstream authors and the open-source community.
 - **DrakesCraft Optimizations:** Modernized for Paper/Purpur 1.21.11+, Java 21, high concurrency, asynchronous safety, and exploit/duplication prevention.

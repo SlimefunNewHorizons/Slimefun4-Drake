@@ -40,7 +40,7 @@ jobs:
       - name: Download ${{ matrix.mcVersion }} Paper
         run: |
           VERSION="${{ matrix.mcVersion }}"
-          USER_AGENT="DrakesCraft-Core-CI/1.0 (https://github.com/DrakesCraft-Labs/Slimefun4-Drake)"
+          USER_AGENT="DrakesCraft-Core-CI/1.0 (https://github.com/SlimefunNewHorizons/Slimefun4-Drake)"
           BUILDS=$(curl -fsSL -H "User-Agent: $USER_AGENT" \
             "https://fill.papermc.io/v3/projects/paper/versions/$VERSION/builds")
           PAPER_URL=$(echo "$BUILDS" \
