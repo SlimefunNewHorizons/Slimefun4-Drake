@@ -227,55 +227,9 @@ class TestItemGroups {
         Player player = server.addPlayer();
         Assertions.assertTrue(group.isVisible(player));
 
-        Assertions.assertDoesNotThrow(() -> group.add(null));
-        Assertions.assertFalse(group.contains(null));
-        Assertions.assertDoesNotThrow(() -> group.remove(null));
-        Assertions.assertTrue(group.getItems().isEmpty());
-    }
-
-    @Test
-    @DisplayName("Test GUIDE_COMPARATOR sorts Slimefun Core first, followed by Addons grouped consecutively")
-    void testGuideComparatorOrdering() {
-        ItemGroup sfWeapons = new ItemGroup(new NamespacedKey("slimefun", "weapons"), new CustomItemStack(Material.IRON_SWORD, "&7Weapons"), 1);
-        ItemGroup sfCargo = new ItemGroup(new NamespacedKey("slimefun", "cargo"), new CustomItemStack(Material.CHEST, "&7Cargo"), 4);
-        ItemGroup addonB1 = new ItemGroup(new NamespacedKey("networks", "cables"), new CustomItemStack(Material.STRING, "&7Networks Cables"), 1);
-        ItemGroup addonB2 = new ItemGroup(new NamespacedKey("networks", "storage"), new CustomItemStack(Material.BARREL, "&7Networks Storage"), 2);
-        ItemGroup addonA1 = new ItemGroup(new NamespacedKey("infinity", "machines"), new CustomItemStack(Material.FURNACE, "&7Infinity Machines"), 2);
-        ItemGroup addonA2 = new ItemGroup(new NamespacedKey("infinity", "materials"), new CustomItemStack(Material.DIAMOND, "&7Infinity Materials"), 1);
-
-        java.util.List<ItemGroup> list = new java.util.ArrayList<>(java.util.List.of(
-            addonB2, addonA1, sfCargo, addonB1, sfWeapons, addonA2
-        ));
-
-        list.sort(ItemGroup.GUIDE_COMPARATOR);
-
-        // Core items first
-        Assertions.assertEquals(sfWeapons, list.get(0), "Slimefun weapons should be first");
-        Assertions.assertEquals(sfCargo, list.get(1), "Slimefun cargo should be second");
-
-        // Addons grouped by namespace/addon name alphabetically ("infinity" before "networks")
-        Assertions.assertEquals(addonA2, list.get(2), "Infinity tier 1 materials should be before tier 2");
-        Assertions.assertEquals(addonA1, list.get(3), "Infinity tier 2 machines should follow tier 1");
-
-        // Next addon: networks
-        Assertions.assertEquals(addonB1, list.get(4), "Networks cables (tier 1) should be first in its addon");
-        Assertions.assertEquals(addonB2, list.get(5), "Networks storage (tier 2) should follow");
-    }
-
-    @Test
-    @DisplayName("Test NestedItemGroup visibility in CHEAT_MODE and SURVIVAL_MODE")
-    void testNestedItemGroupVisibility() {
-        com.github.drakescraft_labs.slimefun4.api.items.groups.NestedItemGroup nested =
-            new com.github.drakescraft_labs.slimefun4.api.items.groups.NestedItemGroup(
-                new NamespacedKey(plugin, "test_nested"),
-                new CustomItemStack(Material.BOOK, "&bNested Test")
-            );
-
-        Player player = server.addPlayer();
-        com.github.drakescraft_labs.slimefun4.api.player.PlayerProfile profile =
-            com.github.drakescraft_labs.slimefun4.api.player.PlayerProfile.find(player).orElse(null);
-
-        Assertions.assertTrue(nested.isVisible(player, profile, SlimefunGuideMode.SURVIVAL_MODE));
-        Assertions.assertTrue(nested.isVisible(player, profile, SlimefunGuideMode.CHEAT_MODE));
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> group.add(null));
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> group.contains(null));
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> group.remove(null));
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> group.getItems());
     }
 }

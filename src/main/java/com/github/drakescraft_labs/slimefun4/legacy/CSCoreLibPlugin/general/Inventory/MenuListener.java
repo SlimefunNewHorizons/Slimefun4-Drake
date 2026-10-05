@@ -70,12 +70,7 @@ public class MenuListener implements Listener {
                 MenuClickHandler handler = menu.getMenuClickHandler(e.getSlot());
 
                 if (handler == null) {
-                    if (menu instanceof com.github.drakescraft_labs.slimefun4.legacy.api.inventory.BlockMenu blockMenu
-                            && blockMenu.getPreset().getInventorySlots().contains(e.getSlot())) {
-                        e.setCancelled(false);
-                    } else {
-                        e.setCancelled(!menu.isEmptySlotsClickable() && (e.getCurrentItem() == null || e.getCurrentItem().getType() == Material.AIR));
-                    }
+                    e.setCancelled(!menu.isEmptySlotsClickable() && (e.getCurrentItem() == null || e.getCurrentItem().getType() == Material.AIR));
                 } else if (handler instanceof AdvancedMenuClickHandler) {
                     e.setCancelled(!((AdvancedMenuClickHandler) handler).onClick(e, (Player) e.getWhoClicked(), e.getSlot(), e.getCursor(), new ClickAction(e.isRightClick(), e.isShiftClick())));
                 } else {
@@ -92,12 +87,8 @@ public class MenuListener implements Listener {
      * por {@link #onClick}, evadiendo todos los MenuClickHandler. La tecnica de
      * "slot drag" (mantener click + arrastrar) explotaba esto para insertar items
      * en slots bloqueados (display/plantilla) de barriles, storages y demas menus
-     * — base de varios dupes conocidos.
-     * 
-     * Se cancela el drag si toca slots ocupados, de plantilla o con click handler.
-     * En slots de inventario validos de {@link com.github.drakescraft_labs.slimefun4.legacy.api.inventory.BlockMenu}
-     * (slots de entrada/salida) y puramente dentro del inventario del jugador, el drag esta permitido
-     * para soportar la interaccion nativa con clic izquierdo (LMC).
+     * — base de varios dupes conocidos. Aqui se cancela cualquier drag que toque
+     * slots del menu top; el drag puramente dentro del inventario del jugador se permite.
      */
     @EventHandler
     public void onDrag(InventoryDragEvent e) {
@@ -110,17 +101,8 @@ public class MenuListener implements Listener {
         int topSize = e.getView().getTopInventory().getSize();
         for (int rawSlot : e.getRawSlots()) {
             if (rawSlot < topSize) {
-                if (menu instanceof com.github.drakescraft_labs.slimefun4.legacy.api.inventory.BlockMenu blockMenu) {
-                    if (!blockMenu.getPreset().getInventorySlots().contains(rawSlot)) {
-                        e.setCancelled(true);
-                        return;
-                    }
-                } else {
-                    if (!menu.isEmptySlotsClickable() || menu.getMenuClickHandler(rawSlot) != null) {
-                        e.setCancelled(true);
-                        return;
-                    }
-                }
+                e.setCancelled(true);
+                return;
             }
         }
 

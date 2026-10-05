@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -156,134 +155,11 @@ public class ItemGroup implements Keyed {
     }
 
     /**
-     * Canonical comparator for the Slimefun Guide and Cheat Sheet.
-     * Keeps Slimefun Core categories together at the beginning with natural progression,
-     * and groups Addon categories strictly together by Addon name (alphabetical),
-     * followed by category tier and display name.
-     */
-    public static final Comparator<ItemGroup> GUIDE_COMPARATOR = (a, b) -> {
-        if (a == b) {
-            return 0;
-        }
-        if (a == null) {
-            return 1;
-        }
-        if (b == null) {
-            return -1;
-        }
-
-        boolean aCore = a.isSlimefunCore();
-        boolean bCore = b.isSlimefunCore();
-
-        if (aCore && !bCore) {
-            return -1;
-        }
-        if (!aCore && bCore) {
-            return 1;
-        }
-
-        if (aCore && bCore) {
-            int rankA = a.getCoreProgressionRank();
-            int rankB = b.getCoreProgressionRank();
-            if (rankA != rankB) {
-                return Integer.compare(rankA, rankB);
-            }
-            if (a.getTier() != b.getTier()) {
-                return Integer.compare(a.getTier(), b.getTier());
-            }
-            return a.getKey().compareTo(b.getKey());
-        }
-
-        // Both are Addons: group strictly by Addon Name
-        String addonA = a.getAddonName();
-        String addonB = b.getAddonName();
-        int addonCompare = addonA.compareToIgnoreCase(addonB);
-        if (addonCompare != 0) {
-            return addonCompare;
-        }
-
-        // Within the same addon, sort by tier first
-        if (a.getTier() != b.getTier()) {
-            return Integer.compare(a.getTier(), b.getTier());
-        }
-
-        // Then by unlocalized / display name
-        String nameA = a.getUnlocalizedName();
-        String nameB = b.getUnlocalizedName();
-        if (nameA != null && nameB != null && !nameA.equalsIgnoreCase(nameB)) {
-            return nameA.compareToIgnoreCase(nameB);
-        }
-
-        return a.getKey().compareTo(b.getKey());
-    };
-
-    /**
-     * This refreshes the {@link ItemGroup} order using the canonical {@link #GUIDE_COMPARATOR}.
+     * This refreshes the {@link ItemGroup} order.
      */
     private void sortCategoriesByTier() {
         List<ItemGroup> categories = Slimefun.getRegistry().getAllItemGroups();
-        categories.sort(GUIDE_COMPARATOR);
-    }
-
-    /**
-     * Returns true if this {@link ItemGroup} belongs to Slimefun core.
-     * 
-     * @return whether this group is part of core Slimefun
-     */
-    public boolean isSlimefunCore() {
-        if (addon != null && addon.getName() != null && addon.getName().equalsIgnoreCase("Slimefun")) {
-            return true;
-        }
-        String namespace = key.getNamespace();
-        return namespace.equalsIgnoreCase("slimefun") || namespace.equalsIgnoreCase("slimefun4");
-    }
-
-    /**
-     * Returns the name of the addon providing this {@link ItemGroup}.
-     * 
-     * @return Addon name or namespace
-     */
-    public @Nonnull String getAddonName() {
-        if (addon != null && addon.getName() != null && !addon.getName().isEmpty()) {
-            return addon.getName();
-        }
-        String namespace = key.getNamespace();
-        if (namespace.equalsIgnoreCase("slimefun") || namespace.equalsIgnoreCase("slimefun4")) {
-            return "Slimefun";
-        }
-        return namespace;
-    }
-
-    /**
-     * Progression priority for core Slimefun categories.
-     */
-    public int getCoreProgressionRank() {
-        String k = key.getKey().toLowerCase(Locale.ROOT);
-        return switch (k) {
-            case "weapons" -> 10;
-            case "tools" -> 20;
-            case "armor" -> 30;
-            case "items" -> 40;
-            case "food" -> 50;
-            case "basic_machines" -> 60;
-            case "resources" -> 70;
-            case "misc" -> 80;
-            case "tech_misc" -> 90;
-            case "technical_gadgets" -> 100;
-            case "electricity" -> 110;
-            case "cargo" -> 120;
-            case "androids" -> 130;
-            case "gps" -> 140;
-            case "magical_items" -> 150;
-            case "magical_armor" -> 160;
-            case "magical_gadgets" -> 170;
-            case "christmas" -> 180;
-            case "valentines_day" -> 190;
-            case "easter" -> 200;
-            case "halloween" -> 210;
-            case "rick" -> 999;
-            default -> 500 + tier;
-        };
+        Collections.sort(categories, Comparator.comparingInt(ItemGroup::getTier));
     }
 
     /**
@@ -303,7 +179,7 @@ public class ItemGroup implements Keyed {
      *            the {@link SlimefunItem} that should be added to this {@link ItemGroup}
      */
     public void add(@Nonnull SlimefunItem item) {
-        Validate.isTrue(item != null, "Cannot add null Items to an ItemGroup!");
+        Validate.notNull(item, "Cannot add null Items to an ItemGroup!");
 
         if (items.contains(item)) {
             // Ignore duplicate entries
@@ -351,28 +227,7 @@ public class ItemGroup implements Keyed {
                 meta.setDisplayName(ChatColor.YELLOW + name);
             }
 
-            List<String> lore = new ArrayList<>();
-            if (item.hasItemMeta() && item.getItemMeta().hasLore()) {
-                List<String> originalLore = item.getItemMeta().getLore();
-                if (originalLore != null) {
-                    for (String line : originalLore) {
-                        if (!line.contains("open-itemgroup") && !line.contains("Click to open")
-                                && !line.contains("Addon:") && !line.contains("Origin:")) {
-                            lore.add(line);
-                        }
-                    }
-                }
-            }
-
-            if (isSlimefunCore()) {
-                lore.add(ChatColor.DARK_GRAY + "Origin: " + ChatColor.AQUA + "Slimefun Core");
-            } else {
-                lore.add(ChatColor.DARK_GRAY + "Addon: " + ChatColor.GREEN + getAddonName());
-            }
-
-            lore.add("");
-            lore.add(ChatColor.GRAY + "\u21E8 " + ChatColor.GREEN + Slimefun.getLocalization().getMessage(p, "guide.tooltips.open-itemgroup"));
-            meta.setLore(lore);
+            meta.setLore(Arrays.asList("", ChatColor.GRAY + "\u21E8 " + ChatColor.GREEN + Slimefun.getLocalization().getMessage(p, "guide.tooltips.open-itemgroup")));
         });
     }
 

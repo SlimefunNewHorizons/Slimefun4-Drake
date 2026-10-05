@@ -1,6 +1,6 @@
 package com.github.drakescraft_labs.slimefun4.implementation.guide;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.annotation.Nonnull;
@@ -8,11 +8,11 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.Recipe;
 
 import com.github.drakescraft_labs.slimefun4.api.items.ItemGroup;
 import com.github.drakescraft_labs.slimefun4.api.items.SlimefunItem;
 import com.github.drakescraft_labs.slimefun4.api.items.groups.FlexItemGroup;
-import com.github.drakescraft_labs.slimefun4.api.items.groups.SubItemGroup;
 import com.github.drakescraft_labs.slimefun4.api.player.PlayerProfile;
 import com.github.drakescraft_labs.slimefun4.core.guide.SlimefunGuide;
 import com.github.drakescraft_labs.slimefun4.core.guide.SlimefunGuideMode;
@@ -51,19 +51,14 @@ public class CheatSheetSlimefunGuide extends SurvivalSlimefunGuide {
      */
     @Override
     protected List<ItemGroup> getVisibleItemGroups(@Nonnull Player p, @Nonnull PlayerProfile profile) {
-        List<ItemGroup> groups = new ArrayList<>();
+        List<ItemGroup> groups = new LinkedList<>();
 
         for (ItemGroup group : Slimefun.getRegistry().getAllItemGroups()) {
-            if (group instanceof SubItemGroup) {
-                // Sub-categories belong inside their parent NestedItemGroup
-                continue;
-            }
             if (!(group instanceof FlexItemGroup flexItemGroup) || flexItemGroup.isVisible(p, profile, getMode())) {
                 groups.add(group);
             }
         }
 
-        groups.sort(ItemGroup.GUIDE_COMPARATOR);
         return groups;
     }
 
