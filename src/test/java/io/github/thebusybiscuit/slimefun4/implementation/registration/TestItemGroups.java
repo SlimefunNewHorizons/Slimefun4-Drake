@@ -227,9 +227,9 @@ class TestItemGroups {
         Player player = server.addPlayer();
         Assertions.assertTrue(group.isVisible(player));
 
-        Assertions.assertThrows(UnsupportedOperationException.class, () -> group.add(null));
-        Assertions.assertThrows(UnsupportedOperationException.class, () -> group.contains(null));
-        Assertions.assertThrows(UnsupportedOperationException.class, () -> group.remove(null));
-        Assertions.assertThrows(UnsupportedOperationException.class, () -> group.getItems());
+        Assertions.assertDoesNotThrow(() -> group.add(null));
+        Assertions.assertFalse(group.contains(null));
+        Assertions.assertDoesNotThrow(() -> group.remove(null));
+        Assertions.assertTrue(group.getItems().isEmpty());
     }
 }
