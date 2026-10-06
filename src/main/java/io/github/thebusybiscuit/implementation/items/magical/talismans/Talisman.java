@@ -41,6 +41,11 @@ import io.github.thebusybiscuit.slimefun4.utils.SlimefunUtils;
 public class Talisman extends SlimefunItem {
 
     protected static final ItemGroup TALISMANS_ITEMGROUP = new ItemGroup(new NamespacedKey(Slimefun.instance(), "talismans"), new CustomItemStack(SlimefunItems.COMMON_TALISMAN, "&7Talismans - &aTier I"), 2);
+
+    static {
+        // Addons extending Talisman register into this core group via the public constructors
+        TALISMANS_ITEMGROUP.setCrossAddonItemGroup(true);
+    }
     private static final String WIKI_PAGE = "Talismans";
 
     private final SlimefunItemStack enderTalisman;
