@@ -15,6 +15,7 @@ import java.util.logging.Level;
 import java.util.stream.IntStream;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.bukkit.Bukkit;
@@ -46,6 +47,7 @@ public class ErrorReport<T extends Throwable> {
 
     private static final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm", Locale.ROOT);
     private static final AtomicInteger count = new AtomicInteger(0);
+    private static final ErrorReportLimiter LIMITER = new ErrorReportLimiter(ErrorReportLimiter.DEFAULT_WINDOW_MILLIS, 4096);
 
     private final SlimefunAddon addon;
     private final T throwable;
@@ -69,7 +71,9 @@ public class ErrorReport<T extends Throwable> {
         this.throwable = throwable;
         this.addon = addon;
 
-        Slimefun.runSync(() -> print(printer));
+        if (LIMITER.tryAcquire(signature(throwable, addon), System.currentTimeMillis())) {
+            Slimefun.runSync(() -> print(printer));
+        }
     }
 
     /**
@@ -137,9 +141,10 @@ public class ErrorReport<T extends Throwable> {
     /**
      * This method returns the {@link File} this {@link ErrorReport} has been written to.
      *
-     * @return The {@link File} for this {@link ErrorReport}
+     * @return The {@link File} for this {@link ErrorReport}, or {@code null} when an
+     *         identical report was recently suppressed
      */
-    public @Nonnull File getFile() {
+    public @Nullable File getFile() {
         return file;
     }
 
@@ -159,6 +164,13 @@ public class ErrorReport<T extends Throwable> {
      */
     public static int count() {
         return count.get();
+    }
+
+    private static @Nonnull String signature(@Nonnull Throwable throwable, @Nonnull SlimefunAddon addon) {
+        StackTraceElement[] trace = throwable.getStackTrace();
+        String origin = trace.length == 0 ? "unknown" : trace[0].toString();
+
+        return addon.getName() + '\n' + throwable.getClass().getName() + '\n' + origin;
     }
 
     private void print(@Nonnull Consumer<PrintStream> printer) {
