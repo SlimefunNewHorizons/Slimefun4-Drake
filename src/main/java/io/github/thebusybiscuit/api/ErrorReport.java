@@ -8,6 +8,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -45,7 +47,9 @@ import me.mrCookieSlime.Slimefun.api.BlockStorage;
 public class ErrorReport<T extends Throwable> {
 
     private static final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm", Locale.ROOT);
+    private static final int MAX_REPORTS_PER_ADDON_PER_MINUTE = 10;
     private static final AtomicInteger count = new AtomicInteger(0);
+    private static final ConcurrentMap<ReportWindow, AtomicInteger> reportsPerMinute = new ConcurrentHashMap<>();
 
     private final SlimefunAddon addon;
     private final T throwable;
@@ -69,7 +73,13 @@ public class ErrorReport<T extends Throwable> {
         this.throwable = throwable;
         this.addon = addon;
 
-        Slimefun.runSync(() -> print(printer));
+        ReportPermit permit = acquireReportPermit(addon.getName(), LocalDateTime.now());
+        if (permit == ReportPermit.ALLOWED) {
+            Slimefun.runSync(() -> print(printer));
+        } else if (permit == ReportPermit.SUPPRESSION_NOTICE) {
+            addon.getLogger().log(Level.WARNING,
+                "Error report limit reached for this addon; suppressing further reports for the current minute.");
+        }
     }
 
     /**
@@ -255,6 +265,29 @@ public class ErrorReport<T extends Throwable> {
         }
 
         return newFile;
+    }
+
+    static ReportPermit acquireReportPermit(@Nonnull String addonName, @Nonnull LocalDateTime now) {
+        LocalDateTime minute = now.withSecond(0).withNano(0);
+        reportsPerMinute.keySet().removeIf(window -> window.minute().isBefore(minute));
+
+        int reports = reportsPerMinute.computeIfAbsent(new ReportWindow(addonName, minute), ignored -> new AtomicInteger())
+            .incrementAndGet();
+
+        if (reports <= MAX_REPORTS_PER_ADDON_PER_MINUTE) {
+            return ReportPermit.ALLOWED;
+        }
+
+        return reports == MAX_REPORTS_PER_ADDON_PER_MINUTE + 1 ? ReportPermit.SUPPRESSION_NOTICE : ReportPermit.SUPPRESSED;
+    }
+
+    enum ReportPermit {
+        ALLOWED,
+        SUPPRESSION_NOTICE,
+        SUPPRESSED
+    }
+
+    private record ReportWindow(@Nonnull String addonName, @Nonnull LocalDateTime minute) {
     }
 
     /**
