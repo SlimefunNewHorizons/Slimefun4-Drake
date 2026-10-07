@@ -337,6 +337,17 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- Mockito 5.10 pulls Byte Buddy 1.14, which cannot define MockBukkit proxy classes on JDK 25. -->
+            <dependency>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy</artifactId>
+                <version>1.17.7</version>
+            </dependency>
+            <dependency>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy-agent</artifactId>
+                <version>1.17.7</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
