@@ -87,9 +87,9 @@ class TestMinecraftVersion {
     @Test
     @DisplayName("Test correct behaviour for MinecraftVersion.UNKNOWN.isBefore(...)")
     void testIsBeforeUnknown() {
-        // Unknown should always fall back to true
-        Assertions.assertTrue(MinecraftVersion.UNKNOWN.isBefore(MinecraftVersion.MINECRAFT_1_16));
-        Assertions.assertTrue(MinecraftVersion.UNKNOWN.isBefore(MinecraftVersion.MINECRAFT_1_17));
+        // PaperLib can identify the running server even when the plugin version is unknown.
+        Assertions.assertFalse(MinecraftVersion.UNKNOWN.isBefore(MinecraftVersion.MINECRAFT_1_16));
+        Assertions.assertFalse(MinecraftVersion.UNKNOWN.isBefore(MinecraftVersion.MINECRAFT_1_17));
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> MinecraftVersion.MINECRAFT_1_16.isBefore(null));
     }
