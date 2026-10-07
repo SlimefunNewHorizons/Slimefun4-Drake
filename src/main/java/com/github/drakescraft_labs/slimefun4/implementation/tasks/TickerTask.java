@@ -137,7 +137,8 @@ public class TickerTask implements Runnable {
         try {
             // Only continue if the Chunk is actually loaded
             if (chunk.isLoaded()) {
-                for (Location l : locations.toArray(Location[]::new)) {
+                // locations is a ConcurrentHashMap key set: iteration is weakly consistent, no copy needed
+                for (Location l : locations) {
                     tickLocation(tickers, l);
                 }
             }
@@ -148,12 +149,28 @@ public class TickerTask implements Runnable {
 
     private void tickLocation(@Nonnull Set<BlockTicker> tickers, @Nonnull Location l) {
         Config data = BlockStorage.getLocationInfo(l);
-        SlimefunItem item = SlimefunItem.getById(data.getString("id"));
+        String id = data.getString("id");
+
+        if (id == null) {
+            return;
+        }
+
+        SlimefunItem item = SlimefunItem.getById(id);
 
         if (item != null && item.getBlockTicker() != null) {
             try {
+                /*
+                 * Without an active profiling run, a non-zero timestamp would still make
+                 * closeEntry() decrement the queue and submit work to the profiler executor
+                 * for every synchronized ticker on every tick.
+                 */
+                boolean profiling = Slimefun.getProfiler().isProfiling();
+
                 if (item.getBlockTicker().isSynchronized()) {
-                    Slimefun.getProfiler().scheduleEntries(1);
+                    if (profiling) {
+                        Slimefun.getProfiler().scheduleEntries(1);
+                    }
+
                     item.getBlockTicker().update();
 
                     /**
@@ -162,10 +179,10 @@ public class TickerTask implements Runnable {
                      */
                     Slimefun.runSync(() -> {
                         Block b = l.getBlock();
-                        tickBlock(l, b, item, data, System.nanoTime());
+                        tickBlock(l, b, item, data, profiling ? System.nanoTime() : 0);
                     });
                 } else {
-                    long timestamp = Slimefun.getProfiler().newEntry();
+                    long timestamp = profiling ? Slimefun.getProfiler().newEntry() : 0;
                     item.getBlockTicker().update();
                     Block b = l.getBlock();
                     tickBlock(l, b, item, data, timestamp);
