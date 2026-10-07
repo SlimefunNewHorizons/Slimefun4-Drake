@@ -1,8 +1,10 @@
 package com.github.drakescraft_labs.slimefun4.api;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -12,7 +14,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
-import java.util.stream.IntStream;
 
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -244,17 +245,16 @@ public class ErrorReport<T extends Throwable> {
     }
 
     private static @Nonnull File getNewFile() {
-        String path = "plugins/Slimefun/error-reports/" + dateFormat.format(LocalDateTime.now());
-        File newFile = new File(path + ".err");
+        File directory = new File("plugins/Slimefun/error-reports");
+        String prefix = dateFormat.format(LocalDateTime.now()) + '-';
 
-        if (newFile.exists()) {
-            IntStream stream = IntStream.iterate(1, i -> i + 1).filter(i -> !new File(path + " (" + i + ").err").exists());
-            int id = stream.findFirst().getAsInt();
-
-            newFile = new File(path + " (" + id + ").err");
+        try {
+            // Atomically reserve a unique report file. Scanning numbered files here used to
+            // become quadratic during an error storm and could stall the main server thread.
+            return Files.createTempFile(directory.toPath(), prefix, ".err").toFile();
+        } catch (IOException exception) {
+            throw new IllegalStateException("Could not reserve an error report file", exception);
         }
-
-        return newFile;
     }
 
     /**
