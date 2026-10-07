@@ -106,7 +106,10 @@ class TestBiomeMapCompatibility {
             MinecraftVersion.MINECRAFT_1_17,
             MinecraftVersion.MINECRAFT_1_18,
             MinecraftVersion.MINECRAFT_1_19,
-            MinecraftVersion.MINECRAFT_1_20
+            MinecraftVersion.MINECRAFT_1_20,
+            MinecraftVersion.MINECRAFT_1_20_5,
+            MinecraftVersion.MINECRAFT_1_21,
+            MinecraftVersion.MINECRAFT_26
         });
 
         testCases.put("oil_v1.16", new MinecraftVersion[] {
@@ -117,7 +120,10 @@ class TestBiomeMapCompatibility {
         testCases.put("oil_v1.18", new MinecraftVersion[] {
             MinecraftVersion.MINECRAFT_1_18,
             MinecraftVersion.MINECRAFT_1_19,
-            MinecraftVersion.MINECRAFT_1_20
+            MinecraftVersion.MINECRAFT_1_20,
+            MinecraftVersion.MINECRAFT_1_20_5,
+            MinecraftVersion.MINECRAFT_1_21,
+            MinecraftVersion.MINECRAFT_26
         });
 
         testCases.put("salt_v1.16", new MinecraftVersion[] {
@@ -128,7 +134,10 @@ class TestBiomeMapCompatibility {
         testCases.put("salt_v1.18", new MinecraftVersion[] {
             MinecraftVersion.MINECRAFT_1_18,
             MinecraftVersion.MINECRAFT_1_19,
-            MinecraftVersion.MINECRAFT_1_20
+            MinecraftVersion.MINECRAFT_1_20,
+            MinecraftVersion.MINECRAFT_1_20_5,
+            MinecraftVersion.MINECRAFT_1_21,
+            MinecraftVersion.MINECRAFT_26
         });
 
         testCases.put("uranium_v1.16", new MinecraftVersion[] {
@@ -142,7 +151,10 @@ class TestBiomeMapCompatibility {
         testCases.put("uranium_v1.18", new MinecraftVersion[] {
             MinecraftVersion.MINECRAFT_1_18,
             MinecraftVersion.MINECRAFT_1_19,
-            MinecraftVersion.MINECRAFT_1_20
+            MinecraftVersion.MINECRAFT_1_20,
+            MinecraftVersion.MINECRAFT_1_20_5,
+            MinecraftVersion.MINECRAFT_1_21,
+            MinecraftVersion.MINECRAFT_26
         });
         // @formatter:on
 

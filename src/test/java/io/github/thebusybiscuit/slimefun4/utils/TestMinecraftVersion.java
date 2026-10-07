@@ -87,9 +87,10 @@ class TestMinecraftVersion {
     @Test
     @DisplayName("Test correct behaviour for MinecraftVersion.UNKNOWN.isBefore(...)")
     void testIsBeforeUnknown() {
-        // Unknown should always fall back to true
-        Assertions.assertTrue(MinecraftVersion.UNKNOWN.isBefore(MinecraftVersion.MINECRAFT_1_16));
-        Assertions.assertTrue(MinecraftVersion.UNKNOWN.isBefore(MinecraftVersion.MINECRAFT_1_17));
+        // Unknown is assumed to be a newer server (26.x port), so it is never "before"
+        Assertions.assertFalse(MinecraftVersion.UNKNOWN.isBefore(MinecraftVersion.MINECRAFT_1_16));
+        Assertions.assertFalse(MinecraftVersion.UNKNOWN.isBefore(MinecraftVersion.MINECRAFT_1_17));
+        Assertions.assertFalse(MinecraftVersion.UNKNOWN.isBefore(MinecraftVersion.MINECRAFT_26));
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> MinecraftVersion.MINECRAFT_1_16.isBefore(null));
     }
