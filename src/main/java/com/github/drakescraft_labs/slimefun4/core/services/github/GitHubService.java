@@ -69,7 +69,8 @@ public class GitHubService {
     public void start(@Nonnull Slimefun plugin) {
         loadConnectors(false);
 
-        long period = TimeUnit.HOURS.toMillis(1);
+        // Periodo en ticks de Bukkit (20 ticks/seg): 1 hora = 72.000L ticks
+        long period = 60 * 60 * 20L;
         GitHubTask task = new GitHubTask(this);
 
         plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, task, 30 * 20L, period);

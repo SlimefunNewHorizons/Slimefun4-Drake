@@ -9,6 +9,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
 import javax.annotation.Nonnull;
@@ -34,6 +35,8 @@ class GitHubTask implements Runnable {
 
     private static final int MAX_REQUESTS_PER_MINUTE = 16;
     private final GitHubService gitHubService;
+    private final AtomicBoolean isRetrying = new AtomicBoolean(false);
+    private int consecutive429Errors = 0;
 
     GitHubTask(@Nonnull GitHubService github) {
         gitHubService = github;
@@ -102,6 +105,7 @@ class GitHubTask implements Runnable {
                     contributor.setTexture(skins.get(contributor.getMinecraftName()));
                 } else {
                     contributor.setTexture(pullTexture(contributor, skins));
+                    consecutive429Errors = 0;
                     return contributor.getUniqueId().isPresent() ? 1 : 2;
                 }
             } catch (IllegalArgumentException x) {
@@ -111,15 +115,31 @@ class GitHubTask implements Runnable {
                 Slimefun.logger().log(Level.WARNING, "The contributors thread was interrupted!");
                 Thread.currentThread().interrupt();
             } catch (Exception x) {
-                // Too many requests
-                Slimefun.logger().log(Level.WARNING, "Attempted to refresh skin cache, got this response: {0}: {1}", new Object[] { x.getClass().getSimpleName(), x.getMessage() });
-                Slimefun.logger().log(Level.WARNING, "This usually means mojang.com is temporarily down or started to rate-limit this connection, nothing to worry about!");
-
                 String msg = x.getMessage();
 
-                // Retry after 5 minutes if it was just rate-limiting
                 if (msg != null && msg.contains("429")) {
-                    Bukkit.getScheduler().runTaskLaterAsynchronously(Slimefun.instance(), this::grabTextures, 5 * 60 * 20L);
+                    int streak = ++consecutive429Errors;
+                    // Backoff exponencial: 5m, 10m, 20m, 40m, hasta máximo 60m
+                    int delayMinutes = Math.min(60, 5 * (1 << Math.min(4, streak - 1)));
+
+                    if (streak == 1) {
+                        Slimefun.logger().log(Level.WARNING, "Attempted to refresh skin cache, got this response: {0}: {1}", new Object[] { x.getClass().getSimpleName(), x.getMessage() });
+                        Slimefun.logger().log(Level.WARNING, "Mojang API rate-limited this connection (HTTP 429). Retrying with exponential backoff up to 60m.");
+                    } else {
+                        Slimefun.logger().log(Level.FINE, "Skin cache refresh still rate-limited (HTTP 429, streak {0}). Next retry in {1}m.", new Object[] { streak, delayMinutes });
+                    }
+
+                    if (Slimefun.instance() != null && Slimefun.instance().isEnabled() && isRetrying.compareAndSet(false, true)) {
+                        Bukkit.getScheduler().runTaskLaterAsynchronously(Slimefun.instance(), () -> {
+                            try {
+                                grabTextures();
+                            } finally {
+                                isRetrying.set(false);
+                            }
+                        }, delayMinutes * 60 * 20L);
+                    }
+                } else {
+                    Slimefun.logger().log(Level.WARNING, "Attempted to refresh skin cache, got this response: {0}: {1}", new Object[] { x.getClass().getSimpleName(), x.getMessage() });
                 }
 
                 return -1;
