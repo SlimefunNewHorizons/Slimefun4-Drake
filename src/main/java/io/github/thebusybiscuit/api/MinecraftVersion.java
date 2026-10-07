@@ -274,7 +274,8 @@ public enum MinecraftVersion {
     /**
      * This checks whether this {@link MinecraftVersion} is older than the specified {@link MinecraftVersion}.
      *
-     * An unknown version will default to {@literal true}.
+     * An unknown version will default to {@literal false}: since the 26.x port
+     * an unidentified server is assumed to be newer, so legacy code paths are skipped.
      *
      * @param version
      *            The {@link MinecraftVersion} to compare
@@ -285,11 +286,6 @@ public enum MinecraftVersion {
         Validate.notNull(version, "A Minecraft version cannot be null!");
 
         if (this == UNKNOWN) {
-            try {
-                if (PaperLib.getMinecraftVersion() >= version.getMajorVersion()) {
-                    return false;
-                }
-            } catch (Throwable ignored) {}
             return false;
         }
 
