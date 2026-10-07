@@ -14,8 +14,8 @@ class CheatDeliveryPathTest {
     @Test
     void categoryAndSearchUseTheSameDeliveryGate() throws IOException {
         String guide = Files.readString(Path.of(
-                "src", "main", "java", "com", "github", "drakescraft_labs",
-                "slimefun4", "implementation", "guide", "SurvivalSlimefunGuide.java"));
+                "src", "main", "java", "io", "github", "thebusybiscuit",
+                "implementation", "guide", "SurvivalSlimefunGuide.java"));
 
         assertEquals(2, occurrences(guide, "CheatPolicy.claim("));
         assertFalse(guide.contains("p.getInventory().addItem(sfItem.getItem()"));
@@ -35,8 +35,8 @@ class CheatDeliveryPathTest {
     @Test
     void limitedDeliveryUsesOneLegalStackPerClaim() throws IOException {
         String policy = Files.readString(Path.of(
-                "src", "main", "java", "com", "github", "drakescraft_labs",
-                "slimefun4", "core", "services", "CheatPolicy.java"));
+                "src", "main", "java", "io", "github", "thebusybiscuit",
+                "core", "services", "CheatPolicy.java"));
 
         assertTrue(policy.contains("limited ? claimed.getMaxStackSize()"));
         assertFalse(policy.contains("limited ? 1 :"));
@@ -45,8 +45,8 @@ class CheatDeliveryPathTest {
     @Test
     void laboratoryCanOpenCheatCatalogWithoutAdministrativeCommands() throws IOException {
         Path commands = Path.of(
-                "src", "main", "java", "com", "github", "drakescraft_labs",
-                "slimefun4", "core", "commands", "subcommands");
+                "src", "main", "java", "io", "github", "thebusybiscuit",
+                "core", "commands", "subcommands");
 
         String cheat = Files.readString(commands.resolve("CheatCommand.java"));
         String give = Files.readString(commands.resolve("GiveCommand.java"));
@@ -63,11 +63,11 @@ class CheatDeliveryPathTest {
     @Test
     void laboratoryBookOpensDirectlyWithoutRunningTheCheatCommand() throws IOException {
         String listener = Files.readString(Path.of(
-                "src", "main", "java", "com", "github", "drakescraft_labs",
-                "slimefun4", "implementation", "listeners", "SlimefunGuideListener.java"));
+                "src", "main", "java", "io", "github", "thebusybiscuit",
+                "implementation", "listeners", "SlimefunGuideListener.java"));
         String policy = Files.readString(Path.of(
-                "src", "main", "java", "com", "github", "drakescraft_labs",
-                "slimefun4", "core", "services", "CheatPolicy.java"));
+                "src", "main", "java", "io", "github", "thebusybiscuit",
+                "core", "services", "CheatPolicy.java"));
 
         assertTrue(listener.contains("PlayerChangedWorldEvent"));
         assertTrue(listener.contains("openGuide(p, e, SlimefunGuideMode.CHEAT_MODE)"));
@@ -79,8 +79,8 @@ class CheatDeliveryPathTest {
     @Test
     void laboratoryResearchBypassIsVirtualAndNotPersisted() throws IOException {
         String profile = Files.readString(Path.of(
-                "src", "main", "java", "com", "github", "drakescraft_labs",
-                "slimefun4", "api", "player", "PlayerProfile.java"));
+                "src", "main", "java", "io", "github", "thebusybiscuit",
+                "api", "player", "PlayerProfile.java"));
 
         assertTrue(profile.contains("CheatPolicy.isLaboratoryAccess(owner)"));
         assertFalse(profile.contains("setResearched(research, CheatPolicy.isLaboratoryAccess"));
