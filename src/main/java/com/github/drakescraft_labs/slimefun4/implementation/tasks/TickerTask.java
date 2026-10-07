@@ -137,7 +137,7 @@ public class TickerTask implements Runnable {
         try {
             // Only continue if the Chunk is actually loaded
             if (chunk.isLoaded()) {
-                for (Location l : locations.toArray(Location[]::new)) {
+                for (Location l : locations) {
                     tickLocation(tickers, l);
                 }
             }
@@ -148,24 +148,31 @@ public class TickerTask implements Runnable {
 
     private void tickLocation(@Nonnull Set<BlockTicker> tickers, @Nonnull Location l) {
         Config data = BlockStorage.getLocationInfo(l);
-        SlimefunItem item = SlimefunItem.getById(data.getString("id"));
+        String id = data.getString("id");
+        if (id == null) {
+            return;
+        }
 
+        SlimefunItem item = SlimefunItem.getById(id);
         if (item != null && item.getBlockTicker() != null) {
             try {
+                boolean profiling = Slimefun.getProfiler().isProfiling();
                 if (item.getBlockTicker().isSynchronized()) {
-                    Slimefun.getProfiler().scheduleEntries(1);
+                    if (profiling) {
+                        Slimefun.getProfiler().scheduleEntries(1);
+                    }
                     item.getBlockTicker().update();
 
                     /**
-                     * We are inserting a new timestamp because synchronized actions
-                     * are always ran with a 50ms delay (1 game tick)
+                     * We only capture timestamp if profiling is active to avoid System.nanoTime()
+                     * and profiler executor queue overhead on main thread.
                      */
                     Slimefun.runSync(() -> {
                         Block b = l.getBlock();
-                        tickBlock(l, b, item, data, System.nanoTime());
+                        tickBlock(l, b, item, data, profiling ? System.nanoTime() : 0L);
                     });
                 } else {
-                    long timestamp = Slimefun.getProfiler().newEntry();
+                    long timestamp = profiling ? Slimefun.getProfiler().newEntry() : 0L;
                     item.getBlockTicker().update();
                     Block b = l.getBlock();
                     tickBlock(l, b, item, data, timestamp);

@@ -76,6 +76,10 @@ public class SlimefunProfiler {
      */
     private volatile boolean isProfiling = false;
 
+    public boolean isProfiling() {
+        return isProfiling;
+    }
+
     /**
      * This {@link AtomicInteger} holds the amount of blocks that still need to be
      * profiled.
