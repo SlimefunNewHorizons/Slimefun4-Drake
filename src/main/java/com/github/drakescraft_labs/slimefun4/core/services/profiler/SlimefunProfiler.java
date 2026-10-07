@@ -125,6 +125,16 @@ public class SlimefunProfiler {
     }
 
     /**
+     * This returns whether the profiler is currently collecting timings.
+     * Callers on hot paths can use this to skip timestamps entirely.
+     *
+     * @return Whether a profiling run is active
+     */
+    public boolean isProfiling() {
+        return isProfiling;
+    }
+
+    /**
      * This method schedules a given amount of entries for the future.
      * Be careful to {@link #closeEntry(Location, SlimefunItem, long)} all of them again!
      * No {@link PerformanceSummary} will be sent until all entries were closed.
