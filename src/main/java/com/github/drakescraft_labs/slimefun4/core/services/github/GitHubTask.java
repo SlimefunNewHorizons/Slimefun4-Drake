@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
@@ -38,6 +39,7 @@ class GitHubTask implements Runnable {
     private static final int MAX_RATE_LIMIT_RETRY_MINUTES = 60;
     private final GitHubService gitHubService;
     private final AtomicInteger consecutiveRateLimits = new AtomicInteger();
+    private final AtomicBoolean rateLimitRetryQueued = new AtomicBoolean();
 
     GitHubTask(@Nonnull GitHubService github) {
         gitHubService = github;
@@ -126,7 +128,12 @@ class GitHubTask implements Runnable {
                     long delayMinutes = Math.min(INITIAL_RATE_LIMIT_RETRY_MINUTES << exponent, MAX_RATE_LIMIT_RETRY_MINUTES);
 
                     Slimefun.logger().log(Level.INFO, "Skin cache refresh was rate-limited; retrying in {0} minutes.", delayMinutes);
-                    Bukkit.getScheduler().runTaskLaterAsynchronously(Slimefun.instance(), this::grabTextures, delayMinutes * 60 * 20L);
+                    if (rateLimitRetryQueued.compareAndSet(false, true)) {
+                        Bukkit.getScheduler().runTaskLaterAsynchronously(Slimefun.instance(), () -> {
+                            rateLimitRetryQueued.set(false);
+                            grabTextures();
+                        }, delayMinutes * 60 * 20L);
+                    }
                 } else {
                     Slimefun.logger().log(Level.WARNING, "Unable to refresh the skin cache ({0}); it will be retried during the next scheduled update.", x.getClass().getSimpleName());
                 }
