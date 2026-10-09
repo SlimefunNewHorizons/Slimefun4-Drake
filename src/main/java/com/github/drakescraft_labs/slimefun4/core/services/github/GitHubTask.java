@@ -9,6 +9,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 
 import javax.annotation.Nonnull;
@@ -33,7 +34,10 @@ import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
 class GitHubTask implements Runnable {
 
     private static final int MAX_REQUESTS_PER_MINUTE = 16;
+    private static final int INITIAL_RATE_LIMIT_RETRY_MINUTES = 5;
+    private static final int MAX_RATE_LIMIT_RETRY_MINUTES = 60;
     private final GitHubService gitHubService;
+    private final AtomicInteger consecutiveRateLimits = new AtomicInteger();
 
     GitHubTask(@Nonnull GitHubService github) {
         gitHubService = github;
@@ -102,6 +106,7 @@ class GitHubTask implements Runnable {
                     contributor.setTexture(skins.get(contributor.getMinecraftName()));
                 } else {
                     contributor.setTexture(pullTexture(contributor, skins));
+                    consecutiveRateLimits.set(0);
                     return contributor.getUniqueId().isPresent() ? 1 : 2;
                 }
             } catch (IllegalArgumentException x) {
@@ -111,15 +116,19 @@ class GitHubTask implements Runnable {
                 Slimefun.logger().log(Level.WARNING, "The contributors thread was interrupted!");
                 Thread.currentThread().interrupt();
             } catch (Exception x) {
-                // Too many requests
-                Slimefun.logger().log(Level.WARNING, "Attempted to refresh skin cache, got this response: {0}: {1}", new Object[] { x.getClass().getSimpleName(), x.getMessage() });
-                Slimefun.logger().log(Level.WARNING, "This usually means mojang.com is temporarily down or started to rate-limit this connection, nothing to worry about!");
-
                 String msg = x.getMessage();
 
-                // Retry after 5 minutes if it was just rate-limiting
+                // A rate-limited profile endpoint should not create a five-minute warning loop.
+                // Do not log the endpoint response because it may contain a profile identifier.
                 if (msg != null && msg.contains("429")) {
-                    Bukkit.getScheduler().runTaskLaterAsynchronously(Slimefun.instance(), this::grabTextures, 5 * 60 * 20L);
+                    int failures = consecutiveRateLimits.incrementAndGet();
+                    int exponent = Math.min(failures - 1, 4);
+                    long delayMinutes = Math.min(INITIAL_RATE_LIMIT_RETRY_MINUTES << exponent, MAX_RATE_LIMIT_RETRY_MINUTES);
+
+                    Slimefun.logger().log(Level.INFO, "Skin cache refresh was rate-limited; retrying in {0} minutes.", delayMinutes);
+                    Bukkit.getScheduler().runTaskLaterAsynchronously(Slimefun.instance(), this::grabTextures, delayMinutes * 60 * 20L);
+                } else {
+                    Slimefun.logger().log(Level.WARNING, "Unable to refresh the skin cache ({0}); it will be retried during the next scheduled update.", x.getClass().getSimpleName());
                 }
 
                 return -1;
