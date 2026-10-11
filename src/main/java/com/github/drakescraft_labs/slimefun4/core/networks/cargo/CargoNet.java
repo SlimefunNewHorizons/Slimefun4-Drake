@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 import javax.annotation.Nonnull;
@@ -14,14 +15,18 @@ import javax.annotation.Nullable;
 
 import org.bukkit.Location;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 
+import dev.drake.dough.blocks.BlockPosition;
 import dev.drake.dough.common.CommonPatterns;
 import com.github.drakescraft_labs.slimefun4.api.network.Network;
 import com.github.drakescraft_labs.slimefun4.api.network.NetworkComponent;
 import com.github.drakescraft_labs.slimefun4.core.attributes.HologramOwner;
 import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
 
+import me.mrCookieSlime.CSCoreLibPlugin.Configuration.Config;
 import com.github.drakescraft_labs.slimefun4.legacy.api.BlockStorage;
 
 /**
@@ -44,8 +49,23 @@ public class CargoNet extends AbstractItemNetwork implements HologramOwner {
     private static final int RANGE = 5;
     private static final int TICK_DELAY = Slimefun.getCfg().getInt("networks.cargo-ticker-delay");
 
+    /**
+     * The {@link BlockStorage} key of an input node that holds its pending overflow.
+     */
+    private static final String PENDING_OVERFLOW_KEY = "pending-overflow";
+
     private final Set<Location> inputNodes = new HashSet<>();
     private final Set<Location> outputNodes = new HashSet<>();
+
+    /**
+     * Items that were withdrawn from an input node's inventory but could neither be delivered
+     * nor put back. This is a cache of the copy stored in the {@link BlockStorage} of the input
+     * node, which lets them survive restarts and network rebuilds.
+     * <p>
+     * The {@link CargoNetworkTask} writes it on the main thread, {@link #onClassificationChange}
+     * reads and cleans it on the ticker thread.
+     */
+    private final Map<Location, ItemStack> pendingOverflow = new ConcurrentHashMap<>();
 
     protected final Map<Location, Integer> roundRobin = new HashMap<>();
     private int tickDelayThreshold = 0;
@@ -111,16 +131,21 @@ public class CargoNet extends AbstractItemNetwork implements HologramOwner {
         if (from == NetworkComponent.TERMINUS) {
             inputNodes.remove(l);
             outputNodes.remove(l);
-            ItemStack pending = pendingOverflow.remove(l);
-            if (pending != null && pending.getAmount() > 0 && l.getWorld() != null) {
-                l.getWorld().dropItemNaturally(l, pending);
-            }
+
+            /*
+             * Only forget the cached copy. The items were already dropped when the node's
+             * block data was deleted, see dropPendingOverflow(Location, Config).
+             */
+            pendingOverflow.remove(l);
         }
 
         if (to == NetworkComponent.TERMINUS) {
             String id = BlockStorage.checkID(l);
             switch (id) {
-                case "CARGO_NODE_INPUT" -> inputNodes.add(l);
+                case "CARGO_NODE_INPUT" -> {
+                    inputNodes.add(l);
+                    loadPendingOverflow(l);
+                }
                 case "CARGO_NODE_OUTPUT",
                     "CARGO_NODE_OUTPUT_ADVANCED" -> outputNodes.add(l);
                 default -> {}
@@ -158,9 +183,14 @@ public class CargoNet extends AbstractItemNetwork implements HologramOwner {
                 display();
             }
 
-            Slimefun.getProfiler().scheduleEntries(inputs.size() + 1);
+            // The task runs on the next tick, so it must know whether this cycle is being profiled
+            boolean profiling = Slimefun.getProfiler().isProfiling();
 
-            CargoNetworkTask runnable = new CargoNetworkTask(this, inputs, outputs);
+            if (profiling) {
+                Slimefun.getProfiler().scheduleEntries(inputs.size() + 1);
+            }
+
+            CargoNetworkTask runnable = new CargoNetworkTask(this, inputs, outputs, profiling);
             Slimefun.runSync(runnable);
         }
     }
@@ -211,6 +241,91 @@ public class CargoNet extends AbstractItemNetwork implements HologramOwner {
         return output;
     }
 
+    public @Nullable ItemStack getPendingOverflow(@Nonnull Location inputNode) {
+        return pendingOverflow.get(inputNode);
+    }
+
+    public void setPendingOverflow(@Nonnull Location inputNode, @Nullable ItemStack item) {
+        if (item == null || item.getAmount() <= 0) {
+            clearPendingOverflow(inputNode);
+        } else {
+            pendingOverflow.put(inputNode, item);
+
+            // Never create block data for a node that is already gone
+            if (BlockStorage.hasBlockInfo(inputNode)) {
+                BlockStorage.addBlockInfo(inputNode, PENDING_OVERFLOW_KEY, serializeItem(item));
+            }
+        }
+    }
+
+    public void clearPendingOverflow(@Nonnull Location inputNode) {
+        pendingOverflow.remove(inputNode);
+
+        if (BlockStorage.hasBlockInfo(inputNode)) {
+            BlockStorage.addBlockInfo(inputNode, PENDING_OVERFLOW_KEY, null);
+        }
+    }
+
+    /**
+     * This drops the items an input node was still holding back. {@link BlockStorage} calls it
+     * for every block whose data is about to be deleted, so it covers every way a node can
+     * disappear: breaking, explosions, WorldEdit or a ticker that was terminated.
+     * It may run on any thread; the item is dropped on the main thread.
+     *
+     * @param l
+     *            The {@link Location} whose block data is being deleted
+     * @param data
+     *            The block data, still intact
+     */
+    public static void dropPendingOverflow(@Nonnull Location l, @Nonnull Config data) {
+        String serialized = data.getString(PENDING_OVERFLOW_KEY);
+
+        if (serialized == null) {
+            return;
+        }
+
+        Location dropLocation = l.clone();
+
+        Slimefun.runSync(() -> {
+            ItemStack item = deserializeItem(dropLocation, serialized);
+
+            if (item != null && dropLocation.getWorld() != null) {
+                dropLocation.getWorld().dropItemNaturally(dropLocation, item);
+            }
+        });
+    }
+
+    private void loadPendingOverflow(@Nonnull Location inputNode) {
+        ItemStack item = readPendingOverflow(inputNode);
+
+        if (item != null) {
+            pendingOverflow.put(inputNode, item);
+        }
+    }
+
+    private static @Nullable ItemStack readPendingOverflow(@Nonnull Location inputNode) {
+        String serialized = BlockStorage.getLocationInfo(inputNode, PENDING_OVERFLOW_KEY);
+        return serialized == null ? null : deserializeItem(inputNode, serialized);
+    }
+
+    private static @Nullable ItemStack deserializeItem(@Nonnull Location inputNode, @Nonnull String serialized) {
+        try {
+            YamlConfiguration cfg = new YamlConfiguration();
+            cfg.loadFromString(serialized);
+            ItemStack item = cfg.getItemStack("item");
+            return item == null || item.getAmount() <= 0 ? null : item;
+        } catch (InvalidConfigurationException x) {
+            Slimefun.logger().log(Level.WARNING, x, () -> "Could not read the pending cargo items of the input node at " + new BlockPosition(inputNode));
+            return null;
+        }
+    }
+
+    private static @Nonnull String serializeItem(@Nonnull ItemStack item) {
+        YamlConfiguration cfg = new YamlConfiguration();
+        cfg.set("item", item);
+        return cfg.saveToString();
+    }
+
     /**
      * This method returns the frequency a given node is set to.
      * Should there be invalid data this method it will fall back to zero in
@@ -221,24 +336,6 @@ public class CargoNet extends AbstractItemNetwork implements HologramOwner {
      * 
      * @return The frequency of the given node
      */
-    private final Map<Location, ItemStack> pendingOverflow = new HashMap<>();
-
-    public @Nullable ItemStack getPendingOverflow(@Nonnull Location inputNode) {
-        return pendingOverflow.get(inputNode);
-    }
-
-    public void setPendingOverflow(@Nonnull Location inputNode, @Nullable ItemStack item) {
-        if (item == null || item.getAmount() <= 0) {
-            pendingOverflow.remove(inputNode);
-        } else {
-            pendingOverflow.put(inputNode, item);
-        }
-    }
-
-    public void clearPendingOverflow(@Nonnull Location inputNode) {
-        pendingOverflow.remove(inputNode);
-    }
-
     private static int getFrequency(@Nonnull Location node) {
         String frequency = BlockStorage.getLocationInfo(node, "frequency");
 

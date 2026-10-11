@@ -1,7 +1,6 @@
 package com.github.drakescraft_labs.slimefun4.core.networks.cargo;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
@@ -52,18 +51,26 @@ class CargoNetworkTask implements Runnable {
     private final Map<Location, Integer> inputs;
     private final Map<Integer, List<Location>> outputs;
 
+    /**
+     * Whether the {@link CargoNet} tick that created this task was profiled.
+     * Only then were entries scheduled, so only then may we close them.
+     */
+    private final boolean profiling;
+
     @ParametersAreNonnullByDefault
-    CargoNetworkTask(CargoNet network, Map<Location, Integer> inputs, Map<Integer, List<Location>> outputs) {
+    CargoNetworkTask(CargoNet network, Map<Location, Integer> inputs, Map<Integer, List<Location>> outputs, boolean profiling) {
         this.network = network;
         this.manager = Slimefun.getNetworkManager();
 
         this.inputs = inputs;
         this.outputs = outputs;
+        this.profiling = profiling;
     }
 
     @Override
     public void run() {
-        long timestamp = System.nanoTime();
+        // A timestamp of 0 makes closeEntry() a no-op, so nothing is measured outside of a profiled cycle
+        long timestamp = profiling ? System.nanoTime() : 0L;
 
         try {
             SlimefunItem inputNode = SlimefunItems.CARGO_INPUT_NODE.getItem();
@@ -72,7 +79,7 @@ class CargoNetworkTask implements Runnable {
                     : 2;
 
             for (Map.Entry<Location, Integer> entry : inputs.entrySet()) {
-                long nodeTimestamp = System.nanoTime();
+                long nodeTimestamp = profiling ? System.nanoTime() : 0L;
                 Location input = entry.getKey();
                 Optional<Block> attachedBlock = network.getAttachedBlock(input);
 
@@ -106,14 +113,23 @@ class CargoNetworkTask implements Runnable {
             return false;
         }
 
+        Config cfg = BlockStorage.getLocationInfo(inputNode);
+        boolean roundrobin = Objects.equals(cfg.getString("round-robin"), "true");
+        boolean smartFill = Objects.equals(cfg.getString("smart-fill"), "true");
+
         // 1. Process any pending overflow from previous ticks for this input node first
         ItemStack pending = network.getPendingOverflow(inputNode);
         if (pending != null && pending.getAmount() > 0) {
-            pending = distributeItem(pending, inputNode, destinations);
+            // insert() shrinks the stack in place, so remember the amount before distributing
+            int pendingBefore = pending.getAmount();
+            pending = distributeItem(pending, inputNode, destinations, roundrobin, smartFill);
             if (pending == null || pending.getAmount() <= 0) {
                 network.clearPendingOverflow(inputNode);
             } else {
-                network.setPendingOverflow(inputNode, pending);
+                // Only persist again when something was actually delivered
+                if (pending.getAmount() != pendingBefore) {
+                    network.setPendingOverflow(inputNode, pending);
+                }
                 return false;
             }
         }
@@ -127,9 +143,10 @@ class CargoNetworkTask implements Runnable {
         ItemStack candidate = peek.getItem();
         int slot = peek.getSlot();
 
-        // 3. Determine how much space is actually available across the destinations
-        Collection<Location> orderedDestinations = getOrderedDestinations(inputNode, destinations);
-        int space = CargoUtils.calculateAvailableSpace(network, inventories, orderedDestinations, candidate);
+        // 3. Determine how much space is actually available across the destinations.
+        // This simulates distributeItem(): same order, same smart-fill rules.
+        Collection<Location> orderedDestinations = getOrderedDestinations(inputNode, destinations, roundrobin);
+        int space = CargoUtils.calculateAvailableSpace(network, inventories, orderedDestinations, candidate, smartFill);
         if (space <= 0) {
             return false;
         }
@@ -142,12 +159,18 @@ class CargoNetworkTask implements Runnable {
             return false;
         }
 
+        int withdrawnAmount = withdrawn.getAmount();
+
         // 5. Distribute the item to destinations
-        ItemStack remaining = distributeItem(withdrawn, inputNode, destinations);
+        ItemStack remaining = distributeItem(withdrawn, inputNode, destinations, roundrobin, smartFill);
 
         // 6. Safe rollback if unexpected race condition occurred (never drop onto floor!)
         if (remaining != null && remaining.getAmount() > 0) {
+            int returned = remaining.getAmount();
             insertItemSafe(inputNode, inputTarget, slot, remaining);
+
+            // Nothing was delivered: retrying in this batch would only repeat the same rollback
+            return returned < withdrawnAmount;
         }
 
         return true;
@@ -218,31 +241,38 @@ class CargoNetworkTask implements Runnable {
 
     @Nonnull
     @ParametersAreNonnullByDefault
-    private Collection<Location> getOrderedDestinations(Location inputNode, List<Location> outputNodes) {
-        Config cfg = BlockStorage.getLocationInfo(inputNode);
-        boolean roundrobin = cfg != null && Objects.equals(cfg.getString("round-robin"), "true");
-
+    private Collection<Location> getOrderedDestinations(Location inputNode, List<Location> outputNodes, boolean roundrobin) {
         if (roundrobin) {
-            int index = network.roundRobin.getOrDefault(inputNode, 0);
             Deque<Location> tempDestinations = new ArrayDeque<>(outputNodes);
-            roundRobinSort(index, tempDestinations);
+            roundRobinSort(getRoundRobinIndex(inputNode, outputNodes.size()), tempDestinations);
             return tempDestinations;
         } else {
-            return new ArrayList<>(outputNodes);
+            return outputNodes;
         }
+    }
+
+    /**
+     * The index of the output node that the round-robin rotation starts at.
+     * A stored index that no longer fits (fewer output nodes) starts over at zero,
+     * which is also what {@link #roundRobinSort(int, Deque)} does in that case.
+     */
+    private int getRoundRobinIndex(@Nonnull Location inputNode, int outputCount) {
+        int index = network.roundRobin.getOrDefault(inputNode, 0);
+        return index < outputCount ? index : 0;
     }
 
     @Nullable
     @ParametersAreNonnullByDefault
-    private ItemStack distributeItem(ItemStack stack, Location inputNode, List<Location> outputNodes) {
+    private ItemStack distributeItem(ItemStack stack, Location inputNode, List<Location> outputNodes, boolean roundrobin, boolean smartFill) {
         ItemStack item = stack;
 
-        Config cfg = BlockStorage.getLocationInfo(inputNode);
-        boolean roundrobin = cfg != null && Objects.equals(cfg.getString("round-robin"), "true");
-        boolean smartFill = cfg != null && Objects.equals(cfg.getString("smart-fill"), "true");
-
-        int index = 0;
-        Collection<Location> destinations = getOrderedDestinations(inputNode, outputNodes);
+        /*
+         * The rotated list starts at the stored round-robin index, so the absolute index of
+         * each destination is that start plus its position. Starting at 0 here stored a
+         * relative position and kept the rotation stuck on the same output node.
+         */
+        int index = roundrobin ? getRoundRobinIndex(inputNode, outputNodes.size()) : 0;
+        Collection<Location> destinations = getOrderedDestinations(inputNode, outputNodes, roundrobin);
 
         for (Location output : destinations) {
             Optional<Block> target = network.getAttachedBlock(output);

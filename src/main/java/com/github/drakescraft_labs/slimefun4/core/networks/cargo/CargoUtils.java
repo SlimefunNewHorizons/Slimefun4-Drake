@@ -1,9 +1,10 @@
 package com.github.drakescraft_labs.slimefun4.core.networks.cargo;
 
-import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -20,7 +21,6 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
 import dev.drake.dough.inventory.InvUtils;
-import com.github.drakescraft_labs.slimefun4.api.items.SlimefunItem;
 import com.github.drakescraft_labs.slimefun4.core.debug.Debug;
 import com.github.drakescraft_labs.slimefun4.core.debug.TestCase;
 import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
@@ -228,89 +228,136 @@ final class CargoUtils {
     }
 
     /**
-     * Calculates total available space across all given destination locations for the candidate item.
+     * Marks a slot in {@link #simulateSlot(ItemStack, int, ItemStackWrapper, boolean)}
+     * that {@link #insert} would skip.
      */
-    static int calculateAvailableSpace(@Nonnull AbstractItemNetwork network, @Nonnull Map<Location, Inventory> inventories, @Nonnull Collection<Location> destinations, @Nonnull ItemStack candidate) {
+    private static final int NEXT_SLOT = -1;
+
+    /**
+     * Calculates how many items of the candidate {@link #insert} would accept across the given
+     * destinations, in that order. It mirrors insert() exactly: one slot per destination, the
+     * same smart-fill rules and the same filters. Summing every free slot over-estimated the
+     * space, so items were withdrawn and rolled back again, on smart-fill nodes every tick.
+     */
+    static int calculateAvailableSpace(@Nonnull AbstractItemNetwork network, @Nonnull Map<Location, Inventory> inventories, @Nonnull Collection<Location> destinations, @Nonnull ItemStack candidate, boolean smartFill) {
         ItemStackWrapper wrapper = ItemStackWrapper.wrap(candidate);
-        int totalCapacity = 0;
-        int maxNeeded = candidate.getAmount();
+        int needed = candidate.getAmount();
+        int accepted = 0;
+        Set<Location> simulatedTargets = new HashSet<>();
 
         for (Location output : destinations) {
             Optional<Block> targetOpt = network.getAttachedBlock(output);
             if (targetOpt.isEmpty()) {
                 continue;
             }
-            Block outputNodeBlock = output.getBlock();
-            if (!matchesFilter(network, outputNodeBlock, candidate)) {
+
+            Block target = targetOpt.get();
+
+            // Two nodes on the same inventory would count its free space twice. Under-estimating is safe.
+            if (!simulatedTargets.add(target.getLocation())) {
                 continue;
             }
-            Block target = targetOpt.get();
-            int space = getAvailableSpaceInTarget(inventories, outputNodeBlock, target, candidate, wrapper);
-            totalCapacity += space;
-            if (totalCapacity >= maxNeeded) {
-                return maxNeeded;
+
+            if (!matchesFilter(network, output.getBlock(), candidate)) {
+                continue;
+            }
+
+            accepted += simulateInsert(inventories, target, needed - accepted, candidate, wrapper, smartFill);
+            if (accepted >= needed) {
+                return needed;
             }
         }
-        return totalCapacity;
+
+        return accepted;
     }
 
     /**
-     * Calculates available space in a single destination block for the specified item.
+     * Returns how many of the given amount {@link #insert} would put into this target.
      */
-    static int getAvailableSpaceInTarget(@Nonnull Map<Location, Inventory> inventories, @Nonnull Block node, @Nonnull Block target, @Nonnull ItemStack item, @Nonnull ItemStackWrapper wrapper) {
-        prepareTargetBeforeInsert(target, item);
-
+    private static int simulateInsert(@Nonnull Map<Location, Inventory> inventories, @Nonnull Block target, int amount, @Nonnull ItemStack item, @Nonnull ItemStackWrapper wrapper, boolean smartFill) {
         DirtyChestMenu menu = getChestMenu(target);
-        int space = 0;
-        int maxStack = item.getType().getMaxStackSize();
 
         if (menu != null) {
+            // insert() runs this hook first; it can free the input slots of a barrel or storage unit
+            prepareTargetBeforeInsert(target, item);
+
             for (int slot : menu.getPreset().getSlotsAccessedByItemTransport(menu, ItemTransportFlow.INSERT, wrapper)) {
-                ItemStack inSlot = menu.getItemInSlot(slot);
-                if (inSlot == null || inSlot.getType() == Material.AIR) {
-                    space += maxStack;
-                } else if (SlimefunUtils.isItemSimilar(inSlot, wrapper, true, false)) {
-                    int room = maxStack - inSlot.getAmount();
-                    if (room > 0) {
-                        space += room;
-                    }
-                }
-                if (space >= item.getAmount()) {
-                    return space;
+                int result = simulateSlot(menu.getItemInSlot(slot), amount, wrapper, smartFill);
+
+                if (result != NEXT_SLOT) {
+                    return result;
                 }
             }
-        } else if (hasInventory(target)) {
-            Inventory inv = inventories.get(target.getLocation());
-            if (inv == null) {
-                BlockState state = PaperLibUtils.getBlockState(target, false).getState();
-                if (state instanceof InventoryHolder inventoryHolder) {
-                    inv = inventoryHolder.getInventory();
-                    inventories.put(target.getLocation(), inv);
-                }
-            }
-            if (inv != null) {
-                if (!InvUtils.isItemAllowed(item.getType(), inv.getType())) {
-                    return 0;
-                }
-                ItemStack[] contents = inv.getContents();
-                int[] range = getInputSlotRange(inv, item);
-                for (int slot = range[0]; slot < range[1]; slot++) {
-                    ItemStack inSlot = contents[slot];
-                    if (inSlot == null || inSlot.getType() == Material.AIR) {
-                        space += maxStack;
-                    } else if (SlimefunUtils.isItemSimilar(inSlot, wrapper, true, false)) {
-                        int room = maxStack - inSlot.getAmount();
-                        if (room > 0) {
-                            space += room;
-                        }
-                    }
-                    if (space >= item.getAmount()) {
-                        return space;
-                    }
-                }
+
+            return 0;
+        }
+
+        Inventory inv = getVanillaInventory(inventories, target);
+
+        if (inv == null || !InvUtils.isItemAllowed(item.getType(), inv.getType())) {
+            return 0;
+        }
+
+        int[] range = getInputSlotRange(inv, item);
+
+        // getItem() per slot instead of getContents(): the loop usually stops at the first slots
+        for (int slot = range[0]; slot < range[1]; slot++) {
+            int result = simulateSlot(inv.getItem(slot), amount, wrapper, smartFill);
+
+            if (result != NEXT_SLOT) {
+                return result;
             }
         }
-        return space;
+
+        return 0;
+    }
+
+    /**
+     * Mirrors one iteration of the slot loop in {@link #insert}.
+     *
+     * @return The amount this slot would accept, or {@link #NEXT_SLOT} if insert() would look at the next slot
+     */
+    private static int simulateSlot(@Nullable ItemStack itemInSlot, int amount, @Nonnull ItemStackWrapper wrapper, boolean smartFill) {
+        if (itemInSlot == null || itemInSlot.getType() == Material.AIR) {
+            return amount;
+        }
+
+        int maxStackSize = itemInSlot.getType().getMaxStackSize();
+        int currentAmount = itemInSlot.getAmount();
+
+        if (!smartFill && currentAmount == maxStackSize) {
+            return NEXT_SLOT;
+        }
+
+        if (SlimefunUtils.isItemSimilar(itemInSlot, wrapper, true, false)) {
+            if (currentAmount < maxStackSize) {
+                return Math.min(amount, maxStackSize - currentAmount);
+            } else if (smartFill) {
+                return 0;
+            }
+        }
+
+        return NEXT_SLOT;
+    }
+
+    @Nullable
+    private static Inventory getVanillaInventory(@Nonnull Map<Location, Inventory> inventories, @Nonnull Block target) {
+        if (!hasInventory(target)) {
+            return null;
+        }
+
+        Inventory inventory = inventories.get(target.getLocation());
+
+        if (inventory == null) {
+            BlockState state = PaperLibUtils.getBlockState(target, false).getState();
+
+            if (state instanceof InventoryHolder inventoryHolder) {
+                inventory = inventoryHolder.getInventory();
+                inventories.put(target.getLocation(), inventory);
+            }
+        }
+
+        return inventory;
     }
 
     @Nullable
@@ -569,95 +616,14 @@ final class CargoUtils {
      * Hook called before withdrawal from target to replenish output slots if target is a barrel or storage unit.
      */
     static void prepareTargetBeforeWithdraw(@Nonnull Block target) {
-        String sfId = BlockStorage.checkID(target);
-        if (sfId == null) {
-            return;
-        }
-        SlimefunItem sfItem = SlimefunItem.getById(sfId);
-        if (sfItem == null) {
-            return;
-        }
-
-        // 1. InfinityExpansion StorageUnit
-        if (sfItem.getClass().getName().contains("StorageUnit")) {
-            try {
-                Method getCacheMethod = sfItem.getClass().getDeclaredMethod("getCache", Location.class);
-                getCacheMethod.setAccessible(true);
-                Object cache = getCacheMethod.invoke(sfItem, target.getLocation());
-                if (cache != null) {
-                    Method outputMethod = cache.getClass().getDeclaredMethod("output");
-                    outputMethod.setAccessible(true);
-                    outputMethod.invoke(cache);
-                }
-            } catch (Exception ignored) {
-            }
-            return;
-        }
-
-        // 2. FluffyMachines Barrel
-        if (sfItem.getClass().getName().contains("Barrel")) {
-            try {
-                DirtyChestMenu menu = getChestMenu(target);
-                if (menu instanceof BlockMenu blockMenu) {
-                    Method getCapacityMethod = sfItem.getClass().getDeclaredMethod("getCapacity", Block.class);
-                    getCapacityMethod.setAccessible(true);
-                    int cap = (Integer) getCapacityMethod.invoke(sfItem, target);
-
-                    Method pushOutputMethod = sfItem.getClass().getDeclaredMethod("pushOutput", BlockMenu.class, Block.class, int.class);
-                    pushOutputMethod.setAccessible(true);
-                    pushOutputMethod.invoke(sfItem, blockMenu, target, cap);
-                }
-            } catch (Exception ignored) {
-            }
-        }
+        CargoStorageHooks.beforeWithdraw(target);
     }
 
     /**
      * Hook called before inserting to empty input buffer slots into storage if target is a barrel or storage unit.
      */
     static void prepareTargetBeforeInsert(@Nonnull Block target, @Nullable ItemStack item) {
-        String sfId = BlockStorage.checkID(target);
-        if (sfId == null) {
-            return;
-        }
-        SlimefunItem sfItem = SlimefunItem.getById(sfId);
-        if (sfItem == null) {
-            return;
-        }
-
-        // 1. InfinityExpansion StorageUnit
-        if (sfItem.getClass().getName().contains("StorageUnit")) {
-            try {
-                Method getCacheMethod = sfItem.getClass().getDeclaredMethod("getCache", Location.class);
-                getCacheMethod.setAccessible(true);
-                Object cache = getCacheMethod.invoke(sfItem, target.getLocation());
-                if (cache != null) {
-                    Method inputMethod = cache.getClass().getDeclaredMethod("input");
-                    inputMethod.setAccessible(true);
-                    inputMethod.invoke(cache);
-                }
-            } catch (Exception ignored) {
-            }
-            return;
-        }
-
-        // 2. FluffyMachines Barrel
-        if (sfItem.getClass().getName().contains("Barrel")) {
-            try {
-                DirtyChestMenu menu = getChestMenu(target);
-                if (menu instanceof BlockMenu blockMenu) {
-                    Method getCapacityMethod = sfItem.getClass().getDeclaredMethod("getCapacity", Block.class);
-                    getCapacityMethod.setAccessible(true);
-                    int cap = (Integer) getCapacityMethod.invoke(sfItem, target);
-
-                    Method acceptInputMethod = sfItem.getClass().getDeclaredMethod("acceptInput", BlockMenu.class, Block.class, int.class, int.class);
-                    acceptInputMethod.setAccessible(true);
-                    acceptInputMethod.invoke(sfItem, blockMenu, target, 19, cap);
-                    acceptInputMethod.invoke(sfItem, blockMenu, target, 20, cap);
-                }
-            } catch (Exception ignored) {
-            }
-        }
+        CargoStorageHooks.beforeInsert(target);
     }
 
     /**
