@@ -75,6 +75,32 @@ public class CapacitorTextureUpdateTask implements Runnable {
         }
     }
 
+    /**
+     * This returns which of the four textures matches the given charge.
+     * It uses the same thresholds as {@link #run()}, so callers can skip
+     * the update when the texture would not change.
+     *
+     * @param charge
+     *            The amount of charge in this {@link Capacitor}
+     * @param capacity
+     *            The capacity of this {@link Capacitor}
+     *
+     * @return The texture level, from 0 (0-25%) to 3 (75-100%)
+     */
+    public static int getTextureLevel(double charge, double capacity) {
+        double filledPercentage = charge / capacity;
+
+        if (filledPercentage <= 0.25) {
+            return 0;
+        } else if (filledPercentage <= 0.5) {
+            return 1;
+        } else if (filledPercentage <= 0.75) {
+            return 2;
+        } else {
+            return 3;
+        }
+    }
+
     private void setTexture(@Nonnull Block b, @Nonnull HeadTexture texture) {
         PlayerSkin skin = PlayerSkin.fromHashCode(texture.getUniqueId(), texture.getTexture());
         PlayerHead.setSkin(b, skin, false);

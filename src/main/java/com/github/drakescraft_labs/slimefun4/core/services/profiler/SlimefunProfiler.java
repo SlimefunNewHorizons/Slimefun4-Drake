@@ -106,6 +106,31 @@ public class SlimefunProfiler {
     }
 
     /**
+     * How many {@link TickerTask} cycles pass between two background samples.
+     * Measuring every cycle costs a {@link System#nanoTime()} pair plus an executor
+     * task per block, so we only sample often enough to keep bStats and placeholders fed.
+     */
+    private static final int SAMPLE_INTERVAL = 20;
+
+    private int cyclesSinceSample = SAMPLE_INTERVAL;
+
+    /**
+     * This decides whether the next {@link TickerTask} cycle should be profiled.
+     * Pending summary requests are always served on the next cycle.
+     * Only the {@link TickerTask} thread may call this.
+     *
+     * @return Whether to call {@link #start()} for the upcoming cycle
+     */
+    public boolean shouldProfileNextTick() {
+        if (!requests.isEmpty() || ++cyclesSinceSample >= SAMPLE_INTERVAL) {
+            cyclesSinceSample = 0;
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * This method starts the profiling, data from previous runs will be cleared.
      */
     public void start() {
@@ -421,7 +446,8 @@ public class SlimefunProfiler {
      * @return The average millisecond timing for this {@link SlimefunProfiler}.
      */
     public long getAndResetAverageTimings() {
-        long l = totalMsTicked.get() / ticksPassed.get();
+        int ticks = ticksPassed.get();
+        long l = ticks == 0 ? 0 : totalMsTicked.get() / ticks;
         totalMsTicked.set(0);
         ticksPassed.set(0);
 
@@ -434,7 +460,8 @@ public class SlimefunProfiler {
      * @return The average nanosecond timing for this {@link SlimefunProfiler}.
      */
     public double getAndResetAverageNanosecondTimings() {
-        long l = totalNsTicked.get() / ticksPassed.get();
+        int ticks = ticksPassed.get();
+        long l = ticks == 0 ? 0 : totalNsTicked.get() / ticks;
         totalNsTicked.set(0);
         ticksPassed.set(0);
 

@@ -13,6 +13,7 @@ import com.github.drakescraft_labs.slimefun4.core.networks.energy.EnergyNet;
 import com.github.drakescraft_labs.slimefun4.core.networks.energy.EnergyNetComponentType;
 import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
 import com.github.drakescraft_labs.slimefun4.implementation.items.electric.Capacitor;
+import com.github.drakescraft_labs.slimefun4.implementation.tasks.CapacitorTextureUpdateTask;
 import com.github.drakescraft_labs.slimefun4.utils.NumberUtils;
 import com.github.drakescraft_labs.slimefun4.utils.SlimefunUtils;
 
@@ -130,14 +131,12 @@ public interface EnergyNetComponent extends ItemAttribute {
             if (capacity > 0) {
                 charge = NumberUtils.clamp(0, charge, capacity);
 
-                // Do we even need to update the value?
-                if (charge != getCharge(l)) {
-                    BlockStorage.addBlockInfo(l, "energy-charge", String.valueOf(charge), false);
+                int previousCharge = getCharge(l);
 
-                    // Update the capacitor texture
-                    if (getEnergyComponentType() == EnergyNetComponentType.CAPACITOR) {
-                        SlimefunUtils.updateCapacitorTexture(l, charge, capacity);
-                    }
+                // Do we even need to update the value?
+                if (charge != previousCharge) {
+                    BlockStorage.addBlockInfo(l, "energy-charge", String.valueOf(charge), false);
+                    updateCapacitorTexture(l, previousCharge, charge, capacity);
                 }
             }
         } catch (Exception | LinkageError x) {
@@ -160,11 +159,7 @@ public interface EnergyNetComponent extends ItemAttribute {
                 if (currentCharge < capacity) {
                     int newCharge = Math.min(capacity, currentCharge + charge);
                     BlockStorage.addBlockInfo(l, "energy-charge", String.valueOf(newCharge), false);
-
-                    // Update the capacitor texture
-                    if (getEnergyComponentType() == EnergyNetComponentType.CAPACITOR) {
-                        SlimefunUtils.updateCapacitorTexture(l, charge, capacity);
-                    }
+                    updateCapacitorTexture(l, currentCharge, newCharge, capacity);
                 }
             }
         } catch (Exception | LinkageError x) {
@@ -187,11 +182,7 @@ public interface EnergyNetComponent extends ItemAttribute {
                 if (currentCharge > 0) {
                     int newCharge = Math.max(0, currentCharge - charge);
                     BlockStorage.addBlockInfo(l, "energy-charge", String.valueOf(newCharge), false);
-
-                    // Update the capacitor texture
-                    if (getEnergyComponentType() == EnergyNetComponentType.CAPACITOR) {
-                        SlimefunUtils.updateCapacitorTexture(l, charge, capacity);
-                    }
+                    updateCapacitorTexture(l, currentCharge, newCharge, capacity);
                 }
             }
         } catch (Exception | LinkageError x) {
@@ -199,4 +190,27 @@ public interface EnergyNetComponent extends ItemAttribute {
         }
     }
 
+    /**
+     * Updates the texture of a {@link Capacitor}, but only when the charge crossed one
+     * of the texture thresholds. Every update rewrites the skull and sends a block
+     * update to nearby players, which used to happen on every single tick.
+     *
+     * @param l
+     *            The target {@link Location}
+     * @param previousCharge
+     *            The charge before the change
+     * @param newCharge
+     *            The charge after the change
+     * @param capacity
+     *            The capacity of this component
+     */
+    private void updateCapacitorTexture(@Nonnull Location l, int previousCharge, int newCharge, int capacity) {
+        if (getEnergyComponentType() != EnergyNetComponentType.CAPACITOR) {
+            return;
+        }
+
+        if (CapacitorTextureUpdateTask.getTextureLevel(previousCharge, capacity) != CapacitorTextureUpdateTask.getTextureLevel(newCharge, capacity)) {
+            SlimefunUtils.updateCapacitorTexture(l, newCharge, capacity);
+        }
+    }
 }

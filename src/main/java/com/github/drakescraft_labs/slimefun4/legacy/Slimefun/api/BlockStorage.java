@@ -11,12 +11,15 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -45,6 +48,7 @@ import com.google.gson.stream.JsonWriter;
 
 import dev.drake.dough.common.CommonPatterns;
 import com.github.drakescraft_labs.slimefun4.api.items.SlimefunItem;
+import com.github.drakescraft_labs.slimefun4.core.networks.cargo.CargoNet;
 import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
 import com.github.drakescraft_labs.slimefun4.utils.NumberUtils;
 
@@ -66,14 +70,33 @@ public class BlockStorage {
     private final Map<Location, Config> storage = new ConcurrentHashMap<>();
     private final ChunkLocationIndex locationsByChunk = new ChunkLocationIndex();
     private final Map<Location, BlockMenu> inventories = new ConcurrentHashMap<>();
-    private final Map<String, Config> blocksCache = new ConcurrentHashMap<>();
+    /*
+     * Ids cuyo "<id>.sfb" hay que volver a escribir. El fichero se reconstruye entero desde
+     * los datos vivos al persistir, no en cada cambio: antes cada setCharge serializaba el
+     * bloque y cargaba el YAML del id en el hilo que escribia (ticker o main thread), y cada
+     * guardado volvia a leer el fichero de disco.
+     */
+    private final Set<String> dirtyIds = ConcurrentHashMap.newKeySet();
+    /*
+     * Entradas de un "<id>.sfb" que no se pudieron cargar (JSON roto, posicion invalida, sin id).
+     * Como el fichero se reconstruye desde memoria, se guardan aqui para no borrarlas del disco.
+     */
+    private final Map<String, Map<String, String>> unloadableEntries = new ConcurrentHashMap<>();
+    // Solo protege la escritura de los .sfb, que nunca espera al hilo principal: asi este no puede bloquearse en un interbloqueo.
+    private final Object blockFilesLock = new Object();
     private final Map<Location, LoadedBlockSource> blockSources = new HashMap<>();
     private final Set<LoadedBlockSource> compactedSources = new HashSet<>();
+
+    /*
+     * Escrituras en segundo plano de mundos descargados. Si el mundo se vuelve a cargar antes
+     * de que terminen, la carga espera para no leer ficheros a medio escribir.
+     */
+    private static final Map<String, CompletableFuture<Void>> pendingUnloadWrites = new ConcurrentHashMap<>();
 
     private static int chunkChanges = 0;
     private static boolean universalInventoriesLoaded = false;
 
-    private int changes = 0;
+    private volatile int changes = 0;
     private AtomicBoolean isMarkedForRemoval = new AtomicBoolean(false);
 
     @Nullable
@@ -84,6 +107,12 @@ public class BlockStorage {
     @Nonnull
     public static BlockStorage getOrCreate(@Nonnull World world) {
         BlockStorage storage = Slimefun.getRegistry().getWorlds().get(world.getName());
+
+        if (storage != null && storage.isMarkedForRemoval()) {
+            // El mundo se descargo y se vuelve a cargar antes de que el TickerTask retirase su BlockStorage
+            Slimefun.getRegistry().getWorlds().remove(world.getName(), storage);
+            storage = null;
+        }
 
         if (storage == null) {
             return new BlockStorage(world);
@@ -128,6 +157,13 @@ public class BlockStorage {
         if (Slimefun.getRegistry().getWorlds().containsKey(w.getName())) {
             // Cancel the loading process if the world was already loaded
             return;
+        }
+
+        CompletableFuture<Void> pendingWrite = pendingUnloadWrites.get(w.getName());
+
+        if (pendingWrite != null) {
+            // Este mundo se descargo hace un momento y sus ficheros aun se estan escribiendo
+            pendingWrite.join();
         }
 
         Slimefun.logger().log(Level.INFO, "Loading Blocks for World \"{0}\"", w.getName());
@@ -182,6 +218,8 @@ public class BlockStorage {
                 }
             }
             compactDuplicateFiles();
+            // Solo hacian falta para resolver duplicados; mantenerlas guardaba en memoria todos los .sfb parseados
+            blockSources.clear();
         } finally {
             long time = (System.currentTimeMillis() - start);
             Slimefun.logger().log(Level.INFO, "Loading Blocks... 100% (FINISHED - {0}ms)", time);
@@ -194,10 +232,12 @@ public class BlockStorage {
     }
 
     private void loadBlock(File file, FileConfiguration cfg, String key) {
+        String fileId = file.getName().replace(".sfb", "");
         Location l = deserializeLocation(key);
 
         if (l == null) {
             // That location was malformed, we will skip this one
+            keepUnloadableEntry(fileId, key, cfg.getString(key));
             return;
         }
 
@@ -205,7 +245,9 @@ public class BlockStorage {
             String json = cfg.getString(key);
             Config blockInfo = parseBlockInfo(l, json);
 
-            if (blockInfo != null && blockInfo.contains("id")) {
+            if (blockInfo == null || !blockInfo.contains("id")) {
+                keepUnloadableEntry(fileId, key, json);
+            } else {
                 Config existing = storage.putIfAbsent(l, blockInfo);
 
                 if (existing != null) {
@@ -220,17 +262,37 @@ public class BlockStorage {
                 }
 
                 indexLocation(l);
+                markIfInWrongFile(fileId, blockInfo);
 
                 blockSources.put(l, new LoadedBlockSource(file, cfg, key));
 
-                String fileName = file.getName().replace(".sfb", "");
-
-                if (Slimefun.getRegistry().getTickerBlocks().contains(fileName)) {
+                if (Slimefun.getRegistry().getTickerBlocks().contains(fileId)) {
                     Slimefun.getTickerTask().enableTicker(l);
                 }
             }
         } catch (Exception x) {
             Slimefun.logger().log(Level.WARNING, x, () -> "Failed to load " + file.getName() + '(' + key + ") for Slimefun " + Slimefun.getVersion());
+            keepUnloadableEntry(fileId, key, cfg.getString(key));
+        }
+    }
+
+    private void keepUnloadableEntry(String fileId, String key, @Nullable String raw) {
+        if (raw != null) {
+            unloadableEntries.computeIfAbsent(fileId, id -> new ConcurrentHashMap<>()).put(key, raw);
+        }
+    }
+
+    /**
+     * Cada "<id>.sfb" se reconstruye con los bloques vivos de ese id. Un bloque guardado en el
+     * fichero de otro id desapareceria de ese fichero sin llegar al suyo, asi que se marcan los
+     * dos para que el primer guardado lo mueva.
+     */
+    private void markIfInWrongFile(String fileId, Config blockInfo) {
+        String id = blockInfo.getString("id");
+
+        if (!fileId.equals(id)) {
+            markDirty(fileId);
+            markDirty(id);
         }
     }
 
@@ -260,6 +322,7 @@ public class BlockStorage {
 
         if (replaceResident) {
             storage.put(l, incoming);
+            markIfInWrongFile(incomingFile.getName().replace(".sfb", ""), incoming);
             LoadedBlockSource previousSource = blockSources.put(l, new LoadedBlockSource(incomingFile, incomingFileConfig, incomingKey));
             if (previousSource != null) {
                 previousSource.configuration().set(previousSource.key(), null);
@@ -430,21 +493,27 @@ public class BlockStorage {
         }
     }
 
-    public synchronized void computeChanges() {
-        changes = blocksCache.size();
+    /*
+     * Ninguno de estos metodos toma el monitor de BlockStorage. El guardado async de inventarios
+     * espera al hilo principal (callSyncMethod); si a la vez el hilo principal esperaba ese
+     * monitor (descarga de mundo, apagado) se quedaban los dos bloqueados para siempre.
+     */
+    public void computeChanges() {
+        int count = dirtyIds.size();
 
-        Map<Location, BlockMenu> inventories2 = new HashMap<>(inventories);
-        for (Map.Entry<Location, BlockMenu> entry : inventories2.entrySet()) {
-            changes += entry.getValue().getUnsavedChanges();
+        // Ambos mapas son concurrentes: se recorren directamente sin copiarlos.
+        for (BlockMenu menu : inventories.values()) {
+            count += menu.getUnsavedChanges();
         }
 
-        Map<String, UniversalBlockMenu> universalInventories2 = new HashMap<>(Slimefun.getRegistry().getUniversalInventories());
-        for (Map.Entry<String, UniversalBlockMenu> entry : universalInventories2.entrySet()) {
-            changes += entry.getValue().getUnsavedChanges();
+        for (UniversalBlockMenu menu : Slimefun.getRegistry().getUniversalInventories().values()) {
+            count += menu.getUnsavedChanges();
         }
+
+        changes = count;
     }
 
-    public synchronized int getChanges() {
+    public int getChanges() {
         return changes;
     }
 
@@ -455,7 +524,7 @@ public class BlockStorage {
      * @param maxPasses maximum number of complete persistence passes
      * @return the number of passes attempted
      */
-    public synchronized int flushUntilClean(int maxPasses) {
+    public int flushUntilClean(int maxPasses) {
         return com.github.drakescraft_labs.slimefun4.core.services.PersistenceDrain.drain(
             maxPasses,
             () -> {
@@ -466,11 +535,11 @@ public class BlockStorage {
         );
     }
 
-    public synchronized void save() {
+    public void save() {
         save(Integer.MAX_VALUE);
     }
 
-    public synchronized void save(int maxChangesToSave) {
+    public void save(int maxChangesToSave) {
         computeChanges();
 
         if (changes == 0) {
@@ -478,57 +547,164 @@ public class BlockStorage {
         }
 
         int remaining = maxChangesToSave <= 0 ? Integer.MAX_VALUE : maxChangesToSave;
+        remaining = saveBlockFiles(remaining);
+        saveInventories(remaining);
+        // computeChanges() redundante eliminado — el caller lo invoca antes de llamar save()
+    }
 
-        // Usa iterator directo en lugar de copiar el mapa completo — O(k) en vez de O(n)
-        Iterator<Map.Entry<String, Config>> blockIt = blocksCache.entrySet().iterator();
-        while (blockIt.hasNext() && remaining > 0) {
-            Map.Entry<String, Config> entry = blockIt.next();
-            Config cfg = entry.getValue();
-            boolean persisted = false;
+    /**
+     * Escribe los ficheros "<id>.sfb" pendientes. Cada fichero se reconstruye entero desde los
+     * bloques vivos de ese id, sin volver a leerlo de disco, y no toca inventarios de Bukkit,
+     * asi que puede ejecutarse fuera del hilo principal.
+     *
+     * @param maxFiles
+     *            Cuantos ficheros de id escribir como maximo; 0 o menos significa todos
+     *
+     * @return La parte del presupuesto que no se ha usado
+     */
+    public int saveBlockFiles(int maxFiles) {
+        synchronized (blockFilesLock) {
+            int remaining = maxFiles <= 0 ? Integer.MAX_VALUE : maxFiles;
+            List<String> ids = new ArrayList<>();
 
-            if (cfg.getKeys().isEmpty()) {
-                File file = cfg.getFile();
-
-                if (file.exists()) {
-                    try {
-                        Files.delete(file.toPath());
-                        persisted = true;
-                    } catch (IOException e) {
-                        Slimefun.logger().log(Level.WARNING, e, () -> "Could not delete file \"" + file.getName() + '"');
-                    }
-                } else {
-                    persisted = true;
+            // Se desmarcan antes de leer: un cambio concurrente los vuelve a marcar para la siguiente pasada.
+            for (String id : dirtyIds) {
+                if (ids.size() >= remaining) {
+                    break;
                 }
-            } else {
-                File tmpFile = new File(cfg.getFile().getParentFile(), cfg.getFile().getName() + ".tmp");
 
-                try {
-                    cfg.getFile().getParentFile().mkdirs();
-                    cfg.save(tmpFile);
-                    try {
-                        Files.move(tmpFile.toPath(), cfg.getFile().toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-                    } catch (IOException atomicMoveFailure) {
-                        // Some filesystems do not support atomic replacement.
-                        Files.move(tmpFile.toPath(), cfg.getFile().toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    }
-                    persisted = true;
-                } catch (IOException x) {
-                    Slimefun.logger().log(Level.SEVERE, x, () -> "Could not persist BlockStorage entry for Slimefun " + Slimefun.getVersion());
-                } finally {
-                    if (tmpFile.exists() && !tmpFile.delete()) {
-                        Slimefun.logger().log(Level.WARNING, "Could not remove temporary BlockStorage file \"{0}\"", tmpFile.getName());
-                    }
+                if (dirtyIds.remove(id)) {
+                    ids.add(id);
                 }
             }
 
-            // Keep failed entries queued so a later save can retry them.
-            if (persisted) {
-                blockIt.remove();
+            if (ids.isEmpty()) {
+                return remaining;
+            }
+
+            // Una sola pasada por los bloques vivos agrupa los de todos los ids a escribir
+            Map<String, List<Map.Entry<Location, Config>>> blocksById = new HashMap<>();
+
+            for (String id : ids) {
+                blocksById.put(id, new ArrayList<>());
+            }
+
+            for (Map.Entry<Location, Config> entry : storage.entrySet()) {
+                String id = entry.getValue().getString("id");
+                List<Map.Entry<Location, Config>> blocks = id == null ? null : blocksById.get(id);
+
+                if (blocks != null) {
+                    blocks.add(entry);
+                }
+            }
+
+            for (int i = 0; i < ids.size(); i++) {
+                String id = ids.get(i);
+
+                if (!writeBlockFile(id, blocksById.get(id))) {
+                    // Keep failed entries queued so a later save can retry them.
+                    for (int j = i; j < ids.size(); j++) {
+                        dirtyIds.add(ids.get(j));
+                    }
+
+                    break;
+                }
+
                 remaining--;
-            } else {
-                break;
+            }
+
+            return remaining;
+        }
+    }
+
+    private boolean writeBlockFile(String id, List<Map.Entry<Location, Config>> blocks) {
+        File file = new File(PATH_BLOCKS + world.getName() + '/' + id + ".sfb");
+        Config cfg = new Config(file, new YamlConfiguration());
+
+        Map<String, String> unloadable = unloadableEntries.get(id);
+
+        if (unloadable != null) {
+            for (Map.Entry<String, String> entry : unloadable.entrySet()) {
+                cfg.setValue(entry.getKey(), entry.getValue());
             }
         }
+
+        for (Map.Entry<Location, Config> block : blocks) {
+            String json = serializeLiveBlockInfo(block.getValue());
+
+            if (json == null) {
+                // Escribir el fichero sin este bloque lo borraria del disco; se reintenta todo el id
+                return false;
+            }
+
+            cfg.setValue(serializeLocation(block.getKey()), json);
+        }
+
+        if (cfg.getKeys().isEmpty()) {
+            if (file.exists()) {
+                try {
+                    Files.delete(file.toPath());
+                } catch (IOException e) {
+                    Slimefun.logger().log(Level.WARNING, e, () -> "Could not delete file \"" + file.getName() + '"');
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        File tmpFile = new File(file.getParentFile(), file.getName() + ".tmp");
+
+        try {
+            file.getParentFile().mkdirs();
+            cfg.save(tmpFile);
+            try {
+                Files.move(tmpFile.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException atomicMoveFailure) {
+                // Some filesystems do not support atomic replacement.
+                Files.move(tmpFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+            return true;
+        } catch (IOException x) {
+            Slimefun.logger().log(Level.SEVERE, x, () -> "Could not persist BlockStorage entry for Slimefun " + Slimefun.getVersion());
+            return false;
+        } finally {
+            if (tmpFile.exists() && !tmpFile.delete()) {
+                Slimefun.logger().log(Level.WARNING, "Could not remove temporary BlockStorage file \"{0}\"", tmpFile.getName());
+            }
+        }
+    }
+
+    /**
+     * Serializa los datos vivos de un bloque. Un ticker async puede estar modificando su
+     * {@link BlockInfoConfig} a la vez, asi que se reintenta un par de veces.
+     *
+     * @return El JSON, o null si el bloque no paro de cambiar
+     */
+    @Nullable
+    private static String serializeLiveBlockInfo(Config live) {
+        for (int attempt = 0; attempt < 3; attempt++) {
+            try {
+                return serializeBlockInfo(live);
+            } catch (ConcurrentModificationException x) {
+                // Lo esta modificando otro hilo; se vuelve a intentar
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Guarda los inventarios sucios. Fuera del hilo principal cada menu pide su copia al
+     * servidor con callSyncMethod, asi que lo normal es llamarlo desde el hilo principal.
+     *
+     * @param maxInventories
+     *            Cuantos inventarios guardar como maximo; 0 o menos significa todos
+     *
+     * @return La parte del presupuesto que no se ha usado
+     */
+    public int saveInventories(int maxInventories) {
+        int remaining = maxInventories <= 0 ? Integer.MAX_VALUE : maxInventories;
 
         Iterator<Map.Entry<Location, BlockMenu>> invIt = inventories.entrySet().iterator();
         while (invIt.hasNext() && remaining > 0) {
@@ -549,13 +725,66 @@ public class BlockStorage {
                 remaining--;
             }
         }
-        // computeChanges() redundante eliminado — el caller lo invoca antes de llamar save()
+
+        return remaining;
     }
 
     public void saveAndRemove() {
         save();
         saveChunks();
         isMarkedForRemoval.set(true);
+    }
+
+    /**
+     * Descarga de un mundo con el servidor en marcha. Los inventarios se copian y guardan aqui,
+     * en el hilo principal; los ficheros "<id>.sfb" se escriben en segundo plano. Si el mundo se
+     * vuelve a cargar antes de que terminen, {@link #BlockStorage(World)} espera a esa escritura.
+     * Debe llamarse desde el hilo principal.
+     */
+    public void saveAndRemoveAsync() {
+        saveInventories(0);
+        saveChunks();
+        isMarkedForRemoval.set(true);
+
+        Slimefun plugin = Slimefun.instance();
+
+        if (plugin == null || !plugin.isEnabled()) {
+            flushBlockFiles();
+            return;
+        }
+
+        String worldName = world.getName();
+        CompletableFuture<Void> write = new CompletableFuture<>();
+        pendingUnloadWrites.put(worldName, write);
+
+        Runnable task = () -> {
+            try {
+                flushBlockFiles();
+            } catch (Throwable t) {
+                Slimefun.logger().log(Level.SEVERE, t, () -> "Could not save the Slimefun blocks of the unloaded world \"" + worldName + '"');
+            } finally {
+                pendingUnloadWrites.remove(worldName, write);
+                write.complete(null);
+            }
+        };
+
+        try {
+            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, task);
+        } catch (RuntimeException x) {
+            // El scheduler no acepta tareas: se escribe aqui mismo
+            task.run();
+        }
+    }
+
+    private void flushBlockFiles() {
+        // Un fallo de escritura deja el id marcado; se reintenta un par de veces antes de rendirse
+        for (int pass = 0; pass < 3 && !dirtyIds.isEmpty(); pass++) {
+            saveBlockFiles(0);
+        }
+
+        if (!dirtyIds.isEmpty()) {
+            Slimefun.logger().log(Level.SEVERE, "Slimefun: {0} block file(s) of world \"{1}\" could not be saved.", new Object[] { dirtyIds.size(), world.getName() });
+        }
     }
 
     public boolean isMarkedForRemoval() {
@@ -831,7 +1060,7 @@ public class BlockStorage {
         String id = cfg.getString("id");
 
         if (previousId != null && !previousId.equals(id)) {
-            refreshCache(storage, l, previousId, null, false);
+            refreshCache(storage, l, previousId, false, false);
         }
 
         if (id == null) {
@@ -856,7 +1085,7 @@ public class BlockStorage {
             }
         }
 
-        refreshCache(storage, l, id, serializeBlockInfo(cfg), updateTicker);
+        refreshCache(storage, l, id, true, updateTicker);
     }
 
     public static void setBlockInfo(Block b, String json, boolean updateTicker) {
@@ -922,7 +1151,12 @@ public class BlockStorage {
         }
 
         if (hasBlockInfo(l)) {
-            refreshCache(storage, l, getLocationInfo(l).getString("id"), null, destroy);
+            Config data = getLocationInfo(l);
+
+            // Todo borrado pasa por aqui (romper, explosion, WorldEdit, ticker terminado, chunk borrado)
+            CargoNet.dropPendingOverflow(l, data);
+
+            refreshCache(storage, l, data.getString("id"), false, destroy);
             storage.storage.remove(l);
             storage.unindexLocation(l);
         }
@@ -974,14 +1208,14 @@ public class BlockStorage {
             menu.move(to);
         }
 
-        refreshCache(storage, from, previousData.getString("id"), null, true);
+        refreshCache(storage, from, previousData.getString("id"), false, true);
         storage.storage.remove(from);
         storage.unindexLocation(from);
 
         Slimefun.getTickerTask().disableTicker(from);
     }
 
-    private static void refreshCache(BlockStorage storage, Location l, String key, String value, boolean updateTicker) {
+    private static void refreshCache(BlockStorage storage, Location l, String key, boolean exists, boolean updateTicker) {
         if (key == null) {
             /**
              * This Block is no longer valid...
@@ -990,14 +1224,13 @@ public class BlockStorage {
             return;
         }
 
-        Config cfg = storage.blocksCache.computeIfAbsent(key, k -> new Config(PATH_BLOCKS + l.getWorld().getName() + '/' + key + ".sfb"));
-        cfg.setValue(serializeLocation(l), value);
+        storage.markDirty(key);
 
         if (updateTicker) {
             SlimefunItem item = SlimefunItem.getById(key);
 
             if (item != null
-                && value != null
+                && exists
                 && l.getWorld() != null
                 && item.isTicking()
                 && !item.isDisabledIn(l.getWorld())
@@ -1005,6 +1238,10 @@ public class BlockStorage {
                 Slimefun.getTickerTask().enableTicker(l);
             }
         }
+    }
+
+    private void markDirty(String id) {
+        dirtyIds.add(id);
     }
 
     @Nullable

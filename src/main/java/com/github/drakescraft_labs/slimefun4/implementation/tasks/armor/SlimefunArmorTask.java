@@ -27,8 +27,15 @@ public class SlimefunArmorTask extends AbstractArmorTask {
     @Override
     @ParametersAreNonnullByDefault
     protected void onPlayerTick(Player p, PlayerProfile profile) {
-        ItemStack[] armor = p.getInventory().getArmorContents();
-        updateAndHandleArmor(p, armor, profile.getArmor());
+        /*
+         * Una sola tarea sincronizada por jugador en vez de una por pieza de armadura.
+         * El inventario tambien se lee aqui, en el hilo principal, como exige Bukkit.
+         */
+        Slimefun.runSync(() -> {
+            if (p.isOnline()) {
+                updateAndHandleArmor(p, p.getInventory().getArmorContents(), profile.getArmor());
+            }
+        });
     }
 
     @ParametersAreNonnullByDefault
@@ -49,13 +56,11 @@ public class SlimefunArmorTask extends AbstractArmorTask {
             }
 
             if (item != null && armorPiece.getItem().isPresent()) {
-                Slimefun.runSync(() -> {
-                    SlimefunArmorPiece sfArmorPiece = armorPiece.getItem().get();
+                SlimefunArmorPiece sfArmorPiece = armorPiece.getItem().get();
 
-                    if (sfArmorPiece.canUse(p, true)) {
-                        onArmorPieceTick(p, sfArmorPiece, item);
-                    }
-                });
+                if (sfArmorPiece.canUse(p, true)) {
+                    onArmorPieceTick(p, sfArmorPiece, item);
+                }
             }
         }
     }

@@ -5,6 +5,7 @@ import java.util.logging.Level;
 import javax.annotation.Nonnull;
 
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
@@ -25,12 +26,14 @@ public class WorldListener implements Listener {
         BlockStorage.getOrCreate(e.getWorld());
     }
 
-    @EventHandler
+    // MONITOR + ignoreCancelled: if another plugin cancels the unload, the world stays loaded and so must its data
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onWorldUnload(WorldUnloadEvent e) {
         BlockStorage storage = BlockStorage.getStorage(e.getWorld());
 
         if (storage != null) {
-            storage.saveAndRemove();
+            // Block files are written in the background so the main thread never waits on disk I/O here
+            storage.saveAndRemoveAsync();
         } else {
             Slimefun.logger().log(Level.SEVERE, "Could not save Slimefun Blocks for World \"{0}\"", e.getWorld().getName());
         }

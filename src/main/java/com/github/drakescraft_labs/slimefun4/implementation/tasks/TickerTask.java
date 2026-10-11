@@ -1,10 +1,12 @@
 package com.github.drakescraft_labs.slimefun4.implementation.tasks;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,6 +27,7 @@ import dev.drake.dough.blocks.BlockPosition;
 import dev.drake.dough.blocks.ChunkPosition;
 import com.github.drakescraft_labs.slimefun4.api.ErrorReport;
 import com.github.drakescraft_labs.slimefun4.api.items.SlimefunItem;
+import com.github.drakescraft_labs.slimefun4.core.services.profiler.SlimefunProfiler;
 import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
 
 import me.mrCookieSlime.CSCoreLibPlugin.Configuration.Config;
@@ -83,6 +86,9 @@ public class TickerTask implements Runnable {
 
     @Override
     public void run() {
+        SlimefunProfiler profiler = Slimefun.getProfiler();
+        boolean profiling = false;
+
         try {
             // If this method is actually still running... DON'T
             if (running) {
@@ -90,8 +96,14 @@ public class TickerTask implements Runnable {
             }
 
             running = true;
-            Slimefun.getProfiler().start();
+            profiling = profiler.shouldProfileNextTick();
+
+            if (profiling) {
+                profiler.start();
+            }
+
             Set<BlockTicker> tickers = new HashSet<>();
+            List<Runnable> syncTasks = new ArrayList<>();
 
             // Remove any deleted blocks
             Iterator<Map.Entry<Location, Boolean>> removals = deletionQueue.entrySet().iterator();
@@ -107,7 +119,7 @@ public class TickerTask implements Runnable {
             // Run our ticker code
             if (!halted) {
                 for (Map.Entry<ChunkPosition, Set<Location>> entry : tickingLocations.entrySet()) {
-                    tickChunk(entry.getKey(), tickers, entry.getValue());
+                    tickChunk(entry.getKey(), tickers, syncTasks, entry.getValue());
                 }
             }
 
@@ -119,26 +131,42 @@ public class TickerTask implements Runnable {
                 moves.remove();
             }
 
+            /*
+             * Todos los tickers sincronizados del ciclo van en una sola tarea del scheduler.
+             * Antes se programaba un BukkitTask por bloque, miles por ciclo con muchas maquinas.
+             */
+            if (!syncTasks.isEmpty()) {
+                Slimefun.runSync(() -> runSyncTasks(syncTasks));
+            }
+
             // Start a new tick cycle for every BlockTicker
             for (BlockTicker ticker : tickers) {
                 ticker.startNewTick();
             }
 
             reset();
-            Slimefun.getProfiler().stop();
+
+            if (profiling) {
+                profiler.stop();
+            }
         } catch (Exception | LinkageError x) {
             Slimefun.logger().log(Level.SEVERE, x, () -> "An Exception was caught while ticking the Block Tickers Task for Slimefun v" + Slimefun.getVersion());
             reset();
+
+            // Otherwise the profiler keeps measuring every block until the next sampled cycle
+            if (profiling) {
+                profiler.stop();
+            }
         }
     }
 
     @ParametersAreNonnullByDefault
-    private void tickChunk(ChunkPosition chunk, Set<BlockTicker> tickers, Set<Location> locations) {
+    private void tickChunk(ChunkPosition chunk, Set<BlockTicker> tickers, List<Runnable> syncTasks, Set<Location> locations) {
         try {
             // Only continue if the Chunk is actually loaded
             if (chunk.isLoaded()) {
                 for (Location l : locations) {
-                    tickLocation(tickers, l);
+                    tickLocation(tickers, syncTasks, l);
                 }
             }
         } catch (ArrayIndexOutOfBoundsException | NumberFormatException x) {
@@ -146,7 +174,7 @@ public class TickerTask implements Runnable {
         }
     }
 
-    private void tickLocation(@Nonnull Set<BlockTicker> tickers, @Nonnull Location l) {
+    private void tickLocation(@Nonnull Set<BlockTicker> tickers, @Nonnull List<Runnable> syncTasks, @Nonnull Location l) {
         Config data = BlockStorage.getLocationInfo(l);
         String id = data.getString("id");
         if (id == null) {
@@ -167,7 +195,7 @@ public class TickerTask implements Runnable {
                      * We only capture timestamp if profiling is active to avoid System.nanoTime()
                      * and profiler executor queue overhead on main thread.
                      */
-                    Slimefun.runSync(() -> {
+                    syncTasks.add(() -> {
                         Block b = l.getBlock();
                         tickBlock(l, b, item, data, profiling ? System.nanoTime() : 0L);
                     });
@@ -181,6 +209,17 @@ public class TickerTask implements Runnable {
                 tickers.add(item.getBlockTicker());
             } catch (Exception x) {
                 reportErrors(l, item, x);
+            }
+        }
+    }
+
+    private void runSyncTasks(@Nonnull List<Runnable> syncTasks) {
+        for (Runnable task : syncTasks) {
+            // tickBlock ya captura sus errores; esto solo evita que un fallo corte el resto del lote.
+            try {
+                task.run();
+            } catch (Exception | LinkageError x) {
+                Slimefun.logger().log(Level.SEVERE, x, () -> "An Exception was caught while ticking a synchronized Block Ticker for Slimefun v" + Slimefun.getVersion());
             }
         }
     }

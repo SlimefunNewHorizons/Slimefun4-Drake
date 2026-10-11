@@ -1,7 +1,9 @@
 package com.github.drakescraft_labs.slimefun4.core.services;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -77,9 +79,8 @@ public class AutoSavingService implements Listener {
         plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, this::saveAllPlayers, 2000L, interval * 60L * 20L);
         plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, this::saveAllBlocks, 2000L, interval * 60L * 20L);
         if (dynamicIntervalSeconds > 0) {
-            // BlockStorage's Bukkit configuration is mutated on the server thread.
-            // A bounded batch here avoids ConcurrentModificationException without
-            // turning the periodic full persistence pass into a main-thread spike.
+            // Runs on the server thread because Slimefun inventories must be copied there.
+            // The block files are then written asynchronously, see saveDirtyBlocksBatch().
             plugin.getServer().getScheduler().runTaskTimer(plugin, this::saveDirtyBlocksBatch, dynamicIntervalSeconds * 20L, dynamicIntervalSeconds * 20L);
         }
 
@@ -244,14 +245,36 @@ public class AutoSavingService implements Listener {
             return;
         }
 
+        boolean handedOff = false;
+
         try {
-            saveDirtyBlocksBatchNow();
+            List<BlockStorage> storages = saveDirtyInventoriesBatchNow();
+
+            /*
+             * BlockStorage now builds the block files from scratch inside saveBlockFiles(), so no
+             * Bukkit configuration is shared with the server thread anymore. Loading and writing
+             * those YAML files is the expensive part of the batch, so it leaves the main thread.
+             * The persistence lock is held until the async part is done.
+             */
+            if (!storages.isEmpty() && plugin != null && plugin.isEnabled()) {
+                plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> saveDirtyBlockFilesBatch(storages));
+                handedOff = true;
+            }
         } finally {
-            blockPersistenceRunning.set(false);
+            if (!handedOff) {
+                blockPersistenceRunning.set(false);
+            }
         }
     }
 
-    private void saveDirtyBlocksBatchNow() {
+    /**
+     * Saves dirty Slimefun inventories on the server thread, where they can be copied directly.
+     *
+     * @return Every {@link BlockStorage} above the threshold, whose block files still need saving
+     */
+    private List<BlockStorage> saveDirtyInventoriesBatchNow() {
+        List<BlockStorage> storages = new ArrayList<>();
+
         for (World world : Bukkit.getWorlds()) {
             try {
                 BlockStorage storage = BlockStorage.getStorage(world);
@@ -265,11 +288,28 @@ public class AutoSavingService implements Listener {
 
                 if (queued >= dynamicThreshold) {
                     Slimefun.logger().log(Level.FINE, "Dynamic block auto-save: draining up to {0} of {1} queued change(s) for world \"{2}\".", new Object[] { dynamicBatchSize, queued, world.getName() });
-                    storage.save(dynamicBatchSize);
+                    storage.saveInventories(dynamicBatchSize);
+                    storages.add(storage);
                 }
             } catch (Throwable t) {
                 Slimefun.logger().log(Level.SEVERE, "Error draining dynamic block auto-save for world " + world.getName(), t);
             }
+        }
+
+        return storages;
+    }
+
+    private void saveDirtyBlockFilesBatch(List<BlockStorage> storages) {
+        try {
+            for (BlockStorage storage : storages) {
+                try {
+                    storage.saveBlockFiles(dynamicBatchSize);
+                } catch (Throwable t) {
+                    Slimefun.logger().log(Level.SEVERE, "Error draining dynamic block auto-save for world " + (storage.getWorld() != null ? storage.getWorld().getName() : "unknown"), t);
+                }
+            }
+        } finally {
+            blockPersistenceRunning.set(false);
         }
     }
 

@@ -144,7 +144,12 @@ public class BlockMenu extends DirtyChestMenu {
              * autoguardado persiste cientos de menus por pasada, asi que ese lock llego a bloquear
              * el Server thread 10 s y disparar el watchdog (2026-09-12). Ver InventoryFileWriter.
              */
-            YamlConfiguration cfg = InventoryFileWriter.load(file);
+            /*
+             * El fichero se reescribe entero con el preset y todos los slots de inventario, asi
+             * que no hace falta leer y parsear el YAML anterior. Solo se pierden claves de slots
+             * que ya no pertenecen al menu y que BlockMenu no puede mostrar.
+             */
+            YamlConfiguration cfg = new YamlConfiguration();
             cfg.set("preset", presetId);
 
             for (int slot : slots) {
