@@ -30,11 +30,15 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4.0.0
+    # JDK 25 is only for compiling against the Paper 26.x APIs (Java 25 class files).
+    # The last version listed, 21, stays the default JAVA_HOME; 25 is exposed as JAVA_HOME_25_X64.
+    - name: Set up JDK 25 and 21
+      uses: actions/setup-java@v4
       with:
-        distribution: 'adopt'
-        java-version: '21'
+        distribution: 'temurin'
+        java-version: |
+          25
+          21
         java-package: jdk
         architecture: x64
 
@@ -52,6 +56,18 @@ jobs:
       run: >-
         mvn test --file pom.xml -DlegacyMockBukkitTests
         -Dtest=TestColorCodes,TestSlimefunSpelling,TestDoubleRangeSetting,TestEnumSetting,TestIntRangeSetting,TestItemSettings,TestMaterialTagSetting,TestNetworkManager,TestResearches,TestUpdaterService,TestRechargeableItems
+
+    - name: Check bytecode against Paper API 1.21.11, 26.1 and 26.2
+      run: mvn test --file pom.xml -Dtest=TestPaperApiCompatibility
+
+    - name: Compile against Paper API 1.21.11
+      run: mvn test --file pom.xml -DpaperApiCompile=true -Dtest='TestPaperApiCompilation#testCompilesAgainstPaper_1_21_11'
+
+    - name: Compile against Paper API 26.1
+      run: mvn test --file pom.xml -DpaperApiCompile=true -Dtest='TestPaperApiCompilation#testCompilesAgainstPaper_26_1'
+
+    - name: Compile against Paper API 26.2
+      run: mvn test --file pom.xml -DpaperApiCompile=true -Dtest='TestPaperApiCompilation#testCompilesAgainstPaper_26_2'
 
     - name: Upload production artifact
       uses: actions/upload-artifact@v4

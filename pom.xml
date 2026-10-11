@@ -143,6 +143,10 @@
                 <configuration>
                     <junitArtifactName>org.junit.jupiter:junit-jupiter</junitArtifactName>
                     <trimStackTrace>false</trimStackTrace>
+                    <systemPropertyVariables>
+                        <!-- TestPaperApiCompilation runs this same Maven against each paper-api-* profile -->
+                        <maven.home>${maven.home}</maven.home>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
 
@@ -550,4 +554,40 @@
         </dependency>
     </dependencies>
 
+
+    <profiles>
+        <!--
+          Compile the plugin against one specific Paper API, with that API's own dependencies.
+          Each profile builds into its own directory so it never touches target/classes.
+          The bytecode stays Java 21; the 26.x APIs are Java 25 class files, so building those
+          profiles needs a JDK 25 or newer. TestPaperApiCompilation runs one test per profile.
+        -->
+        <profile>
+            <id>paper-api-1.21.11</id>
+            <properties>
+                <paper.version>1.21.11-R0.1-SNAPSHOT</paper.version>
+            </properties>
+            <build>
+                <directory>${project.basedir}/target/paper-api-compile/1.21.11</directory>
+            </build>
+        </profile>
+        <profile>
+            <id>paper-api-26.1</id>
+            <properties>
+                <paper.version>26.1.2.build.74-stable</paper.version>
+            </properties>
+            <build>
+                <directory>${project.basedir}/target/paper-api-compile/26.1</directory>
+            </build>
+        </profile>
+        <profile>
+            <id>paper-api-26.2</id>
+            <properties>
+                <paper.version>26.2.build.133-stable</paper.version>
+            </properties>
+            <build>
+                <directory>${project.basedir}/target/paper-api-compile/26.2</directory>
+            </build>
+        </profile>
+    </profiles>
 </project>
