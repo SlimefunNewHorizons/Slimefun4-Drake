@@ -187,6 +187,99 @@ class TestEnchanterPersistenceAndDowngrade {
         );
     }
 
+    private static int countInMenu(BlockMenu menu, Material type) {
+        int amount = 0;
+
+        for (int slot : new int[] { 19, 20, 24, 25 }) {
+            ItemStack item = menu.getItemInSlot(slot);
+
+            if (item != null && item.getType() == type) {
+                amount += item.getAmount();
+            }
+        }
+
+        return amount;
+    }
+
+    @Test
+    @DisplayName("AutoEnchanter: a restart mid-craft hands back the exact items that went in")
+    void testAutoEnchanterRefundsRealIngredients() {
+        AutoEnchanter enchanter = new AutoEnchanter(
+            new ItemGroup(org.bukkit.NamespacedKey.minecraft("test_real_refund_group"), new ItemStack(Material.BOOK)),
+            new SlimefunItemStack("TEST_REAL_REFUND_ENCHANTER", Material.ENCHANTING_TABLE, "&cTest Real Refund Enchanter"),
+            RecipeType.ENHANCED_CRAFTING_TABLE,
+            new ItemStack[] { new ItemStack(Material.DIRT) }
+        );
+        enchanter.setCapacity(100);
+        enchanter.setEnergyConsumption(10);
+        enchanter.setProcessingSpeed(1);
+        enchanter.register(plugin);
+
+        Block block = world.getBlockAt(50, 64, 50);
+        block.setType(Material.ENCHANTING_TABLE);
+        BlockStorage.store(block, enchanter.getId());
+
+        BlockMenu menu = BlockStorage.getInventory(block);
+        Assertions.assertNotNull(menu);
+
+        ItemStack book = new ItemStack(Material.ENCHANTED_BOOK);
+        EnchantmentStorageMeta meta = (EnchantmentStorageMeta) book.getItemMeta();
+        meta.addStoredEnchant(Enchantment.SHARPNESS, 5, true);
+        book.setItemMeta(meta);
+
+        menu.replaceExistingItem(19, new ItemStack(Material.DIAMOND_SWORD));
+        menu.replaceExistingItem(20, book);
+
+        // The real flow: the recipe lookup consumes the live items out of the input slots
+        MachineRecipe recipe = java.util.concurrent.CompletableFuture.supplyAsync(() -> enchanter.findNextRecipe(menu)).join();
+        Assertions.assertNotNull(recipe);
+        Assertions.assertEquals(0, countInMenu(menu, Material.DIAMOND_SWORD), "the sword should have left the input slot");
+
+        enchanter.getMachineProcessor().startOperation(block, new CraftingOperation(recipe));
+        MachineProcessor.refundAllActiveProcessors();
+
+        Assertions.assertEquals(1, countInMenu(menu, Material.DIAMOND_SWORD), "the sword was lost on restart");
+        Assertions.assertEquals(1, countInMenu(menu, Material.ENCHANTED_BOOK), "the enchanted book was lost on restart");
+    }
+
+    @Test
+    @DisplayName("AutoDisenchanter: a restart mid-craft neither loses the item nor duplicates the books")
+    void testAutoDisenchanterRefundsRealIngredients() {
+        AutoDisenchanter disenchanter = new AutoDisenchanter(
+            new ItemGroup(org.bukkit.NamespacedKey.minecraft("test_real_refund_dis_group"), new ItemStack(Material.BOOK)),
+            new SlimefunItemStack("TEST_REAL_REFUND_DISENCHANTER", Material.ENCHANTING_TABLE, "&cTest Real Refund Disenchanter"),
+            RecipeType.ENHANCED_CRAFTING_TABLE,
+            new ItemStack[] { new ItemStack(Material.DIRT) }
+        );
+        disenchanter.setCapacity(100);
+        disenchanter.setEnergyConsumption(10);
+        disenchanter.setProcessingSpeed(1);
+        disenchanter.register(plugin);
+
+        Block block = world.getBlockAt(60, 64, 60);
+        block.setType(Material.ENCHANTING_TABLE);
+        BlockStorage.store(block, disenchanter.getId());
+
+        BlockMenu menu = BlockStorage.getInventory(block);
+        Assertions.assertNotNull(menu);
+
+        ItemStack sword = new ItemStack(Material.DIAMOND_SWORD);
+        sword.addUnsafeEnchantment(Enchantment.SHARPNESS, 5);
+
+        menu.replaceExistingItem(19, sword);
+        menu.replaceExistingItem(20, new ItemStack(Material.BOOK, 10));
+
+        MachineRecipe recipe = java.util.concurrent.CompletableFuture.supplyAsync(() -> disenchanter.findNextRecipe(menu)).join();
+        Assertions.assertNotNull(recipe);
+        Assertions.assertEquals(9, countInMenu(menu, Material.BOOK), "one book should have been consumed");
+
+        disenchanter.getMachineProcessor().startOperation(block, new CraftingOperation(recipe));
+        MachineProcessor.refundAllActiveProcessors();
+
+        Assertions.assertEquals(1, countInMenu(menu, Material.DIAMOND_SWORD), "the enchanted sword was lost on restart");
+        Assertions.assertEquals(10, countInMenu(menu, Material.BOOK), "books were lost or duplicated on restart");
+    }
+
     @Test
     @DisplayName("Ticket #55: machines that keep their ingredients in the input slots are never refunded (no dupes)")
     void testNoRefundWhenIngredientsAreNotConsumed() {

@@ -117,6 +117,25 @@ public abstract class AContainer extends SlimefunItem implements InventoryBlock,
     }
 
     /**
+     * Copies a single item out of an input slot, to be stored as an ingredient of a
+     * {@link CraftingOperation}. {@link BlockMenu#getItemInSlot(int)} returns the live stack
+     * and {@link BlockMenu#consumeItem(int)} shrinks that very stack, so an ingredient that
+     * is not copied first turns into air (lost on refund) or into the rest of the stack
+     * (duplicated on refund).
+     *
+     * @param item
+     *            The item in the input slot
+     *
+     * @return An independent copy with an amount of one
+     */
+    @Nonnull
+    protected static ItemStack copyIngredient(@Nonnull ItemStack item) {
+        ItemStack copy = item.clone();
+        copy.setAmount(1);
+        return copy;
+    }
+
+    /**
      * Ticket #55: the items of an in-flight {@link CraftingOperation} may only be handed back (block break,
      * shutdown) when they were taken out of the input slots as the operation started. That holds for
      * {@link #findNextRecipe(BlockMenu)} and the core enchanting machines; addons that override {@code tick}

@@ -140,7 +140,7 @@ public class AutoEnchanter extends AbstractEnchantmentMachine {
             enchantedItem.setAmount(1);
             enchantedItem.addUnsafeEnchantments(enchantments);
 
-            MachineRecipe recipe = new MachineRecipe(75 * enchantments.size() / getSpeed(), new ItemStack[] { target, enchantedBook }, new ItemStack[] { enchantedItem, new ItemStack(Material.BOOK) });
+            MachineRecipe recipe = new MachineRecipe(75 * enchantments.size() / getSpeed(), new ItemStack[] { copyIngredient(target), copyIngredient(enchantedBook) }, new ItemStack[] { enchantedItem, new ItemStack(Material.BOOK) });
 
             if (!InvUtils.fitAll(menu.toInventory(), recipe.getOutput(), getOutputSlots())) {
                 return null;
