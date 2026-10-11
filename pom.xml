@@ -147,6 +147,46 @@
             </plugin>
 
             <plugin>
+                <!-- Paper API jars that TestPaperApiCompatibility checks the compiled plugin against -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.11.0</version>
+
+                <executions>
+                    <execution>
+                        <id>copy-paper-api-jars</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/paper-api</outputDirectory>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>io.papermc.paper</groupId>
+                                    <artifactId>paper-api</artifactId>
+                                    <version>1.21.11-R0.1-SNAPSHOT</version>
+                                    <destFileName>paper-api-1.21.11.jar</destFileName>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>io.papermc.paper</groupId>
+                                    <artifactId>paper-api</artifactId>
+                                    <version>26.1.2.build.74-stable</version>
+                                    <destFileName>paper-api-26.1.jar</destFileName>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>io.papermc.paper</groupId>
+                                    <artifactId>paper-api</artifactId>
+                                    <version>26.2.build.133-stable</version>
+                                    <destFileName>paper-api-26.2.jar</destFileName>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
                 <!-- Sonarcloud Scanner -->
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>
@@ -380,6 +420,13 @@
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy-agent</artifactId>
             <version>1.17.7</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- Reads class files for TestPaperApiCompatibility, including the Java 25 Paper 26.x API -->
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm</artifactId>
+            <version>9.10.1</version>
             <scope>test</scope>
         </dependency>
         <!-- Keep MockBukkit aligned with the current Paper registry format. -->

@@ -24,6 +24,7 @@ import com.github.drakescraft_labs.slimefun4.api.recipes.RecipeType;
 import com.github.drakescraft_labs.slimefun4.core.services.sounds.SoundEffect;
 import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
 import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
+import com.github.drakescraft_labs.slimefun4.utils.DamageEvents;
 
 /**
  * The Boots of the Stomper are boots which damage nearby enemies whenever the {@link Player}
@@ -57,7 +58,7 @@ public class StomperBoots extends SlimefunItem {
 
                 // Check if it's not a Player or if PvP is enabled
                 if (!(entity instanceof Player) || (player.getWorld().getPVP() && Slimefun.getProtectionManager().hasPermission(player, entity.getLocation(), Interaction.ATTACK_PLAYER))) {
-                    EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(player, entity, DamageCause.ENTITY_ATTACK, fallDamageEvent.getDamage() / 2);
+                    EntityDamageByEntityEvent event = DamageEvents.create(player, entity, DamageCause.ENTITY_ATTACK, fallDamageEvent.getDamage() / 2);
                     Bukkit.getPluginManager().callEvent(event);
 
                     if (!event.isCancelled()) {

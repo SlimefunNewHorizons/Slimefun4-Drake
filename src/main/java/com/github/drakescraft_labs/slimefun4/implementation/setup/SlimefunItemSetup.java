@@ -11,7 +11,6 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.PotionMeta;
-import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
@@ -839,11 +838,7 @@ public final class SlimefunItemSetup {
 
         ItemStack weaknessPotion = new ItemStack(Material.POTION);
         PotionMeta meta = (PotionMeta) weaknessPotion.getItemMeta();
-        if (Slimefun.getMinecraftVersion().isBefore(20, 2)) {
-            meta.setBasePotionData(new PotionData(PotionType.WEAKNESS, false, false));
-        } else {
-            meta.setBasePotionType(PotionType.WEAKNESS);
-        }
+        meta.setBasePotionType(PotionType.WEAKNESS);
         weaknessPotion.setItemMeta(meta);
 
         new MagicalZombiePills(itemGroups.magicalGadgets, SlimefunItems.MAGICAL_ZOMBIE_PILLS, RecipeType.MAGIC_WORKBENCH,

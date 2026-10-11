@@ -37,7 +37,6 @@ import com.github.drakescraft_labs.slimefun4.legacy.api.BlockStorage;
 import com.github.drakescraft_labs.slimefun4.legacy.api.inventory.BlockMenu;
 import com.github.drakescraft_labs.slimefun4.legacy.api.inventory.BlockMenuPreset;
 import org.bukkit.inventory.meta.PotionMeta;
-import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionType;
 
 /**
@@ -204,11 +203,7 @@ public class FluidPump extends SimpleSlimefunItem<BlockTicker> implements Invent
             case BUBBLE_COLUMN:
                 ItemStack waterBottle = new ItemStack(Material.POTION);
                 PotionMeta meta = (PotionMeta) waterBottle.getItemMeta();
-                if (Slimefun.getMinecraftVersion().isBefore(20, 2)) {
-                    meta.setBasePotionData(new PotionData(PotionType.WATER));
-                } else {
-                    meta.setBasePotionType(PotionType.WATER);
-                }
+                meta.setBasePotionType(PotionType.WATER);
                 waterBottle.setItemMeta(meta);
                 return waterBottle;
             default:

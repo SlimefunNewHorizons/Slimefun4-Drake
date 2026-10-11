@@ -33,6 +33,7 @@ import com.github.drakescraft_labs.slimefun4.core.handlers.ItemUseHandler;
 import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
 import com.github.drakescraft_labs.slimefun4.implementation.items.SimpleSlimefunItem;
 import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
+import com.github.drakescraft_labs.slimefun4.utils.DamageEvents;
 
 /**
  * The {@link SeismicAxe} is an interesting weapon. It spawns ghostly block entities in a straight line
@@ -124,7 +125,7 @@ public class SeismicAxe extends SimpleSlimefunItem<ItemUseHandler> implements No
     private void pushEntity(Player p, Entity entity) {
         // Only damage players when PVP is enabled, other entities are fine.
         if (entity.getType() != EntityType.PLAYER || p.getWorld().getPVP()) {
-            EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(p, entity, DamageCause.ENTITY_ATTACK, DAMAGE);
+            EntityDamageByEntityEvent event = DamageEvents.create(p, entity, DamageCause.ENTITY_ATTACK, DAMAGE);
             Bukkit.getPluginManager().callEvent(event);
 
             // Fixes #2207 - Only apply Vector if the Player is able to damage the entity

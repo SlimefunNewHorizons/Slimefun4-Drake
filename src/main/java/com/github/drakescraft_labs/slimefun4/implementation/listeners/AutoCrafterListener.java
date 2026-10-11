@@ -4,7 +4,7 @@ import java.util.Optional;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import org.bukkit.GameRule;
+import org.bukkit.GameRules;
 import org.bukkit.Keyed;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -71,7 +71,7 @@ public class AutoCrafterListener implements Listener {
 
                 // Check for the "doLimitedCrafting" gamerule when using a Vanilla Auto-Crafter
                 if (block instanceof VanillaAutoCrafter) {
-                    boolean doLimitedCrafting = e.getPlayer().getWorld().getGameRuleValue(GameRule.DO_LIMITED_CRAFTING);
+                    boolean doLimitedCrafting = e.getPlayer().getWorld().getGameRuleValue(GameRules.LIMITED_CRAFTING);
 
                     // Check if the recipe of the item is disabled.
                     if (doLimitedCrafting && !hasUnlockedRecipe(e.getPlayer(), e.getItem())) {

@@ -22,6 +22,7 @@ import com.github.drakescraft_labs.slimefun4.api.items.settings.IntRangeSetting;
 import com.github.drakescraft_labs.slimefun4.core.handlers.BowShootHandler;
 import com.github.drakescraft_labs.slimefun4.core.services.sounds.SoundEffect;
 import com.github.drakescraft_labs.slimefun4.utils.compatibility.VersionedParticle;
+import com.github.drakescraft_labs.slimefun4.utils.DamageEvents;
 
 /**
  * The {@link ExplosiveBow} is a {@link SlimefunBow} which creates a fake explosion when it hits
@@ -63,7 +64,7 @@ public class ExplosiveBow extends SlimefunBow {
                 double damage = e.getDamage() * (1 - (distanceSquared / (2 * range.getValue() * range.getValue())));
 
                 if (!entity.getUniqueId().equals(target.getUniqueId())) {
-                    EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(e.getDamager(), entity, EntityDamageEvent.DamageCause.ENTITY_EXPLOSION, damage);
+                    EntityDamageByEntityEvent event = DamageEvents.create(e.getDamager(), entity, EntityDamageEvent.DamageCause.ENTITY_EXPLOSION, damage);
                     Bukkit.getPluginManager().callEvent(event);
 
                     if (!event.isCancelled()) {
