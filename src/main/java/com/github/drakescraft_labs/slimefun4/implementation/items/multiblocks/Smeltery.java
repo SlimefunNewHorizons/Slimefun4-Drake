@@ -9,7 +9,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -25,6 +24,7 @@ import com.github.drakescraft_labs.slimefun4.api.items.settings.IntRangeSetting;
 import com.github.drakescraft_labs.slimefun4.implementation.SlimefunItems;
 import com.github.drakescraft_labs.slimefun4.implementation.items.blocks.IgnitionChamber;
 import com.github.drakescraft_labs.slimefun4.implementation.items.misc.AlloyIngot;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
  * The {@link Smeltery} is an upgraded version of the {@link MakeshiftSmeltery}
@@ -92,7 +92,7 @@ public class Smeltery extends AbstractSmeltery {
 
         if (!isFireRenewed) {
             Block fire = b.getRelative(BlockFace.DOWN).getRelative(BlockFace.DOWN);
-            fire.getWorld().playEffect(fire.getLocation(), Effect.STEP_SOUND, fire.getType());
+            BlockEffects.playBreakEffect(fire.getLocation(), fire.getType());
             fire.setType(Material.AIR);
         }
     }

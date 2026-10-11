@@ -2,7 +2,6 @@ package com.github.drakescraft_labs.slimefun4.implementation.items.medical;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import org.bukkit.Effect;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -16,6 +15,7 @@ import com.github.drakescraft_labs.slimefun4.api.recipes.RecipeType;
 import com.github.drakescraft_labs.slimefun4.core.handlers.ItemUseHandler;
 import com.github.drakescraft_labs.slimefun4.implementation.items.SimpleSlimefunItem;
 import com.github.drakescraft_labs.slimefun4.utils.compatibility.VersionedPotionEffectType;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
  * A {@link Bandage} or Rag is a medical supply which heals the {@link Player} and extinguishes
@@ -49,7 +49,7 @@ public class Bandage extends SimpleSlimefunItem<ItemUseHandler> {
                 ItemUtils.consumeItem(e.getItem(), false);
             }
 
-            p.getWorld().playEffect(p.getLocation(), Effect.STEP_SOUND, Material.WHITE_WOOL);
+            BlockEffects.playBreakEffect(p.getLocation(), Material.WHITE_WOOL);
             p.addPotionEffect(new PotionEffect(VersionedPotionEffectType.INSTANT_HEALTH, 1, healingLevel));
             p.setFireTicks(0);
 

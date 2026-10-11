@@ -11,7 +11,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.SoundCategory;
@@ -28,6 +27,7 @@ import com.github.drakescraft_labs.slimefun4.implementation.items.altar.AncientA
 import com.github.drakescraft_labs.slimefun4.implementation.items.altar.AncientPedestal;
 import com.github.drakescraft_labs.slimefun4.implementation.listeners.AncientAltarListener;
 import com.github.drakescraft_labs.slimefun4.utils.compatibility.VersionedParticle;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
  * The {@link AncientAltarTask} is responsible for the animation that happens when a ritual
@@ -168,7 +168,7 @@ public class AncientAltarTask implements Runnable {
 
             if (!event.isCancelled()) {
                 SoundEffect.ANCIENT_ALTAR_FINISH_SOUND.playAt(dropLocation, SoundCategory.BLOCKS);
-                dropLocation.getWorld().playEffect(dropLocation, Effect.STEP_SOUND, Material.EMERALD_BLOCK);
+                BlockEffects.playBreakEffect(dropLocation, Material.EMERALD_BLOCK);
                 dropLocation.getWorld().dropItemNaturally(dropLocation.add(0, -0.5, 0), event.getItem());
             }
 

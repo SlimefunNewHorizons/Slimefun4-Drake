@@ -5,7 +5,6 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -40,6 +39,7 @@ import com.github.drakescraft_labs.slimefun4.legacy.api.inventory.BlockMenu;
 import com.github.drakescraft_labs.slimefun4.legacy.api.inventory.BlockMenuPreset;
 import com.github.drakescraft_labs.slimefun4.legacy.api.inventory.DirtyChestMenu;
 import com.github.drakescraft_labs.slimefun4.legacy.api.item_transport.ItemTransportFlow;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
  * This is an abstract super class for Entity Assemblers.
@@ -211,7 +211,7 @@ public abstract class AbstractEntityAssembler<T extends Entity> extends SimpleSl
                             Location loc = new Location(b.getWorld(), b.getX() + 0.5D, b.getY() + offset, b.getZ() + 0.5D);
                             spawnEntity(loc);
 
-                            b.getWorld().playEffect(b.getLocation(), Effect.STEP_SOUND, getHead().getType());
+                            BlockEffects.playBreakEffect(b.getLocation(), getHead().getType());
                         });
                     }
                 }

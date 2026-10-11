@@ -16,7 +16,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
-import org.bukkit.Effect;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -41,6 +40,7 @@ import com.github.drakescraft_labs.slimefun4.implementation.items.SimpleSlimefun
 import com.github.drakescraft_labs.slimefun4.implementation.settings.ClimbableSurface;
 import com.github.drakescraft_labs.slimefun4.utils.compatibility.VersionedEnchantment;
 import com.github.drakescraft_labs.slimefun4.utils.tags.SlimefunTag;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
  * The {@link ClimbingPick} launches you 1 block upwards when you right click
@@ -253,7 +253,7 @@ public class ClimbingPick extends SimpleSlimefunItem<ItemUseHandler> implements 
         MinecraftVersion version = Slimefun.getMinecraftVersion();
 
         if (version != MinecraftVersion.UNIT_TEST) {
-            p.getWorld().playEffect(b.getLocation(), Effect.STEP_SOUND, b.getType());
+            BlockEffects.playBreakEffect(b.getLocation(), b.getType());
 
             if (hand == EquipmentSlot.HAND) {
                 p.swingMainHand();

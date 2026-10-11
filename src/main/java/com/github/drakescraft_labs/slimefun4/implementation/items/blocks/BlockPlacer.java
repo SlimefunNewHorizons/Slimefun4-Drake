@@ -7,7 +7,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Nameable;
@@ -40,6 +39,7 @@ import com.github.drakescraft_labs.slimefun4.utils.PaperLibUtils;
 import io.papermc.lib.features.blockstatesnapshot.BlockStateSnapshotResult;
 
 import com.github.drakescraft_labs.slimefun4.legacy.api.BlockStorage;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
  * The {@link BlockPlacer} is a machine which can place {@link Block Blocks}, as the name
@@ -249,7 +249,7 @@ public class BlockPlacer extends SlimefunItem {
                 removedItem.setAmount(1);
 
                 // Play particles
-                b.getWorld().playEffect(b.getLocation(), Effect.STEP_SOUND, item.getType());
+                BlockEffects.playBreakEffect(b.getLocation(), item.getType());
 
                 // Make sure the item was actually removed (fixes #2817)
 

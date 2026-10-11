@@ -3,7 +3,6 @@ package com.github.drakescraft_labs.slimefun4.implementation.items.weapons;
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -16,6 +15,7 @@ import com.github.drakescraft_labs.slimefun4.api.items.SlimefunItemStack;
 import com.github.drakescraft_labs.slimefun4.core.handlers.BowShootHandler;
 import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
 import com.github.drakescraft_labs.slimefun4.utils.compatibility.VersionedPotionEffectType;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
  * The {@link IcyBow} is a special kind of bow which slows down any
@@ -46,8 +46,8 @@ public class IcyBow extends SlimefunBow {
                     player.setFreezeTicks(60);
                 }
             }
-            n.getWorld().playEffect(n.getLocation(), Effect.STEP_SOUND, Material.ICE);
-            n.getWorld().playEffect(n.getEyeLocation(), Effect.STEP_SOUND, Material.ICE);
+            BlockEffects.playBreakEffect(n.getLocation(), Material.ICE);
+            BlockEffects.playBreakEffect(n.getEyeLocation(), Material.ICE);
             n.addPotionEffect(new PotionEffect(VersionedPotionEffectType.SLOWNESS, 20 * 2, 10));
             n.addPotionEffect(new PotionEffect(VersionedPotionEffectType.JUMP_BOOST, 20 * 2, -10));
         };

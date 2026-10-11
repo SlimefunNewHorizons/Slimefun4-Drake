@@ -8,7 +8,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -32,6 +31,7 @@ import com.github.drakescraft_labs.slimefun4.implementation.SlimefunItems;
 import com.github.drakescraft_labs.slimefun4.utils.SlimefunUtils;
 import io.papermc.lib.PaperLib;
 import com.github.drakescraft_labs.slimefun4.utils.PaperLibUtils;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
  * The {@link OreCrusher} is a {@link MultiBlockMachine} which allows you to double ores
@@ -202,7 +202,7 @@ public class OreCrusher extends MultiBlockMachine {
                                 removing.setAmount(convert.getAmount());
                                 inv.removeItem(removing);
                                 outputInv.addItem(event.getOutput());
-                                p.getWorld().playEffect(b.getLocation(), Effect.STEP_SOUND, 1);
+                                BlockEffects.playBreakEffect(b.getLocation(), Material.STONE);
                             } else {
                                 Slimefun.getLocalization().sendMessage(p, "machines.full-inventory", true);
                             }

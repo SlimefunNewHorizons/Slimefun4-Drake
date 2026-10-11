@@ -8,7 +8,6 @@ import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -28,6 +27,7 @@ import com.github.drakescraft_labs.slimefun4.implementation.SlimefunItems;
 import com.github.drakescraft_labs.slimefun4.utils.SlimefunUtils;
 import io.papermc.lib.PaperLib;
 import com.github.drakescraft_labs.slimefun4.utils.PaperLibUtils;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
  * The {@link OreWasher} is a special {@link MultiBlockMachine} which allows you to
@@ -172,7 +172,7 @@ public class OreWasher extends MultiBlockMachine {
             inputInv.removeItem(removing);
             outputInv.addItem(output.clone());
 
-            b.getWorld().playEffect(b.getLocation(), Effect.STEP_SOUND, Material.WATER);
+            BlockEffects.playBreakEffect(b.getLocation(), Material.WATER);
             SoundEffect.ORE_WASHER_WASH_SOUND.playAt(b);
         } else {
             Slimefun.getLocalization().sendMessage(p, "machines.full-inventory", true);

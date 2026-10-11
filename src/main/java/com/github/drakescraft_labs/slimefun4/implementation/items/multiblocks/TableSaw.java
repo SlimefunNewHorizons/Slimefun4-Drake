@@ -9,7 +9,6 @@ import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Effect;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.Tag;
@@ -26,6 +25,7 @@ import com.github.drakescraft_labs.slimefun4.api.items.SlimefunItemStack;
 import com.github.drakescraft_labs.slimefun4.core.multiblocks.MultiBlockMachine;
 import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
 import com.github.drakescraft_labs.slimefun4.implementation.items.blocks.OutputChest;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
  * The {@link TableSaw} is an implementation of a {@link MultiBlockMachine} that allows
@@ -121,7 +121,7 @@ public class TableSaw extends MultiBlockMachine {
         }
 
         outputItems(b, event.getOutput());
-        b.getWorld().playEffect(b.getLocation(), Effect.STEP_SOUND, item.getType());
+        BlockEffects.playBreakEffect(b.getLocation(), item.getType());
     }
 
     private @Nullable ItemStack getOutputFromMaterial(@Nonnull Material item) {

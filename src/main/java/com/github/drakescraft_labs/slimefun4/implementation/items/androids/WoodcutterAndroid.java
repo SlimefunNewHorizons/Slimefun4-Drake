@@ -8,7 +8,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Tag;
@@ -27,6 +26,7 @@ import com.github.drakescraft_labs.slimefun4.utils.tags.SlimefunTag;
 
 import com.github.drakescraft_labs.slimefun4.legacy.api.BlockStorage;
 import com.github.drakescraft_labs.slimefun4.legacy.api.inventory.BlockMenu;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 public class WoodcutterAndroid extends ProgrammableAndroid {
 
@@ -55,7 +55,7 @@ public class WoodcutterAndroid extends ProgrammableAndroid {
 
             if (!list.isEmpty()) {
                 Block log = list.get(list.size() - 1);
-                log.getWorld().playEffect(log.getLocation(), Effect.STEP_SOUND, log.getType());
+                BlockEffects.playBreakEffect(log.getLocation(), log.getType());
 
                 OfflinePlayer owner = Bukkit.getOfflinePlayer(UUID.fromString(BlockStorage.getLocationInfo(b.getLocation(), "owner")));
                 if (Slimefun.getProtectionManager().hasPermission(owner, log.getLocation(), Interaction.BREAK_BLOCK)) {
@@ -76,7 +76,7 @@ public class WoodcutterAndroid extends ProgrammableAndroid {
         // We try to push the log into the android's inventory, but nothing happens if it does not fit
         menu.pushItem(drop, getOutputSlots());
 
-        log.getWorld().playEffect(log.getLocation(), Effect.STEP_SOUND, log.getType());
+        BlockEffects.playBreakEffect(log.getLocation(), log.getType());
 
         // If the android just chopped the bottom log, we replant the appropriate sapling
         if (log.getY() == android.getRelative(face).getY()) {

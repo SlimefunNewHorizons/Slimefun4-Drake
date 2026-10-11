@@ -8,7 +8,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Effect;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -29,6 +28,7 @@ import com.github.drakescraft_labs.slimefun4.implementation.SlimefunItems;
 import com.github.drakescraft_labs.slimefun4.implementation.items.blocks.OutputChest;
 import com.github.drakescraft_labs.slimefun4.implementation.items.tools.GoldPan;
 import com.github.drakescraft_labs.slimefun4.implementation.items.tools.NetherGoldPan;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
  * The {@link AutomatedPanningMachine} is a {@link MultiBlockMachine} that
@@ -90,7 +90,7 @@ public class AutomatedPanningMachine extends MultiBlockMachine {
 
         TaskQueue queue = new TaskQueue();
 
-        queue.thenRepeatEvery(20, 5, () -> b.getWorld().playEffect(b.getRelative(BlockFace.DOWN).getLocation(), Effect.STEP_SOUND, material));
+        queue.thenRepeatEvery(20, 5, () -> BlockEffects.playBreakEffect(b.getRelative(BlockFace.DOWN).getLocation(), material));
         queue.thenRun(20, () -> {
             if (finalOutput.getType() != Material.AIR) {
                 Optional<Inventory> outputChest = OutputChest.findOutputChestFor(b.getRelative(BlockFace.DOWN), output);

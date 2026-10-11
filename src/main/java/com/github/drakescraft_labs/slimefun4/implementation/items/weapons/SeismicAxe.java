@@ -9,7 +9,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -33,6 +32,7 @@ import com.github.drakescraft_labs.slimefun4.core.attributes.NotPlaceable;
 import com.github.drakescraft_labs.slimefun4.core.handlers.ItemUseHandler;
 import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
 import com.github.drakescraft_labs.slimefun4.implementation.items.SimpleSlimefunItem;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
  * The {@link SeismicAxe} is an interesting weapon. It spawns ghostly block entities in a straight line
@@ -68,7 +68,7 @@ public class SeismicAxe extends SimpleSlimefunItem<ItemUseHandler> implements No
                 Block ground = findGround(blocks.get(i));
                 Location groundLocation = ground.getLocation();
 
-                ground.getWorld().playEffect(groundLocation, Effect.STEP_SOUND, ground.getType());
+                BlockEffects.playBreakEffect(groundLocation, ground.getType());
 
                 // Check if they have room above.
                 Block blockAbove = ground.getRelative(BlockFace.UP);

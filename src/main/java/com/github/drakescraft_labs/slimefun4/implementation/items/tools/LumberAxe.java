@@ -6,7 +6,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.bukkit.Axis;
-import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.Tag;
@@ -26,6 +25,7 @@ import com.github.drakescraft_labs.slimefun4.core.handlers.ToolUseHandler;
 import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
 
 import com.github.drakescraft_labs.slimefun4.legacy.api.BlockStorage;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
  * The {@link LumberAxe} is a powerful tool which can chop entire trees.
@@ -100,7 +100,7 @@ public class LumberAxe extends SlimefunItem implements NotPlaceable {
     }
 
     private void breakLog(@Nonnull Block b) {
-        b.getWorld().playEffect(b.getLocation(), Effect.STEP_SOUND, b.getType());
+        BlockEffects.playBreakEffect(b.getLocation(), b.getType());
 
         for (ItemStack drop : b.getDrops(getItem())) {
             b.getWorld().dropItemNaturally(b.getLocation(), drop);

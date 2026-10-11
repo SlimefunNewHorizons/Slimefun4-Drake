@@ -4,7 +4,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import javax.annotation.Nonnull;
 
-import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.SoundCategory;
 import org.bukkit.entity.Player;
@@ -13,6 +12,7 @@ import org.bukkit.util.Vector;
 import com.github.drakescraft_labs.slimefun4.core.services.sounds.SoundEffect;
 import com.github.drakescraft_labs.slimefun4.implementation.items.electric.gadgets.JetBoots;
 import com.github.drakescraft_labs.slimefun4.utils.NumberUtils;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 public class JetBootsTask extends AbstractPlayerTask {
 
@@ -35,7 +35,7 @@ public class JetBootsTask extends AbstractPlayerTask {
 
         if (boots.removeItemCharge(p.getInventory().getBoots(), COST)) {
             SoundEffect.JETBOOTS_THRUST_SOUND.playAt(p.getLocation(), SoundCategory.PLAYERS);
-            p.getWorld().playEffect(p.getLocation(), Effect.SMOKE, 1, 1);
+            BlockEffects.playSmoke(p.getLocation());
             p.setFallDistance(0F);
             double gravity = 0.04;
             double offset = ThreadLocalRandom.current().nextBoolean() ? accuracy : -accuracy;

@@ -7,7 +7,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
@@ -28,6 +27,7 @@ import com.github.drakescraft_labs.slimefun4.utils.tags.SlimefunTag;
 
 import com.github.drakescraft_labs.slimefun4.legacy.api.BlockStorage;
 import com.github.drakescraft_labs.slimefun4.legacy.api.inventory.BlockMenu;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
  * The {@link MinerAndroid} is a variant of the {@link ProgrammableAndroid} which
@@ -130,7 +130,7 @@ public class MinerAndroid extends ProgrammableAndroid {
             return;
         }
 
-        block.getWorld().playEffect(block.getLocation(), Effect.STEP_SOUND, block.getType());
+        BlockEffects.playBreakEffect(block.getLocation(), block.getType());
 
         // Push our drops to the inventory
         for (ItemStack drop : drops) {

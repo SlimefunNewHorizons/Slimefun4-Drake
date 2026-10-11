@@ -7,7 +7,6 @@ import java.util.Optional;
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Tag;
@@ -28,6 +27,7 @@ import com.github.drakescraft_labs.slimefun4.core.services.sounds.SoundEffect;
 import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
 import com.github.drakescraft_labs.slimefun4.implementation.items.SimpleSlimefunItem;
 import com.github.drakescraft_labs.slimefun4.utils.SlimefunUtils;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 public class Composter extends SimpleSlimefunItem<BlockUseHandler> implements RecipeDisplayItem {
 
@@ -90,7 +90,7 @@ public class Composter extends SimpleSlimefunItem<BlockUseHandler> implements Re
 
                         tasks.thenRepeatEvery(30, 10, () -> {
                             Material material = input.getType().isBlock() ? input.getType() : Material.HAY_BLOCK;
-                            b.getWorld().playEffect(b.getLocation(), Effect.STEP_SOUND, material);
+                            BlockEffects.playBreakEffect(b.getLocation(), material);
                         });
 
                         tasks.thenRun(20, () -> {

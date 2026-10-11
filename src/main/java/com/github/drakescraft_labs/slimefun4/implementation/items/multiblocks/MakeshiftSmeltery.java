@@ -5,7 +5,6 @@ import java.util.List;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -16,6 +15,7 @@ import org.bukkit.inventory.ItemStack;
 import dev.drake.dough.items.CustomItemStack;
 import com.github.drakescraft_labs.slimefun4.api.items.ItemGroup;
 import com.github.drakescraft_labs.slimefun4.api.items.SlimefunItemStack;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
  * The {@link MakeshiftSmeltery} is a simpler version of the {@link Smeltery}.
@@ -50,7 +50,7 @@ public class MakeshiftSmeltery extends AbstractSmeltery {
         super.craft(p, b, inv, recipe, output, outputInv);
 
         Block fire = b.getRelative(BlockFace.DOWN).getRelative(BlockFace.DOWN);
-        fire.getWorld().playEffect(fire.getLocation(), Effect.STEP_SOUND, fire.getType());
+        BlockEffects.playBreakEffect(fire.getLocation(), fire.getType());
         fire.setType(Material.AIR);
     }
 

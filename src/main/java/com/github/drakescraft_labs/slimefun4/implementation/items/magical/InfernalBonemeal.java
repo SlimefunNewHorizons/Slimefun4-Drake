@@ -4,7 +4,6 @@ import java.util.Optional;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import org.bukkit.Effect;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -18,6 +17,7 @@ import com.github.drakescraft_labs.slimefun4.api.items.SlimefunItemStack;
 import com.github.drakescraft_labs.slimefun4.api.recipes.RecipeType;
 import com.github.drakescraft_labs.slimefun4.core.handlers.ItemUseHandler;
 import com.github.drakescraft_labs.slimefun4.implementation.items.SimpleSlimefunItem;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
  * The {@link InfernalBonemeal} is a special type of bone meal which will work on
@@ -48,7 +48,7 @@ public class InfernalBonemeal extends SimpleSlimefunItem<ItemUseHandler> {
                     if (ageable.getAge() < ageable.getMaximumAge()) {
                         ageable.setAge(ageable.getMaximumAge());
                         b.setBlockData(ageable);
-                        b.getWorld().playEffect(b.getLocation(), Effect.STEP_SOUND, Material.REDSTONE_BLOCK);
+                        BlockEffects.playBreakEffect(b.getLocation(), Material.REDSTONE_BLOCK);
 
                         if (e.getPlayer().getGameMode() != GameMode.CREATIVE) {
                             ItemUtils.consumeItem(e.getItem(), false);

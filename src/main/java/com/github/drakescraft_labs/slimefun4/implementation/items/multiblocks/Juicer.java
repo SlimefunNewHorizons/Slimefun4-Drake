@@ -7,7 +7,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -29,6 +28,7 @@ import com.github.drakescraft_labs.slimefun4.implementation.items.food.Juice;
 import com.github.drakescraft_labs.slimefun4.utils.SlimefunUtils;
 import io.papermc.lib.PaperLib;
 import com.github.drakescraft_labs.slimefun4.utils.PaperLibUtils;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
  * The {@link Juicer} is a {@link MultiBlockMachine} which can be used to
@@ -80,7 +80,7 @@ public class Juicer extends MultiBlockMachine {
 
                             SoundEffect.JUICER_USE_SOUND.playAt(b);
                             // Not changed since this is supposed to be a natural sound.
-                            p.getWorld().playEffect(b.getLocation(), Effect.STEP_SOUND, Material.HAY_BLOCK);
+                            BlockEffects.playBreakEffect(b.getLocation(), Material.HAY_BLOCK);
                         } else {
                             Slimefun.getLocalization().sendMessage(p, "machines.full-inventory", true);
                         }

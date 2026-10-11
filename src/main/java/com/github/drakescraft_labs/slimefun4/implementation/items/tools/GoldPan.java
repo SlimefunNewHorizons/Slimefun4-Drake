@@ -12,7 +12,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.ItemFrame;
@@ -35,6 +34,7 @@ import com.github.drakescraft_labs.slimefun4.implementation.items.electric.machi
 import com.github.drakescraft_labs.slimefun4.implementation.items.multiblocks.AutomatedPanningMachine;
 import com.github.drakescraft_labs.slimefun4.implementation.settings.GoldPanDrop;
 import com.github.drakescraft_labs.slimefun4.utils.SlimefunUtils;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
  * A {@link GoldPan} is a {@link SlimefunItem} which allows you to obtain various
@@ -149,7 +149,7 @@ public class GoldPan extends SimpleSlimefunItem<ItemUseHandler> implements Recip
                 if (isValidInputMaterial(b.getType()) && Slimefun.getProtectionManager().hasPermission(e.getPlayer(), b.getLocation(), Interaction.BREAK_BLOCK)) {
                     ItemStack output = getRandomOutput();
 
-                    b.getWorld().playEffect(b.getLocation(), Effect.STEP_SOUND, b.getType());
+                    BlockEffects.playBreakEffect(b.getLocation(), b.getType());
                     b.setType(Material.AIR);
 
                     // Make sure that the randomly selected item is not air

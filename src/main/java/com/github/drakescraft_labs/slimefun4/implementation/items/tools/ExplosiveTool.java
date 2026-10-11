@@ -8,7 +8,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import dev.lone.itemsadder.api.CustomBlock;
 import org.bukkit.Bukkit;
-import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -34,6 +33,7 @@ import com.github.drakescraft_labs.slimefun4.implementation.items.SimpleSlimefun
 import com.github.drakescraft_labs.slimefun4.utils.tags.SlimefunTag;
 
 import com.github.drakescraft_labs.slimefun4.legacy.api.BlockStorage;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
  * This {@link SlimefunItem} is a super class for items like the {@link ExplosivePickaxe} or {@link ExplosiveShovel}.
@@ -184,7 +184,7 @@ public class ExplosiveTool extends SimpleSlimefunItem<ToolUseHandler> implements
         Slimefun.getProtectionManager().logAction(p, b, Interaction.BREAK_BLOCK);
         Material material = b.getType();
 
-        b.getWorld().playEffect(b.getLocation(), Effect.STEP_SOUND, material);
+        BlockEffects.playBreakEffect(b.getLocation(), material);
         SlimefunItem sfItem = BlockStorage.check(b);
 
         if (sfItem != null && !sfItem.useVanillaBlockBreaking()) {

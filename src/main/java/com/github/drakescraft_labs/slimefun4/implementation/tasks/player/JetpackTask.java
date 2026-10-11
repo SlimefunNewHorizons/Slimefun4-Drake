@@ -2,7 +2,6 @@ package com.github.drakescraft_labs.slimefun4.implementation.tasks.player;
 
 import javax.annotation.Nonnull;
 
-import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.SoundCategory;
 import org.bukkit.entity.Player;
@@ -10,6 +9,7 @@ import org.bukkit.util.Vector;
 
 import com.github.drakescraft_labs.slimefun4.core.services.sounds.SoundEffect;
 import com.github.drakescraft_labs.slimefun4.implementation.items.electric.gadgets.Jetpack;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 public class JetpackTask extends AbstractPlayerTask {
 
@@ -30,7 +30,7 @@ public class JetpackTask extends AbstractPlayerTask {
 
         if (jetpack.removeItemCharge(p.getInventory().getChestplate(), COST)) {
             SoundEffect.JETPACK_THRUST_SOUND.playAt(p.getLocation(), SoundCategory.PLAYERS);
-            p.getWorld().playEffect(p.getLocation(), Effect.SMOKE, 1, 1);
+            BlockEffects.playSmoke(p.getLocation());
             p.setFallDistance(0F);
             Vector vector = new Vector(0, 1, 0);
             vector.multiply(jetpack.getThrust());

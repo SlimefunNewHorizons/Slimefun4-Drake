@@ -4,7 +4,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -24,6 +23,7 @@ import com.github.drakescraft_labs.slimefun4.api.items.SlimefunItemStack;
 import com.github.drakescraft_labs.slimefun4.api.recipes.RecipeType;
 import com.github.drakescraft_labs.slimefun4.core.services.sounds.SoundEffect;
 import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
  * The Boots of the Stomper are boots which damage nearby enemies whenever the {@link Player}
@@ -69,7 +69,7 @@ public class StomperBoots extends SlimefunItem {
 
         for (BlockFace face : BlockFace.values()) {
             Block block = player.getLocation().getBlock().getRelative(BlockFace.DOWN).getRelative(face);
-            player.getWorld().playEffect(block.getLocation(), Effect.STEP_SOUND, block.getType());
+            BlockEffects.playBreakEffect(block.getLocation(), block.getType());
         }
     }
 

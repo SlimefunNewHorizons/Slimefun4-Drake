@@ -7,7 +7,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -28,6 +27,7 @@ import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
 import com.github.drakescraft_labs.slimefun4.utils.SlimefunUtils;
 import io.papermc.lib.PaperLib;
 import com.github.drakescraft_labs.slimefun4.utils.PaperLibUtils;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 public class PressureChamber extends MultiBlockMachine {
 
@@ -86,9 +86,9 @@ public class PressureChamber extends MultiBlockMachine {
 
             Slimefun.runSync(() -> {
                 SoundEffect.PRESSURE_CHAMBER_WORKING_SOUND.playAt(b);
-                p.getWorld().playEffect(b.getRelative(BlockFace.UP).getLocation(), Effect.SMOKE, 4);
-                p.getWorld().playEffect(b.getRelative(BlockFace.UP).getLocation(), Effect.SMOKE, 4);
-                p.getWorld().playEffect(b.getRelative(BlockFace.UP).getLocation(), Effect.SMOKE, 4);
+                BlockEffects.playSmoke(b.getRelative(BlockFace.UP).getLocation());
+                BlockEffects.playSmoke(b.getRelative(BlockFace.UP).getLocation());
+                BlockEffects.playSmoke(b.getRelative(BlockFace.UP).getLocation());
 
                 if (j < 3) {
                     SoundEffect.PRESSURE_CHAMBER_WORKING_SOUND.playAt(b);

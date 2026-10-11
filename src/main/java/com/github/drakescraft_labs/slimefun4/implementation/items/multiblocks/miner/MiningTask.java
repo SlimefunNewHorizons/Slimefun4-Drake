@@ -7,7 +7,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -34,6 +33,7 @@ import io.papermc.lib.PaperLib;
 import com.github.drakescraft_labs.slimefun4.utils.PaperLibUtils;
 
 import com.github.drakescraft_labs.slimefun4.legacy.Objects.SlimefunItem.abstractItems.MachineFuel;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
  * This represents a running instance of an {@link IndustrialMiner}.
@@ -188,7 +188,7 @@ class MiningTask implements Runnable {
         queue.thenRun(() -> {
             try {
                 Block furnace = chest.getRelative(BlockFace.DOWN);
-                furnace.getWorld().playEffect(furnace.getLocation(), Effect.STEP_SOUND, Material.STONE);
+                BlockEffects.playBreakEffect(furnace.getLocation(), Material.STONE);
 
                 World world = start.getWorld();
                 for (int y = height; y > world.getMinHeight(); y--) {
@@ -201,7 +201,7 @@ class MiningTask implements Runnable {
 
                     if (miner.canMine(b) && push(miner.getOutcome(b.getType()))) {
                         // Not changed since this is supposed to be a natural sound.
-                        furnace.getWorld().playEffect(furnace.getLocation(), Effect.STEP_SOUND, b.getType());
+                        BlockEffects.playBreakEffect(furnace.getLocation(), b.getType());
 
                         SoundEffect.MINING_TASK_SOUND.playAt(furnace);
 

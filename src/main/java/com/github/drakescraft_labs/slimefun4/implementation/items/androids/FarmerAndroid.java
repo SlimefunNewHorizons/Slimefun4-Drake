@@ -6,7 +6,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;
@@ -19,6 +18,7 @@ import com.github.drakescraft_labs.slimefun4.api.items.SlimefunItemStack;
 import com.github.drakescraft_labs.slimefun4.api.recipes.RecipeType;
 
 import com.github.drakescraft_labs.slimefun4.legacy.api.inventory.BlockMenu;
+import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 public class FarmerAndroid extends ProgrammableAndroid {
 
@@ -55,7 +55,7 @@ public class FarmerAndroid extends ProgrammableAndroid {
             drop = event.getDrop();
 
             if (drop != null && menu.pushItem(drop, getOutputSlots()) == null) {
-                block.getWorld().playEffect(block.getLocation(), Effect.STEP_SOUND, blockType);
+                BlockEffects.playBreakEffect(block.getLocation(), blockType);
 
                 if (data instanceof Ageable ageable) {
                     ageable.setAge(0);
