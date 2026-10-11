@@ -1,6 +1,8 @@
 package com.github.drakescraft_labs.slimefun4.implementation.guide;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -136,7 +138,22 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
             }
         }
 
+        sortItemGroups(p, groups);
         return groups;
+    }
+
+    protected final void sortItemGroups(@Nonnull Player player, @Nonnull List<ItemGroup> groups) {
+        groups.sort(Comparator
+            .comparing((ItemGroup group) -> normalizeSearchText(group.getDisplayName(player)))
+            .thenComparing(group -> group.getKey().toString()));
+    }
+
+    private List<SlimefunItem> getSortedItems(@Nonnull ItemGroup itemGroup) {
+        List<SlimefunItem> items = new ArrayList<>(itemGroup.getItems());
+        items.sort(Comparator
+            .comparing((SlimefunItem item) -> normalizeSearchText(item.getItemName()))
+            .thenComparing(SlimefunItem::getId));
+        return items;
     }
 
     @Override
@@ -246,7 +263,8 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
 
         addBackButton(menu, 1, p, profile);
 
-        int pages = (itemGroup.getItems().size() - 1) / MAX_ITEM_GROUPS + 1;
+        List<SlimefunItem> items = getSortedItems(itemGroup);
+        int pages = (items.size() - 1) / MAX_ITEM_GROUPS + 1;
 
         menu.addItem(46, ChestMenuUtils.getPreviousButton(p, page, pages));
         menu.addMenuClickHandler(46, (pl, slot, item, action) -> {
@@ -276,11 +294,11 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
         for (int i = 0; i < MAX_ITEM_GROUPS; i++) {
             int target = itemGroupIndex + i;
 
-            if (target >= itemGroup.getItems().size()) {
+            if (target >= items.size()) {
                 break;
             }
 
-            SlimefunItem sfitem = itemGroup.getItems().get(target);
+            SlimefunItem sfitem = items.get(target);
 
             if (!sfitem.isDisabledIn(p.getWorld())) {
                 displaySlimefunItem(menu, itemGroup, p, profile, sfitem, page, index);
@@ -346,7 +364,7 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
         }
 
         ChestMenu menu = new ChestMenu(Slimefun.getLocalization().getMessage(p, "guide.search.inventory").replace("%item%", ChatUtils.crop(ChatColor.WHITE, input)));
-        String searchTerm = ChatColor.stripColor(input.toLowerCase(Locale.ROOT));
+        String searchTerm = normalizeSearchText(input);
 
         if (addToHistory) {
             profile.getGuideHistory().add(searchTerm);
@@ -356,46 +374,55 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
         createHeader(p, profile, menu);
         addBackButton(menu, 1, p, profile);
 
-        int index = 9;
-        // Find items and add them
+        List<SlimefunItem> results = new ArrayList<>();
         for (SlimefunItem slimefunItem : Slimefun.getRegistry().getEnabledSlimefunItems()) {
+            if (!slimefunItem.isHidden() && isItemGroupAccessible(p, slimefunItem) && isSearchFilterApplicable(p, slimefunItem, searchTerm)) {
+                results.add(slimefunItem);
+            }
+        }
+
+        results.sort(Comparator
+            .comparingInt((SlimefunItem item) -> getSearchRank(item, searchTerm))
+            .thenComparing(item -> normalizeSearchText(item.getItemName()))
+            .thenComparing(SlimefunItem::getId));
+
+        int index = 9;
+        for (SlimefunItem slimefunItem : results) {
             if (index == 44) {
                 break;
             }
 
-            if (!slimefunItem.isHidden() && isItemGroupAccessible(p, slimefunItem) && isSearchFilterApplicable(slimefunItem, searchTerm)) {
-                ItemStack itemstack = new CustomItemStack(decorateBookmarkedItem(p, slimefunItem), meta -> {
-                    ItemGroup itemGroup = slimefunItem.getItemGroup();
-                    List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
-                    lore.add(ChatColor.DARK_GRAY + "\u21E8 " + ChatColor.WHITE + itemGroup.getDisplayName(p));
-                    meta.setLore(lore);
-                    meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, VersionedItemFlag.HIDE_ADDITIONAL_TOOLTIP);
-                });
+            ItemStack itemstack = new CustomItemStack(decorateBookmarkedItem(p, slimefunItem), meta -> {
+                ItemGroup itemGroup = slimefunItem.getItemGroup();
+                List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+                lore.add(ChatColor.DARK_GRAY + "⇨ " + ChatColor.WHITE + itemGroup.getDisplayName(p));
+                meta.setLore(lore);
+                meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, VersionedItemFlag.HIDE_ADDITIONAL_TOOLTIP);
+            });
 
-                menu.addItem(index, itemstack);
-                menu.addMenuClickHandler(index, (pl, slot, itm, action) -> {
-                    try {
-                        if (bookmarksEnabled && isSurvivalMode() && action.isRightClicked()) {
-                            toggleBookmark(pl, slimefunItem);
-                            openSearch(profile, input, false);
-                        } else if (!isSurvivalMode()) {
-                            if (slimefunItem instanceof MultiBlockMachine) {
-                                Slimefun.getLocalization().sendMessage(pl, "guide.cheat.no-multiblocks");
-                            } else {
-                                CheatPolicy.claim(pl, slimefunItem, action.isShiftClicked());
-                            }
+            menu.addItem(index, itemstack);
+            menu.addMenuClickHandler(index, (pl, slot, itm, action) -> {
+                try {
+                    if (bookmarksEnabled && isSurvivalMode() && action.isRightClicked()) {
+                        toggleBookmark(pl, slimefunItem);
+                        openSearch(profile, input, false);
+                    } else if (!isSurvivalMode()) {
+                        if (slimefunItem instanceof MultiBlockMachine) {
+                            Slimefun.getLocalization().sendMessage(pl, "guide.cheat.no-multiblocks");
                         } else {
-                            displayItem(profile, slimefunItem, true);
+                            CheatPolicy.claim(pl, slimefunItem, action.isShiftClicked());
                         }
-                    } catch (Exception | LinkageError x) {
-                        printErrorMessage(pl, slimefunItem, x);
+                    } else {
+                        displayItem(profile, slimefunItem, true);
                     }
+                } catch (Exception | LinkageError x) {
+                    printErrorMessage(pl, slimefunItem, x);
+                }
 
-                    return false;
-                });
+                return false;
+            });
 
-                index++;
-            }
+            index++;
         }
 
         menu.open(p);
@@ -407,9 +434,41 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
     }
 
     @ParametersAreNonnullByDefault
-    private boolean isSearchFilterApplicable(SlimefunItem slimefunItem, String searchTerm) {
-        String itemName = ChatColor.stripColor(slimefunItem.getItemName()).toLowerCase(Locale.ROOT);
-        return !itemName.isEmpty() && (itemName.equals(searchTerm) || itemName.contains(searchTerm));
+    private boolean isSearchFilterApplicable(Player player, SlimefunItem slimefunItem, String searchTerm) {
+        String itemName = normalizeSearchText(slimefunItem.getItemName());
+        if (itemName.isEmpty() || searchTerm.isBlank()) {
+            return false;
+        }
+
+        String itemId = normalizeSearchText(slimefunItem.getId());
+        ItemGroup group = slimefunItem.getItemGroup();
+        String groupName = normalizeSearchText(group.getDisplayName(player));
+        String groupId = normalizeSearchText(group.getKey().toString());
+        String addonName = group.getAddon() == null ? "slimefun" : normalizeSearchText(group.getAddon().getJavaPlugin().getName());
+
+        for (String term : searchTerm.split("\s+")) {
+            if (term.isBlank()) continue;
+            if (term.startsWith("@") && !(addonName.contains(term.substring(1)) || groupId.contains(term.substring(1)))) return false;
+            if (term.startsWith("#") && !(groupName.contains(term.substring(1)) || groupId.contains(term.substring(1)))) return false;
+            if (!term.startsWith("@") && !term.startsWith("#")
+                && !itemName.contains(term) && !itemId.contains(term) && !groupName.contains(term)) return false;
+        }
+        return true;
+    }
+
+    private int getSearchRank(SlimefunItem item, String searchTerm) {
+        String itemName = normalizeSearchText(item.getItemName());
+        if (itemName.equals(searchTerm)) return 0;
+        if (itemName.startsWith(searchTerm)) return 1;
+        if (itemName.contains(searchTerm)) return 2;
+        return 3;
+    }
+
+    private static String normalizeSearchText(String text) {
+        return Normalizer.normalize(ChatColor.stripColor(text), Normalizer.Form.NFD)
+            .replaceAll("\\p{M}", "")
+            .toLowerCase(Locale.ROOT)
+            .trim();
     }
 
     @Override

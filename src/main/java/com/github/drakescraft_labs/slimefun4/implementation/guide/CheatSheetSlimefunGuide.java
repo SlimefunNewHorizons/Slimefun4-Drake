@@ -59,6 +59,7 @@ public class CheatSheetSlimefunGuide extends SurvivalSlimefunGuide {
             }
         }
 
+        sortItemGroups(p, groups);
         return groups;
     }
 
