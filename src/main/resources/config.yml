@@ -88,6 +88,9 @@ guide:
   show-hidden-item-groups-in-search: false
   # Guarda accesos rapidos por jugador en guide-bookmarks.yml.
   bookmarks: true
+  # false: categorias y objetos en el orden nativo de Slimefun (progresion).
+  # true: todo en orden alfabetico. Un jugador lo noto el 2026-10-12 y creyo haberlo cambiado el.
+  alphabetical-sorting: false
 
 researches:
   free-in-creative-mode: true

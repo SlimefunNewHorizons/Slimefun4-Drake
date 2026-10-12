@@ -149,7 +149,20 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
         return themes.isEnabled() ? themes.toThemeEntries(groups) : groups;
     }
 
+    /**
+     * Si es {@code false} (por defecto) la guia conserva el orden nativo de Slimefun: las categorias
+     * y los objetos van en el orden en que se registran, que es el de progresion. El orden
+     * alfabetico se activa con {@code guide.alphabetical-sorting} en config.yml.
+     */
+    private boolean isAlphabeticalSorting() {
+        return Slimefun.getCfg().getBoolean("guide.alphabetical-sorting");
+    }
+
     protected final void sortItemGroups(@Nonnull Player player, @Nonnull List<ItemGroup> groups) {
+        if (!isAlphabeticalSorting()) {
+            return;
+        }
+
         groups.sort(Comparator
             .comparing((ItemGroup group) -> normalizeSearchText(group.getDisplayName(player)))
             .thenComparing(group -> group.getKey().toString()));
@@ -157,9 +170,13 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
 
     private List<SlimefunItem> getSortedItems(@Nonnull ItemGroup itemGroup) {
         List<SlimefunItem> items = new ArrayList<>(itemGroup.getItems());
-        items.sort(Comparator
-            .comparing((SlimefunItem item) -> normalizeSearchText(item.getItemName()))
-            .thenComparing(SlimefunItem::getId));
+
+        if (isAlphabeticalSorting()) {
+            items.sort(Comparator
+                .comparing((SlimefunItem item) -> normalizeSearchText(item.getItemName()))
+                .thenComparing(SlimefunItem::getId));
+        }
+
         return items;
     }
 
