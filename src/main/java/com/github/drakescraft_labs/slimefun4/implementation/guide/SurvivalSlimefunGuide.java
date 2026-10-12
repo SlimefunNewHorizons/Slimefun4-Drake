@@ -43,6 +43,7 @@ import com.github.drakescraft_labs.slimefun4.core.guide.GuideHistory;
 import com.github.drakescraft_labs.slimefun4.core.guide.SlimefunGuide;
 import com.github.drakescraft_labs.slimefun4.core.guide.SlimefunGuideImplementation;
 import com.github.drakescraft_labs.slimefun4.core.guide.SlimefunGuideMode;
+import com.github.drakescraft_labs.slimefun4.core.guide.themes.GuideThemes;
 import com.github.drakescraft_labs.slimefun4.core.guide.options.SlimefunGuideSettings;
 import com.github.drakescraft_labs.slimefun4.core.multiblocks.MultiBlock;
 import com.github.drakescraft_labs.slimefun4.core.multiblocks.MultiBlockMachine;
@@ -139,7 +140,13 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
         }
 
         sortItemGroups(p, groups);
-        return groups;
+        return applyThemes(groups);
+    }
+
+    /** With guide themes enabled, the flat list of groups is replaced by one entry per theme. */
+    protected final @Nonnull List<ItemGroup> applyThemes(@Nonnull List<ItemGroup> groups) {
+        GuideThemes themes = GuideThemes.get();
+        return themes.isEnabled() ? themes.toThemeEntries(groups) : groups;
     }
 
     protected final void sortItemGroups(@Nonnull Player player, @Nonnull List<ItemGroup> groups) {
@@ -214,6 +221,57 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
         menu.open(p);
     }
 
+    /**
+     * Opens a paged list of item groups (the content of a guide theme). Groups are rendered exactly like in the main
+     * menu, so locked groups, hidden groups and click handling behave the same.
+     */
+    public void openGroupList(@Nonnull PlayerProfile profile, @Nonnull ThemeItemGroup theme, int page) {
+        Player p = profile.getPlayer();
+
+        if (p == null) {
+            return;
+        }
+
+        List<ItemGroup> groups = theme.getMembers();
+        int pages = Math.max(1, (groups.size() - 1) / MAX_ITEM_GROUPS + 1);
+        int current = Math.min(Math.max(page, 1), pages);
+
+        if (isSurvivalMode()) {
+            profile.getGuideHistory().add(theme, current);
+        }
+
+        ChestMenu menu = create(p);
+        createHeader(p, profile, menu);
+        addBackButton(menu, 1, p, profile);
+
+        int index = 9;
+
+        for (int i = (current - 1) * MAX_ITEM_GROUPS; i < groups.size() && index < MAX_ITEM_GROUPS + 9; i++) {
+            showItemGroup(menu, p, profile, groups.get(i), index);
+            index++;
+        }
+
+        menu.addItem(46, ChestMenuUtils.getPreviousButton(p, current, pages));
+        menu.addMenuClickHandler(46, (pl, slot, item, action) -> {
+            if (current > 1) {
+                openGroupList(profile, theme, current - 1);
+            }
+
+            return false;
+        });
+
+        menu.addItem(52, ChestMenuUtils.getNextButton(p, current, pages));
+        menu.addMenuClickHandler(52, (pl, slot, item, action) -> {
+            if (current < pages) {
+                openGroupList(profile, theme, current + 1);
+            }
+
+            return false;
+        });
+
+        menu.open(p);
+    }
+
     private void showItemGroup(ChestMenu menu, Player p, PlayerProfile profile, ItemGroup group, int index) {
         if (!(group instanceof LockedItemGroup) || !isSurvivalMode() || ((LockedItemGroup) group).hasUnlocked(p, profile)) {
             menu.addItem(index, group.getItem(p));
@@ -246,6 +304,11 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
         Player p = profile.getPlayer();
 
         if (p == null) {
+            return;
+        }
+
+        if (itemGroup instanceof ThemeItemGroup theme) {
+            openGroupList(profile, theme, page);
             return;
         }
 
@@ -684,7 +747,7 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
 
         if (bookmarksEnabled && isSurvivalMode()) {
             int count = GuideBookmarks.get().size(p.getUniqueId()) + GuideBookmarks.get().groupSize(p.getUniqueId());
-            menu.addItem(5, new CustomItemStack(Material.NETHER_STAR, "&6&lFavoritos", "", "&7Recetas guardadas: &f" + count, "", "&eClic para abrir", "&7Clic derecho sobre una receta", "&7para guardarla o quitarla."));
+            menu.addItem(5, new CustomItemStack(Material.NETHER_STAR, "&6&lFavorites", "", "&7Saved recipes: &f" + count, "", "&eClick to open", "&7Right-click a recipe", "&7to save or remove it."));
             menu.addMenuClickHandler(5, (pl, slot, item, action) -> {
                 openBookmarks(profile, 1);
                 return false;
@@ -780,8 +843,8 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
         return new CustomItemStack(group.getItem(player), meta -> {
             List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
             lore.add("");
-            lore.add(ChatColor.GOLD + "★ Grupo guardado en favoritos");
-            lore.add(ChatColor.GRAY + "Clic derecho para quitarlo");
+            lore.add(ChatColor.GOLD + "★ Category saved to favorites");
+            lore.add(ChatColor.GRAY + "Right-click to remove it");
             meta.setLore(lore);
         });
     }
@@ -795,9 +858,9 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
         return new CustomItemStack(sfItem.getItem(), meta -> {
             List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
             lore.add("");
-            lore.add(bookmarked ? ChatColor.GOLD + "★ Guardado en favoritos" : ChatColor.YELLOW + "Clic derecho: guardar favorito");
+            lore.add(bookmarked ? ChatColor.GOLD + "★ Saved to favorites" : ChatColor.YELLOW + "Right-click: save to favorites");
             if (bookmarked) {
-                lore.add(ChatColor.GRAY + "Clic derecho para quitarlo");
+                lore.add(ChatColor.GRAY + "Right-click to remove it");
             }
             meta.setLore(lore);
         });

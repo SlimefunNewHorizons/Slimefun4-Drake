@@ -244,7 +244,7 @@ public class ArmorTask implements Runnable, Listener {
 
             // Mensaje de muerte personalizado por radiación letal
             String customDeathMsg = ChatColor.RED + "☢ " + ChatColor.YELLOW + player.getName()
-                    + ChatColor.RED + " fue desintegrado por radiación letal al manipular "
+                    + ChatColor.RED + " was disintegrated by lethal radiation while handling "
                     + ChatColor.GOLD + ChatColor.BOLD + radioactiveItemName;
 
             event.setDeathMessage(customDeathMsg);

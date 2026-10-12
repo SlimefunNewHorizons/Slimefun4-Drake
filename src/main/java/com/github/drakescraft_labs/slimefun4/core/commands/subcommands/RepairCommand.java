@@ -24,7 +24,7 @@ class RepairCommand extends SubCommand {
     @Override
     public void onExecute(@Nonnull CommandSender sender, @Nonnull String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Este comando debe ejecutarse dentro del juego.");
+            sender.sendMessage("This command can only be used in-game.");
             return;
         }
         if (!player.hasPermission("slimefun.command.repair") && !player.isOp()) {
@@ -32,17 +32,17 @@ class RepairCommand extends SubCommand {
             return;
         }
         if (args.length != 2 || !args[1].equalsIgnoreCase("chunk")) {
-            sender.sendMessage("Uso: /sf repair chunk");
+            sender.sendMessage("Usage: /sf repair chunk");
             return;
         }
 
         RepairSummary summary = repairChunk(player.getLocation().getChunk());
-        sender.sendMessage("§aReparación SF del chunk: " + summary.validEntries + " válido(s), "
-                + summary.tickersEnabled + " ticker(s) reactivado(s), " + summary.inventoriesMarked
-                + " inventario(s) marcado(s) para guardado.");
+        sender.sendMessage("§aSlimefun chunk repair: " + summary.validEntries + " valid, "
+                + summary.tickersEnabled + " ticker(s) re-enabled, " + summary.inventoriesMarked
+                + " inventories marked for saving.");
         if (summary.invalidEntries > 0 || summary.staleBlocks > 0) {
-            sender.sendMessage("§eDiagnóstico sin cambios: " + summary.invalidEntries + " ID(s) desconocido(s), "
-                    + summary.staleBlocks + " registro(s) con bloque ausente.");
+            sender.sendMessage("§eDiagnosis (no changes made): " + summary.invalidEntries + " unknown ID(s), "
+                    + summary.staleBlocks + " record(s) with a missing block.");
         }
     }
 

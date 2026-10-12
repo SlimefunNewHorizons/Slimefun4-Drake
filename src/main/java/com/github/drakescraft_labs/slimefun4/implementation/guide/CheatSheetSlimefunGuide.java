@@ -60,7 +60,7 @@ public class CheatSheetSlimefunGuide extends SurvivalSlimefunGuide {
         }
 
         sortItemGroups(p, groups);
-        return groups;
+        return applyThemes(groups);
     }
 
     @Override

@@ -90,9 +90,9 @@ public class BlockListener implements Listener {
             fastPlaceCooldowns.put(player.getUniqueId(), now);
             player.sendMessage(
                 ChatColor.GOLD + "" + ChatColor.BOLD + "DrakesCraft " + ChatColor.DARK_GRAY + "· " +
-                ChatColor.RED + "¡Oye Flash, más despacio velocista! ⚡ " +
-                ChatColor.YELLOW + "Estás colocando bloques muy rápido. " +
-                ChatColor.GRAY + "Protegimos tu ítem en tu mano para evitar que se convierta en vanilla."
+                ChatColor.RED + "Whoa, slow down there, speedster! ⚡ " +
+                ChatColor.YELLOW + "You are placing blocks too fast. " +
+                ChatColor.GRAY + "We protected the item in your hand so it does not turn into a vanilla item."
             );
         }
     }
@@ -109,8 +109,8 @@ public class BlockListener implements Listener {
             unresolvedItemCooldowns.put(player.getUniqueId(), now);
             player.sendMessage(
                 ChatColor.GOLD + "" + ChatColor.BOLD + "DrakesCraft " + ChatColor.DARK_GRAY + "· " +
-                ChatColor.RED + "Este ítem conserva metadatos de Slimefun que ya no se reconocen. " +
-                ChatColor.YELLOW + "No es un bloqueo por velocidad; guárdalo y solicita revisión al staff."
+                ChatColor.RED + "This item keeps Slimefun metadata that is no longer recognised. " +
+                ChatColor.YELLOW + "This is not a speed block; keep it and ask the staff to review it."
             );
         }
     }

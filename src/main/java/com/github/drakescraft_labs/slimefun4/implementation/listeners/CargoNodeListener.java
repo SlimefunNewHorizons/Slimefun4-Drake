@@ -57,7 +57,7 @@ public class CargoNodeListener implements Listener {
                 int count = countCargoNodesInChunk(b.getChunk());
                 if (count >= maxPerChunk) {
                     e.getPlayer().sendMessage(ChatColor.translateAlternateColorCodes('&',
-                            "&c[Cargo] Has alcanzado el límite máximo de nodos de Cargo en este chunk ("
+                            "&c[Cargo] You have reached the maximum number of Cargo nodes in this chunk ("
                             + count + "/" + maxPerChunk + ")."));
                     e.setCancelled(true);
                 }

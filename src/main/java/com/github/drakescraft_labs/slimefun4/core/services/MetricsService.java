@@ -108,7 +108,7 @@ public class MetricsService {
         /*
          * Drake / lab: sin MetricsModule, sin bStats y sin llamadas a api.github.com desde el core.
          */
-        plugin.getLogger().fine("Slimefun: métricas (bStats / MetricsModule) desactivadas en esta línea de build.");
+        plugin.getLogger().fine("Slimefun: metrics (bStats / MetricsModule) are disabled in this build line.");
     }
 
     /**
@@ -244,7 +244,7 @@ public class MetricsService {
                     plugin.getLogger().log(Level.WARNING, "MetricsModule: HTTP {0} al descargar {1}", new Object[] { response.statusCode(), uri });
                 }
             } catch (InterruptedException | JsonParseException e) {
-                plugin.getLogger().log(Level.WARNING, "MetricsModule: error de red o respuesta inválida: {0}", e.getMessage());
+                plugin.getLogger().log(Level.WARNING, "MetricsModule: network error or invalid response: {0}", e.getMessage());
             } catch (IOException e) {
                 plugin.getLogger().log(Level.WARNING, "MetricsModule: I/O ({0}): {1}", new Object[] { e.getClass().getSimpleName(), e.getMessage() });
             }

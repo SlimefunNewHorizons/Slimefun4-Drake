@@ -38,7 +38,7 @@ public final class RustNativeEngine implements NativeAccelerationService {
         );
 
         if (!config.getBoolean("native-engine.enabled")) {
-            plugin.getLogger().info("[Slimefun-Rust] Motor nativo deshabilitado por configuración.");
+            plugin.getLogger().info("[Slimefun-Rust] Native engine disabled by configuration.");
             return;
         }
 
@@ -60,20 +60,20 @@ public final class RustNativeEngine implements NativeAccelerationService {
             System.load(library.toString());
             abiVersion = nativeAbiVersion();
             if (abiVersion != SUPPORTED_ABI) {
-                throw new IllegalStateException("ABI " + abiVersion + " incompatible; esperado " + SUPPORTED_ABI);
+                throw new IllegalStateException("ABI " + abiVersion + " incompatible; expected " + SUPPORTED_ABI);
             }
             if (nativeSumSaturating(new int[] {Integer.MAX_VALUE, 1}) != Integer.MAX_VALUE) {
-                throw new IllegalStateException("La autoprueba de saturación falló");
+                throw new IllegalStateException("The saturation self-test failed");
             }
 
             available = true;
-            plugin.getLogger().info("[Slimefun-Rust] Motor JNI activo (ABI " + abiVersion + ").");
+            plugin.getLogger().info("[Slimefun-Rust] JNI engine active (ABI " + abiVersion + ").");
         } catch (Throwable error) {
             available = false;
             failures.incrementAndGet();
             plugin.getLogger().log(
                 Level.SEVERE,
-                "[Slimefun-Rust] No se pudo activar el motor nativo; EnergyNet continuará con fallback Java.",
+                "[Slimefun-Rust] Could not enable the native engine; EnergyNet will continue with the Java fallback.",
                 error
             );
         }

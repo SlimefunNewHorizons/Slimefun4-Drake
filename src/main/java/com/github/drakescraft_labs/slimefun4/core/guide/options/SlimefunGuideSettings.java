@@ -125,11 +125,11 @@ public final class SlimefunGuideSettings {
         menu.addItem(6, new CustomItemStack(Material.COMPARATOR,
            "&e" + locale.getMessage(p, "guide.title.source"),
            "",
-           "&7Ecosistema tecnológico Slimefun optimizado",
-           "&7y adaptado exclusivamente para &6DrakesCraft&7.",
-           "&7Mejoras de rendimiento, fixes y nuevos módulos.",
+           "&7Optimized Slimefun technology ecosystem",
+           "&7tailored exclusively for &6DrakesCraft&7.",
+           "&7Performance improvements, fixes and new modules.",
            "",
-           "&7\u21E8 &eClick para abrir GitHub (DrakesCraft-Labs)"
+           "&7\u21E8 &eClick to open GitHub (DrakesCraft-Labs)"
         ));
         // @formatter:on
 
@@ -143,11 +143,11 @@ public final class SlimefunGuideSettings {
         menu.addItem(8, new CustomItemStack(Material.KNOWLEDGE_BOOK,
             "&3" + locale.getMessage(p, "guide.title.wiki"),
             "",
-            "&7¿Tienes dudas con alguna máquina o ítem?",
-            "&7Consulta la guía web oficial de DrakesCraft con",
-            "&7todos los detalles, recetas, guías y consejos.",
+            "&7Questions about a machine or item?",
+            "&7Check the official DrakesCraft web guide for",
+            "&7every detail, recipe, guide and tip.",
             "",
-            "&7\u21E8 &eClick para abrir la Guía Web de DrakesCraft"
+            "&7\u21E8 &eClick to open the DrakesCraft Web Guide"
         ));
         // @formatter:on
 
@@ -161,13 +161,13 @@ public final class SlimefunGuideSettings {
         menu.addItem(47, new CustomItemStack(Material.BOOKSHELF,
             "&3" + locale.getMessage(p, "guide.title.addons"),
             "",
-            "&7Slimefun en DrakesCraft es un universo entero.",
-            "&7Contamos con decenas de addons integrados y balanceados",
+            "&7Slimefun on DrakesCraft is a whole universe.",
+            "&7We run dozens of integrated and balanced addons",
             "&7(Infinity, Supreme, Networks, DankTech, DynaTech, etc.).",
             "",
-            "&7Addons activos en este servidor: &b" + Slimefun.getInstalledAddons().size(),
+            "&7Active addons on this server: &b" + Slimefun.getInstalledAddons().size(),
             "",
-            "&7\u21E8 &eClick para ver la Wiki de Addons en la Web"
+            "&7\u21E8 &eClick to see the Addon Wiki on the web"
         ));
         // @formatter:on
 
@@ -181,11 +181,11 @@ public final class SlimefunGuideSettings {
         menu.addItem(49, new CustomItemStack(Material.REDSTONE_TORCH,
             "&4" + locale.getMessage(p, "guide.title.bugs"),
             "",
-            "&7¿Encontraste algún bug, glitch o error?",
-            "&7¡Infórmalo a &6Jack &7y &bSAORI &7en nuestro Discord!",
-            "&7Atención directa en español y recompensas por reportes.",
+            "&7Found a bug, glitch or error?",
+            "&7Report it to &6Jack &7and &bSAORI &7on our Discord!",
+            "&7Direct support in English and Spanish, with rewards for reports.",
             "",
-            "&7\u21E8 &eClick para abrir el canal de soporte y tickets"
+            "&7\u21E8 &eClick to open the support and tickets channel"
         ));
         // @formatter:on
 
@@ -197,24 +197,24 @@ public final class SlimefunGuideSettings {
 
         // @formatter:off
         menu.addItem(51, new CustomItemStack(Material.TOTEM_OF_UNDYING,
-            "&6Tótem de Sabiduría &b(Asistente SAORI)",
+            "&6Totem of Wisdom &b(SAORI Assistant)",
             "",
-            "&7Guía interactiva in-game y asistencia del servidor.",
-            "&7Obtén ayuda rápida sobre comandos clave, economía,",
-            "&7protección de islas y el ecosistema de Slimefun.",
+            "&7Interactive in-game guide and server assistance.",
+            "&7Get quick help on key commands, economy,",
+            "&7island protection and the Slimefun ecosystem.",
             "",
-            "&7\u21E8 &eClick para recibir asistencia de SAORI en chat"
+            "&7\u21E8 &eClick to get SAORI's help in chat"
         ), (pl, slot, item, action) -> {
             pl.closeInventory();
             pl.sendMessage("§8§m--------------------------------------------------");
-            pl.sendMessage("§6§l✦ DRAKESCRAFT ︱ ASISTENCIA & GUÍA RÁPIDA ✦");
-            pl.sendMessage("§7Hola §e" + pl.getName() + "§7, ¿en qué te puede ayudar §bSAORI§7?");
+            pl.sendMessage("§6§l✦ DRAKESCRAFT ︱ HELP & QUICK GUIDE ✦");
+            pl.sendMessage("§7Hi §e" + pl.getName() + "§7, how can §bSAORI§7 help you?");
             pl.sendMessage("");
-            pl.sendMessage("§e ⏵ §b/guia §7- Abre la guía web y tutoriales del servidor");
-            pl.sendMessage("§e ⏵ §b/asistencia §7- Solicita ayuda directa al Staff y a SAORI");
-            pl.sendMessage("§e ⏵ §b/sf guide §7- Guía enciclopedia de Slimefun");
-            pl.sendMessage("§e ⏵ §b/is help §7- Comandos y configuración de tu isla BentoBox");
-            pl.sendMessage("§e ⏵ §b/discord §7- Únete a nuestra comunidad oficial");
+            pl.sendMessage("§e ⏵ §b/guia §7- Opens the web guide and server tutorials");
+            pl.sendMessage("§e ⏵ §b/asistencia §7- Ask the Staff and SAORI for direct help");
+            pl.sendMessage("§e ⏵ §b/sf guide §7- The Slimefun encyclopedia guide");
+            pl.sendMessage("§e ⏵ §b/is help §7- Commands and settings for your BentoBox island");
+            pl.sendMessage("§e ⏵ §b/discord §7- Join our official community");
             pl.sendMessage("§8§m--------------------------------------------------");
             SoundEffect.TOME_OF_KNOWLEDGE_USE_SOUND.playFor(pl);
             return false;

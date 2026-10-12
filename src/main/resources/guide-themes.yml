@@ -1,0 +1,110 @@
+# Slimefun Guide themes
+#
+# Enable with `guide.themes.enabled: true` in config.yml (then /sf reload or restart).
+# The /sf guide and /sf cheat main menus then show one entry per theme below instead of one entry per addon
+# category. Recipes, item IDs, researches and permissions are NOT affected: only the navigation changes.
+#
+# An item group belongs to the theme that lists its namespace. The namespace is the lower-case name of the
+# plugin that registered the group (for example `dynatech`, `infinityexpansion`, `networksv6-drake`);
+# Slimefun's own groups use `slimefun`. Groups not listed anywhere go to the `fallback` theme.
+# Themes are shown in the order they appear here; empty themes are hidden automatically.
+
+themes:
+  core:
+    name: "&aSlimefun Core"
+    icon: SLIME_BALL
+    description:
+      - "&7The base categories: basic items,"
+      - "&7tools, armor, resources and machines."
+    namespaces: [slimefun]
+
+  technology:
+    name: "&bTechnology & Machines"
+    icon: COMPARATOR
+    description:
+      - "&7Machines, automation and advanced"
+      - "&7engineering."
+    namespaces: [advancedtech, dynatech, fluffymachines, foxymachines, fastmachines, supreme, infinityexpansion,
+                 sensibletoolbox, electricspawners, drakesnanotech, transcendence, equivalencytech, emctech,
+                 danktech2, slimeframe, randomexpansion, notenoughaddons, moreresearches, idreamofeasy, worldeditslimefun]
+
+  energy:
+    name: "&eEnergy & Generators"
+    icon: REDSTONE_LAMP
+    description:
+      - "&7Power generation, batteries and"
+      - "&7reactors."
+    namespaces: [litexpansion, ecopower, simplematerialgenerators, smg, ultimategenerators2, globalwarming, betternucleargenerator]
+
+  logistics:
+    name: "&6Storage & Logistics"
+    icon: CHEST
+    description:
+      - "&7Networks, storage, backpacks and"
+      - "&7item transport."
+    namespaces: [networksv6-drake, networks, multiversenets, chestterminal, privatestorage, betterchests, simplestorage,
+                 dyedbackpacks, coloredenderchests, sfbetterchests, playervaultz]
+
+  botany:
+    name: "&2Botany & Life"
+    icon: WHEAT_SEEDS
+    description:
+      - "&7Farming, plants, bees, genetics"
+      - "&7and living creatures."
+    namespaces: [cultivation, exoticgarden, geneticchickengineering, slimybees, slimytreetaps, flowerpower, mobcapturer,
+                 hotbarpets, netheopoiesis]
+
+  magic:
+    name: "&dMagic & Arcana"
+    icon: ENCHANTED_BOOK
+    description:
+      - "&7Alchemy, relics, souls, runes and"
+      - "&7the arcane arts."
+    namespaces: [alchimiavitae, crystamaehistoria, relicsofcthonia, souljars, magicxpansion, demonicexpansion, infernalexpansion,
+                 potionexpansion, drakesarcana, elementmanipulation, wildernether]
+
+  combat:
+    name: "&cCombat & Gear"
+    icon: DIAMOND_SWORD
+    description:
+      - "&7Weapons, armor, tinkering and"
+      - "&7boss content."
+    namespaces: [drakesbosses, slimetinker, slimefunwarfare, extragear, slimefunluckyblocks, fnamplifications, missilewarfare,
+                 obsidianexpansion, obsidianarmor, militaryarsenal, cringlebosses, multiversecreatures]
+
+  exploration:
+    name: "&9Exploration & Space"
+    icon: ENDER_EYE
+    description:
+      - "&7Space, telescopes, mining and"
+      - "&7world exploration."
+    namespaces: [galaxyfun, galactifun2, coronalis, nexcavate, slimefunorechunks]
+
+  food:
+    name: "&6Food & Brewing"
+    icon: COOKED_BEEF
+    description:
+      - "&7Cooking, brewing and consumables."
+    namespaces: [gastronomicon, brewerymenu, breweryx, drugfun]
+
+  utility:
+    name: "&fUtility & Tools"
+    icon: COMPASS
+    description:
+      - "&7Handy tools, calculators and"
+      - "&7quality-of-life items."
+    namespaces: [sfcalc, slimehud, simpleutils, extratools, extrautils, soundmuffler, villagerutil, villagertrade,
+                 drakesslimemarket, itemedit]
+
+fallback:
+  name: "&7Other Addons"
+  icon: ENDER_CHEST
+  description:
+    - "&7Categories that are not part of"
+    - "&7any theme yet."
+
+all:
+  name: "&fAll Categories &7(A-Z)"
+  icon: BOOKSHELF
+  description:
+    - "&7Every category in one alphabetical list."

@@ -169,9 +169,9 @@ class TestFastBlockPlacementAndAntiVanilla {
         Assertions.assertFalse(BlockStorage.hasBlockInfo(block), "No debe registrarse en BlockStorage");
         String warning = player.nextMessage();
         Assertions.assertNotNull(warning, "El jugador debe recibir un diagnóstico para el ítem no resuelto");
-        Assertions.assertTrue(warning.contains("metadatos de Slimefun que ya no se reconocen"));
-        Assertions.assertTrue(warning.contains("No es un bloqueo por velocidad"));
-        Assertions.assertFalse(warning.contains("colocando bloques muy rápido"));
+        Assertions.assertTrue(warning.contains("metadata that is no longer recognised"));
+        Assertions.assertTrue(warning.contains("This is not a speed block"));
+        Assertions.assertFalse(warning.contains("placing blocks too fast"));
     }
 
     @Test
