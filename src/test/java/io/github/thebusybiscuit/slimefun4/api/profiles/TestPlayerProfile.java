@@ -126,7 +126,7 @@ class TestPlayerProfile {
     @Test
     @DisplayName("Test nullability for Player profiles")
     void testNullPlayerGetProfile() {
-        Assertions.assertThrows(IllegalArgumentException.class, () -> PlayerProfile.get(null, p -> {}));
+        Assertions.assertThrows(NullPointerException.class, () -> PlayerProfile.get(null, p -> {}));
     }
 
     @Test

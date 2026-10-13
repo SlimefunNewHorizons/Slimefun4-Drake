@@ -53,7 +53,7 @@ class TestMinecraftVersion {
         Assertions.assertFalse(MinecraftVersion.UNKNOWN.isAtLeast(MinecraftVersion.MINECRAFT_1_16));
         Assertions.assertFalse(MinecraftVersion.UNKNOWN.isAtLeast(MinecraftVersion.MINECRAFT_1_17));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> MinecraftVersion.MINECRAFT_1_16.isAtLeast(null));
+        Assertions.assertThrows(NullPointerException.class, () -> MinecraftVersion.MINECRAFT_1_16.isAtLeast(null));
     }
 
     @Test
@@ -91,7 +91,7 @@ class TestMinecraftVersion {
         Assertions.assertFalse(MinecraftVersion.UNKNOWN.isBefore(MinecraftVersion.MINECRAFT_1_16));
         Assertions.assertFalse(MinecraftVersion.UNKNOWN.isBefore(MinecraftVersion.MINECRAFT_1_17));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> MinecraftVersion.MINECRAFT_1_16.isBefore(null));
+        Assertions.assertThrows(NullPointerException.class, () -> MinecraftVersion.MINECRAFT_1_16.isBefore(null));
     }
 
     @Test

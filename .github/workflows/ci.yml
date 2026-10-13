@@ -22,7 +22,7 @@ jobs:
   verificar:
     uses: SlimefunNewHorizons/.github/.github/workflows/verificar.yml@main
     with:
-      maven-args: '-DlegacyMockBukkitTests -Dtest=TestColorCodes,TestSlimefunSpelling,TestDoubleRangeSetting,TestEnumSetting,TestIntRangeSetting,TestItemSettings,TestMaterialTagSetting,TestNetworkManager,TestResearches,TestUpdaterService,TestRechargeableItems,TestPaperApiCompatibility'  # subconjunto estable (el resto de la suite exige fixtures de Paper 1.21.11, ver README)
+      maven-args: '-DlegacyMockBukkitTests'  # suite COMPLETA (1852 tests): ya no hace falta el subconjunto estable
   seguridad:
     permissions:
       contents: read

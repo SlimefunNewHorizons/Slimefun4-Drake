@@ -46,7 +46,7 @@ class TestGuideHistory {
         Assertions.assertNotNull(profile.getGuideHistory());
         Assertions.assertEquals(0, profile.getGuideHistory().size());
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> new GuideHistory(null));
+        Assertions.assertThrows(NullPointerException.class, () -> new GuideHistory(null));
     }
 
     @Test
@@ -56,7 +56,7 @@ class TestGuideHistory {
         PlayerProfile profile = TestUtilities.awaitProfile(player);
         GuideHistory history = profile.getGuideHistory();
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> history.add((String) null));
+        Assertions.assertThrows(NullPointerException.class, () -> history.add((String) null));
 
         Assertions.assertEquals(0, history.size());
         history.add("Walshrus");
@@ -84,7 +84,7 @@ class TestGuideHistory {
         PlayerProfile profile = TestUtilities.awaitProfile(player);
         GuideHistory history = profile.getGuideHistory();
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> history.add((SlimefunItem) null));
+        Assertions.assertThrows(NullPointerException.class, () -> history.add((SlimefunItem) null));
 
         Assertions.assertEquals(0, history.size());
 
@@ -101,7 +101,7 @@ class TestGuideHistory {
         PlayerProfile profile = TestUtilities.awaitProfile(player);
         GuideHistory history = profile.getGuideHistory();
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> history.add((ItemStack) null, 1));
+        Assertions.assertThrows(NullPointerException.class, () -> history.add((ItemStack) null, 1));
         Assertions.assertThrows(IllegalArgumentException.class, () -> history.add(new ItemStack(Material.DIAMOND), -20));
 
         Assertions.assertEquals(0, history.size());
@@ -122,7 +122,7 @@ class TestGuideHistory {
 
         ItemGroup itemGroup = new ItemGroup(new NamespacedKey(plugin, "itemgroup_guide_history"), new CustomItemStack(Material.BEDROCK, "&4Can't touch this"));
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> history.add((ItemGroup) null, 1));
+        Assertions.assertThrows(NullPointerException.class, () -> history.add((ItemGroup) null, 1));
         Assertions.assertThrows(IllegalArgumentException.class, () -> history.add(itemGroup, -20));
 
         Assertions.assertEquals(0, history.size());

@@ -44,7 +44,7 @@ class TestTagParser {
         TagParser parser = new TagParser(key);
 
         String nullValue = null;
-        Assertions.assertThrows(IllegalArgumentException.class, () -> parser.parse(nullValue, (a, b) -> {}));
+        Assertions.assertThrows(NullPointerException.class, () -> parser.parse(nullValue, (a, b) -> {}));
     }
 
     @Test

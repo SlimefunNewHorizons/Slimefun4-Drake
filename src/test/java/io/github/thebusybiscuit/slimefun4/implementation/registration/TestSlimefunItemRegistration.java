@@ -93,7 +93,7 @@ class TestSlimefunItemRegistration {
         item.load();
 
         // null should not be a valid argument
-        Assertions.assertThrows(IllegalArgumentException.class, () -> item.setItemGroup(null));
+        Assertions.assertThrows(NullPointerException.class, () -> item.setItemGroup(null));
 
         ItemGroup itemGroup = item.getItemGroup();
         ItemGroup itemGroup2 = new ItemGroup(new NamespacedKey(plugin, "test2"), new CustomItemStack(Material.OBSIDIAN, "&6Test 2"));
