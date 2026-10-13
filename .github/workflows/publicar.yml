@@ -30,6 +30,8 @@ jobs:
       contents: write
     uses: SlimefunNewHorizons/.github/.github/workflows/publicar.yml@main
     with:
+      maven-args: '-DlegacyMockBukkitTests -Dtest=TestColorCodes,TestSlimefunSpelling,TestDoubleRangeSetting,TestEnumSetting,TestIntRangeSetting,TestItemSettings,TestMaterialTagSetting,TestNetworkManager,TestResearches,TestUpdaterService,TestRechargeableItems,TestPaperApiCompatibility'
+      modrinth: false  # el core se distribuye por GitHub Releases
       dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
       force: ${{ github.event_name == 'workflow_dispatch' && inputs.force }}
     secrets:
