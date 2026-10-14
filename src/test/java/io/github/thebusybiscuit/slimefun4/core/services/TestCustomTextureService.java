@@ -43,13 +43,13 @@ class TestCustomTextureService {
         SlimefunItem item = TestUtilities.mockSlimefunItem(plugin, "TEXTURE_TEST", new ItemStack(Material.LANTERN));
         service.register(Arrays.asList(null, item, null), false);
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> service.register(null, false));
+        Assertions.assertThrows(NullPointerException.class, () -> service.register(null, false));
 
         // These values should not have changed yet
         Assertions.assertFalse(service.isActive());
         Assertions.assertNull(service.getVersion());
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> service.getModelData(null));
+        Assertions.assertThrows(NullPointerException.class, () -> service.getModelData(null));
     }
 
     @Test

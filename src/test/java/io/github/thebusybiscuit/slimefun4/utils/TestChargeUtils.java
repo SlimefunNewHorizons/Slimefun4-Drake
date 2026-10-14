@@ -49,7 +49,7 @@ class TestChargeUtils {
         Assertions.assertEquals(10.1, PersistentDataAPI.getFloat(meta, Slimefun.getRegistry().getItemChargeDataKey()), 0.001);
 
         // Test exceptions
-        Assertions.assertThrows(IllegalArgumentException.class, () -> ChargeUtils.setCharge(null, 1, 1));
+        Assertions.assertThrows(NullPointerException.class, () -> ChargeUtils.setCharge(null, 1, 1));
         Assertions.assertThrows(IllegalArgumentException.class, () -> ChargeUtils.setCharge(meta, -1, 10));
         Assertions.assertThrows(IllegalArgumentException.class, () -> ChargeUtils.setCharge(meta, 100, 10));
         Assertions.assertThrows(IllegalArgumentException.class, () -> ChargeUtils.setCharge(meta, 10, -10));
@@ -86,6 +86,6 @@ class TestChargeUtils {
         Assertions.assertEquals(0, ChargeUtils.getCharge(itemWithNoDataOrLore.getItemMeta()));
 
         // Test exceptions
-        Assertions.assertThrows(IllegalArgumentException.class, () -> ChargeUtils.getCharge(null));
+        Assertions.assertThrows(NullPointerException.class, () -> ChargeUtils.getCharge(null));
     }
 }
