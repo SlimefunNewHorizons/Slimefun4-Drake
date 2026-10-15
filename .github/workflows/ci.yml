@@ -5,7 +5,7 @@ name: CI
 on:
   push:
     branches: [main, port-26x, 26.x]
-    paths: ['src/**', 'pom.xml', 'build.gradle*', 'gradle/**', '.github/workflows/ci.yml']
+    paths: ['src/**', 'pom.xml', 'build-parent/**', 'build.gradle*', 'gradle/**', '.github/workflows/ci.yml']
   pull_request:
   workflow_dispatch:
   schedule:
