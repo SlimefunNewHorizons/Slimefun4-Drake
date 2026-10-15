@@ -89,7 +89,7 @@
             <url>https://repo.codemc.io/repository/maven-public/</url>
         </repository>
         <repository>
-            <!-- commons-lang-drake-patched, dough-core -->
+        <!-- commons-lang-drake-patched -->
             <id>drakescraft-maven</id>
             <url>https://maven.drakescraft.cl</url>
         </repository>
@@ -351,8 +351,8 @@
 
         <!-- Shaded packages -->
         <dependency>
-            <groupId>com.github.drakescraft_labs</groupId>
-            <artifactId>dough-core</artifactId>
+            <groupId>com.github.baked-libs.dough</groupId>
+            <artifactId>dough-api</artifactId>
             <version>${dough.version}</version>
             <scope>compile</scope>
         </dependency>
