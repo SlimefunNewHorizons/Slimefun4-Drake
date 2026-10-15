@@ -490,11 +490,12 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- TODO: Remove this dependency -->
+        <!-- Dough upstream links against the original Commons Lang 2.x Validate contract.
+             Keep the Drake-patched variant out of the universal ABI line. -->
         <dependency>
-            <groupId>com.github.drakescraft_labs</groupId>
-            <artifactId>commons-lang-drake-patched</artifactId>
-            <version>2.6.1-DRAKE-PATCHED</version>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>2.6</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
