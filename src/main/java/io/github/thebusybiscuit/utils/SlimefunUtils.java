@@ -32,10 +32,10 @@ import org.bukkit.persistence.PersistentDataType;
 import com.destroystokyo.paper.profile.PlayerProfile;
 import com.destroystokyo.paper.profile.ProfileProperty;
 
-import dev.drake.dough.common.CommonPatterns;
-import dev.drake.dough.items.ItemMetaSnapshot;
-import dev.drake.dough.skins.PlayerHead;
-import dev.drake.dough.skins.PlayerSkin;
+import io.github.bakedlibs.dough.common.CommonPatterns;
+import io.github.bakedlibs.dough.items.ItemMetaSnapshot;
+import io.github.bakedlibs.dough.skins.PlayerHead;
+import io.github.bakedlibs.dough.skins.PlayerSkin;
 import io.github.thebusybiscuit.slimefun4.api.MinecraftVersion;
 import io.github.thebusybiscuit.slimefun4.api.events.SlimefunItemSpawnEvent;
 import io.github.thebusybiscuit.slimefun4.api.exceptions.PrematureCodeException;

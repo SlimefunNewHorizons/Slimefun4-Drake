@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import dev.drake.dough.common.ChatColors;
+import io.github.bakedlibs.dough.common.ChatColors;
 
 class TestChatUtils {
 

@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 
-import dev.drake.dough.config.Config;
+import io.github.bakedlibs.dough.config.Config;
 
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 import me.mrCookieSlime.Slimefun.api.item_transport.ItemTransportFlow;

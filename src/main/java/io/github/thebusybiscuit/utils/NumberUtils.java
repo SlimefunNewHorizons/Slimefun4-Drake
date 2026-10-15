@@ -14,7 +14,7 @@ import javax.annotation.Nullable;
 import org.apache.commons.lang.Validate;
 import org.bukkit.ChatColor;
 
-import dev.drake.dough.common.CommonPatterns;
+import io.github.bakedlibs.dough.common.CommonPatterns;
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 
 /**

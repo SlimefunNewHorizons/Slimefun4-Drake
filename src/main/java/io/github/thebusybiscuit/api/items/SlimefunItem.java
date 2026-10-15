@@ -24,8 +24,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.Permission;
 
-import dev.drake.dough.collections.OptionalMap;
-import dev.drake.dough.items.ItemUtils;
+import io.github.bakedlibs.dough.collections.OptionalMap;
+import io.github.bakedlibs.dough.items.ItemUtils;
 import io.github.thebusybiscuit.slimefun4.api.MinecraftVersion;
 import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon;
 import io.github.thebusybiscuit.slimefun4.api.SlimefunBranch;

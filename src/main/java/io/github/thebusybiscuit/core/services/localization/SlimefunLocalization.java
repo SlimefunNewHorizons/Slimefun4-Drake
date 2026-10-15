@@ -23,9 +23,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 
-import dev.drake.dough.common.ChatColors;
-import dev.drake.dough.config.Config;
-import dev.drake.dough.items.CustomItemStack;
+import io.github.bakedlibs.dough.common.ChatColors;
+import io.github.bakedlibs.dough.config.Config;
+import io.github.bakedlibs.dough.items.CustomItemStack;
 import io.github.thebusybiscuit.slimefun4.api.MinecraftVersion;
 import io.github.thebusybiscuit.slimefun4.api.SlimefunBranch;
 import io.github.thebusybiscuit.slimefun4.api.recipes.RecipeType;

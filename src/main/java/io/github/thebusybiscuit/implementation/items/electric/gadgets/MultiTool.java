@@ -7,8 +7,8 @@ import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import dev.drake.dough.common.ChatColors;
-import dev.drake.dough.data.persistent.PersistentDataAPI;
+import io.github.bakedlibs.dough.common.ChatColors;
+import io.github.bakedlibs.dough.data.persistent.PersistentDataAPI;
 import org.bukkit.ChatColor;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.EntityType;

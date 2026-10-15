@@ -14,7 +14,7 @@ import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 
 /**
  * Reads and writes the legacy {@code .sfi} inventory files without going through
- * {@link dev.drake.dough.config.Config}.
+ * {@link io.github.bakedlibs.dough.config.Config}.
  * <p>
  * Every {@code Config} constructor builds a {@code DoughLogger}, and that logger's
  * constructor calls {@link java.util.logging.Logger#setParent(java.util.logging.Logger)}

@@ -20,9 +20,9 @@ import org.bukkit.World.Environment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import dev.drake.dough.chat.ChatInput;
-import dev.drake.dough.common.ChatColors;
-import dev.drake.dough.items.CustomItemStack;
+import io.github.bakedlibs.dough.chat.ChatInput;
+import io.github.bakedlibs.dough.common.ChatColors;
+import io.github.bakedlibs.dough.items.CustomItemStack;
 import io.github.thebusybiscuit.slimefun4.api.events.WaypointCreateEvent;
 import io.github.thebusybiscuit.slimefun4.api.geo.GEOResource;
 import io.github.thebusybiscuit.slimefun4.api.geo.ResourceManager;

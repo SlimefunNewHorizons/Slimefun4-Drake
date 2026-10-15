@@ -4,7 +4,7 @@ import java.io.File;
 
 import org.bukkit.configuration.file.YamlConfiguration;
 
-import dev.drake.dough.config.Config;
+import io.github.bakedlibs.dough.config.Config;
 
 // This class will be deprecated, relocated and rewritten in a future version.
 public class UniversalBlockMenu extends DirtyChestMenu {

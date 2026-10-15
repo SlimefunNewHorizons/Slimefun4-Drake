@@ -24,10 +24,10 @@ import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.inventory.RecipeChoice.MaterialChoice;
 
-import dev.drake.dough.chat.ChatInput;
-import dev.drake.dough.items.CustomItemStack;
-import dev.drake.dough.items.ItemUtils;
-import dev.drake.dough.recipes.MinecraftRecipe;
+import io.github.bakedlibs.dough.chat.ChatInput;
+import io.github.bakedlibs.dough.items.CustomItemStack;
+import io.github.bakedlibs.dough.items.ItemUtils;
+import io.github.bakedlibs.dough.recipes.MinecraftRecipe;
 import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon;
 import io.github.thebusybiscuit.slimefun4.api.items.ItemGroup;
 import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;

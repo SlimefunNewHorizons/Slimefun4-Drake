@@ -1,6 +1,6 @@
 package io.github.thebusybiscuit.slimefun4.implementation.tasks.armor;
 
-import dev.drake.dough.common.ChatColors;
+import io.github.bakedlibs.dough.common.ChatColors;
 import io.github.thebusybiscuit.slimefun4.api.events.RadiationDamageEvent;
 import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;
 import io.github.thebusybiscuit.slimefun4.api.player.PlayerProfile;

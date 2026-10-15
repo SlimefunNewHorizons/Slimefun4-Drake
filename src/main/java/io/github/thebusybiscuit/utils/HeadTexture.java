@@ -8,8 +8,8 @@ import javax.annotation.Nonnull;
 import org.apache.commons.lang.Validate;
 import org.bukkit.inventory.ItemStack;
 
-import dev.drake.dough.common.CommonPatterns;
-import dev.drake.dough.skins.PlayerSkin;
+import io.github.bakedlibs.dough.common.CommonPatterns;
+import io.github.bakedlibs.dough.skins.PlayerSkin;
 
 /**
  * This enum holds all currently used Head textures in Slimefun.

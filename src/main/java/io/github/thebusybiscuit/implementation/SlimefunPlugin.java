@@ -3,7 +3,7 @@ package io.github.thebusybiscuit.slimefun4.implementation;
 import io.github.thebusybiscuit.slimefun4.core.SlimefunRegistry;
 import io.github.thebusybiscuit.slimefun4.core.services.LocalizationService;
 import io.github.thebusybiscuit.slimefun4.core.services.MinecraftRecipeService;
-import dev.drake.dough.protection.ProtectionManager;
+import io.github.bakedlibs.dough.protection.ProtectionManager;
 import io.github.thebusybiscuit.slimefun4.api.services.NativeAccelerationService;
 
 /**

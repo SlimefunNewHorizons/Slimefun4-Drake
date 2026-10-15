@@ -30,7 +30,7 @@ import org.bukkit.plugin.Plugin;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 
-import dev.drake.dough.common.CommonPatterns;
+import io.github.bakedlibs.dough.common.CommonPatterns;
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 import io.github.thebusybiscuit.slimefun4.utils.JsonUtils;
 

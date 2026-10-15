@@ -12,8 +12,8 @@ import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.FireworkEffectMeta;
 
-import dev.drake.dough.common.ChatColors;
-import dev.drake.dough.items.CustomItemStack;
+import io.github.bakedlibs.dough.common.ChatColors;
+import io.github.bakedlibs.dough.items.CustomItemStack;
 import io.github.thebusybiscuit.slimefun4.utils.compatibility.VersionedItemFlag;
 
 /**

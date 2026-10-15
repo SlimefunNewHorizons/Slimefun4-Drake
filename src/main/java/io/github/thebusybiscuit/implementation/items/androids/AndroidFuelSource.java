@@ -4,7 +4,7 @@ import javax.annotation.Nonnull;
 
 import org.bukkit.inventory.ItemStack;
 
-import dev.drake.dough.items.CustomItemStack;
+import io.github.bakedlibs.dough.items.CustomItemStack;
 import io.github.thebusybiscuit.slimefun4.utils.HeadTexture;
 
 /**

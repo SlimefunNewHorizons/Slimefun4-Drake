@@ -23,8 +23,8 @@ import org.bukkit.entity.Piglin;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import dev.drake.dough.collections.KeyMap;
-import dev.drake.dough.config.Config;
+import io.github.bakedlibs.dough.collections.KeyMap;
+import io.github.bakedlibs.dough.config.Config;
 import io.github.thebusybiscuit.slimefun4.api.geo.GEOResource;
 import io.github.thebusybiscuit.slimefun4.api.items.ItemGroup;
 import io.github.thebusybiscuit.slimefun4.api.items.ItemHandler;

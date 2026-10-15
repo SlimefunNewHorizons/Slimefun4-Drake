@@ -10,8 +10,8 @@ import org.bukkit.Keyed;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 
-import dev.drake.dough.common.CommonPatterns;
-import dev.drake.dough.data.persistent.PersistentDataAPI;
+import io.github.bakedlibs.dough.common.CommonPatterns;
+import io.github.bakedlibs.dough.data.persistent.PersistentDataAPI;
 
 /**
  * A very simple API that is meant for adding/getting/clearing custom status effects

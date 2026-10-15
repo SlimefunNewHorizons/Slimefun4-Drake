@@ -1,6 +1,6 @@
 package io.github.thebusybiscuit.slimefun4.storage.backend.legacy;
 
-import dev.drake.dough.config.Config;
+import io.github.bakedlibs.dough.config.Config;
 import io.github.thebusybiscuit.slimefun4.api.gps.Waypoint;
 import io.github.thebusybiscuit.slimefun4.api.player.PlayerBackpack;
 import io.github.thebusybiscuit.slimefun4.api.researches.Research;

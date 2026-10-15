@@ -9,9 +9,9 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import dev.drake.dough.chat.ChatInput;
-import dev.drake.dough.common.ChatColors;
-import dev.drake.dough.common.CommonPatterns;
+import io.github.bakedlibs.dough.chat.ChatInput;
+import io.github.bakedlibs.dough.common.ChatColors;
+import io.github.bakedlibs.dough.common.CommonPatterns;
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 
 /**

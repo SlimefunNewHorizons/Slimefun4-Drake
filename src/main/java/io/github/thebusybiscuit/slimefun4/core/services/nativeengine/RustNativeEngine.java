@@ -10,7 +10,7 @@ import javax.annotation.Nonnull;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import dev.drake.dough.config.Config;
+import io.github.bakedlibs.dough.config.Config;
 import io.github.thebusybiscuit.slimefun4.api.services.NativeAccelerationService;
 
 /**

@@ -1,6 +1,6 @@
 package io.github.thebusybiscuit.slimefun4.core.machines;
 
-import dev.drake.dough.blocks.BlockPosition;
+import io.github.bakedlibs.dough.blocks.BlockPosition;
 import io.github.thebusybiscuit.slimefun4.core.attributes.MachineProcessHolder;
 
 /**

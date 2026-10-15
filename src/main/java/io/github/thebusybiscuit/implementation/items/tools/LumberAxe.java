@@ -14,8 +14,8 @@ import org.bukkit.block.Block;
 import org.bukkit.block.data.Orientable;
 import org.bukkit.inventory.ItemStack;
 
-import dev.drake.dough.blocks.Vein;
-import dev.drake.dough.protection.Interaction;
+import io.github.bakedlibs.dough.blocks.Vein;
+import io.github.bakedlibs.dough.protection.Interaction;
 import io.github.thebusybiscuit.slimefun4.api.items.ItemGroup;
 import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;
 import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItemStack;

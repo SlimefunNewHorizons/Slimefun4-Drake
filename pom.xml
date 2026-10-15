@@ -200,7 +200,7 @@
                             <shadedPattern>io.github.thebusybiscuit.slimefun4.libraries.paperlib</shadedPattern>
                         </relocation>
                         <relocation>
-                            <pattern>dev.drake.dough</pattern>
+                            <pattern>io.github.bakedlibs.dough</pattern>
                             <shadedPattern>io.github.thebusybiscuit.slimefun4.libraries.dough</shadedPattern>
                         </relocation>
                         <relocation>
