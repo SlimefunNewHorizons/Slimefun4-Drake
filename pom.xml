@@ -356,6 +356,14 @@
             <version>${dough.version}</version>
             <scope>compile</scope>
         </dependency>
+        <!-- Dough exposes CustomGameProfile in its public skin API. Paper's API POM does not
+             transitively provide Authlib, so retain Dough's provided compile contract here. -->
+        <dependency>
+            <groupId>com.mojang</groupId>
+            <artifactId>authlib</artifactId>
+            <version>6.0.52</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>io.papermc</groupId>
             <artifactId>paperlib</artifactId>
