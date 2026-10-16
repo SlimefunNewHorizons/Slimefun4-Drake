@@ -960,14 +960,21 @@ public class BlockStorage {
     }
 
     private static String serializeBlockInfo(Config cfg) {
+        if (cfg == null) {
+            return "{}";
+        }
+
         StringWriter string = new StringWriter();
 
         try (JsonWriter writer = new JsonWriter(string)) {
             writer.setLenient(true);
             writer.beginObject();
 
-            for (String key : cfg.getKeys()) {
-                writer.name(key).value(cfg.getString(key));
+            Set<String> keys = cfg.getKeys();
+            if (keys != null) {
+                for (String key : keys) {
+                    writer.name(key).value(cfg.getString(key));
+                }
             }
 
             writer.endObject();

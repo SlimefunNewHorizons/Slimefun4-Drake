@@ -42,13 +42,17 @@ public class BlockInfoConfig extends Config {
 
     @Nonnull
     public Map<String, String> getMap() {
-        return data;
+        return data == null ? java.util.Collections.emptyMap() : data;
     }
 
     @Override
     public void setValue(String path, Object value) {
         if (value != null && !(value instanceof String)) {
             throw new UnsupportedOperationException("Can't set \"" + path + "\" to \"" + value + "\" (type: " + value.getClass().getSimpleName() + ") because BlockInfoConfig only supports Strings");
+        }
+
+        if (data == null) {
+            throw new UnsupportedOperationException("Cannot store values (" + path + ':' + value + ") on a read-only or empty data object!");
         }
 
         if (value == null) {
@@ -60,7 +64,7 @@ public class BlockInfoConfig extends Config {
 
     @Override
     public boolean contains(String path) {
-        return data.containsKey(path);
+        return data != null && data.containsKey(path);
     }
 
     @Override
@@ -70,12 +74,12 @@ public class BlockInfoConfig extends Config {
 
     @Override
     public String getString(String path) {
-        return data.get(path);
+        return data == null ? null : data.get(path);
     }
 
     @Override
     public Set<String> getKeys() {
-        return data.keySet();
+        return data == null ? java.util.Collections.emptySet() : data.keySet();
     }
 
     @Override
@@ -115,7 +119,7 @@ public class BlockInfoConfig extends Config {
 
     @Nonnull
     public String toJSON() {
-        return new GsonBuilder().create().toJson(data);
+        return new GsonBuilder().create().toJson(getMap());
     }
 
 }
