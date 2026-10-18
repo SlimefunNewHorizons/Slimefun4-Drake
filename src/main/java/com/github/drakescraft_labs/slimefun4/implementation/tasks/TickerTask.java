@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
@@ -20,7 +21,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import dev.drake.dough.blocks.BlockPosition;
@@ -65,6 +68,12 @@ public class TickerTask implements Runnable {
     private boolean running = false;
 
     /**
+     * Cache volátil de chunks activos dentro de la distancia de simulación de jugadores
+     * o forzados con /forceload. Se actualiza en el hilo principal cada ciclo de ticker.
+     */
+    private volatile Map<UUID, Set<Long>> activeChunksByWorld = Collections.emptyMap();
+
+    /**
      * This method starts the {@link TickerTask} on an asynchronous schedule.
      * 
      * @param plugin
@@ -74,7 +83,73 @@ public class TickerTask implements Runnable {
         this.tickRate = Slimefun.getCfg().getInt("URID.custom-ticker-delay");
 
         BukkitScheduler scheduler = plugin.getServer().getScheduler();
+        // Rastreador atómico sincronizado en hilo principal para respeto estricto de simulation-distance
+        scheduler.runTaskTimer(plugin, this::updateActiveChunks, 100L, tickRate);
         scheduler.runTaskTimerAsynchronously(plugin, this, 100L, tickRate);
+    }
+
+    /**
+     * Recolecta las coordenadas de chunks dentro del rango de simulación de todos los jugadores
+     * activos y chunks forzados, permitiendo que Paper 1.21.11 desacople la vista de los cálculos.
+     */
+    public void updateActiveChunks() {
+        try {
+            Map<UUID, Set<Long>> newMap = new HashMap<>();
+
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if (!player.isValid()) {
+                    continue;
+                }
+                Location loc = player.getLocation();
+                World world = loc.getWorld();
+                if (world == null) {
+                    continue;
+                }
+
+                int px = loc.getBlockX() >> 4;
+                int pz = loc.getBlockZ() >> 4;
+                int simDist = Math.max(1, Math.min(world.getSimulationDistance(), 6));
+
+                Set<Long> set = newMap.computeIfAbsent(world.getUID(), k -> new HashSet<>());
+                for (int cx = px - simDist; cx <= px + simDist; cx++) {
+                    for (int cz = pz - simDist; cz <= pz + simDist; cz++) {
+                        set.add(ChunkPosition.getAsLong(cx, cz));
+                    }
+                }
+            }
+
+            for (World world : Bukkit.getWorlds()) {
+                Collection<Chunk> forced = world.getForceLoadedChunks();
+                if (!forced.isEmpty()) {
+                    Set<Long> set = newMap.computeIfAbsent(world.getUID(), k -> new HashSet<>());
+                    for (Chunk c : forced) {
+                        set.add(ChunkPosition.getAsLong(c.getX(), c.getZ()));
+                    }
+                }
+            }
+
+            this.activeChunksByWorld = newMap;
+        } catch (Exception x) {
+            Slimefun.logger().log(Level.WARNING, "Error updating active simulation chunks in TickerTask", x);
+        }
+    }
+
+    /**
+     * Verifica en O(1) si un chunk se encuentra en simulación activa o forzado.
+     */
+    public boolean isChunkSimulated(@Nonnull ChunkPosition chunk) {
+        World world = chunk.getWorld();
+        if (world == null) {
+            return false;
+        }
+
+        Map<UUID, Set<Long>> activeMap = this.activeChunksByWorld;
+        if (activeMap.isEmpty()) {
+            return world.isChunkForceLoaded(chunk.getX(), chunk.getZ());
+        }
+
+        Set<Long> activeChunks = activeMap.get(world.getUID());
+        return activeChunks != null && activeChunks.contains(chunk.getPosition());
     }
 
     /**
@@ -163,8 +238,8 @@ public class TickerTask implements Runnable {
     @ParametersAreNonnullByDefault
     private void tickChunk(ChunkPosition chunk, Set<BlockTicker> tickers, List<Runnable> syncTasks, Set<Location> locations) {
         try {
-            // Only continue if the Chunk is actually loaded
-            if (chunk.isLoaded()) {
+            // Solo tickea si el chunk está en memoria Y dentro de la esfera de simulación activa
+            if (chunk.isLoaded() && isChunkSimulated(chunk)) {
                 for (Location l : locations) {
                     tickLocation(tickers, syncTasks, l);
                 }
@@ -178,6 +253,8 @@ public class TickerTask implements Runnable {
         Config data = BlockStorage.getLocationInfo(l);
         String id = data.getString("id");
         if (id == null) {
+            // Limpieza inmediata de bloque huérfano para evitar saturación de memoria y disco
+            disableTicker(l);
             return;
         }
 
