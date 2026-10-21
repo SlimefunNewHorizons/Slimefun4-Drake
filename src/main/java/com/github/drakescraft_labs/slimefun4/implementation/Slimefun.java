@@ -456,6 +456,13 @@ public class Slimefun extends JavaPlugin implements SlimefunAddon {
             getLogger().log(Level.SEVERE, "An Error occurred while refunding active machine processors during onDisable", t);
         }
 
+        // Máquinas legacy de addons (mapa processing en memoria): entregar lo que estaba en vuelo (Ticket #55)
+        try {
+            com.github.drakescraft_labs.slimefun4.core.machines.LegacyProcessingRecovery.completeAllActiveOperations();
+        } catch (Throwable t) {
+            getLogger().log(Level.SEVERE, "An Error occurred while completing legacy machine operations during onDisable", t);
+        }
+
         // Guardado completo al apagar: todos los perfiles en memoria + bloques pendientes (evita pérdidas)
         autoSavingService.shutdownSave();
 
