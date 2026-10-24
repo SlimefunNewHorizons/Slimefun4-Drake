@@ -37,4 +37,26 @@ public interface MachineProcessHolder<T extends MachineOperation> extends ItemAt
         return false;
     }
 
+    /**
+     * Slots that receive unfinished operation inputs during shutdown recovery.
+     * The legacy layout remains the default for existing machine implementations.
+     *
+     * @return inventory slots used for refunded inputs
+     */
+    @Nonnull
+    default int[] getRefundInputSlots() {
+        return new int[] {19, 20};
+    }
+
+    /**
+     * Slots that receive finished operation outputs during shutdown recovery.
+     * The legacy layout remains the default for existing machine implementations.
+     *
+     * @return inventory slots used for refunded outputs
+     */
+    @Nonnull
+    default int[] getRefundOutputSlots() {
+        return new int[] {24, 25};
+    }
+
 }

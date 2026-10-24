@@ -323,7 +323,7 @@ public class MachineProcessor<T extends MachineOperation> {
         if (operation instanceof CraftingOperation craftingOp) {
             if (craftingOp.markRefunded()) {
                 if (craftingOp.isFinished()) {
-                    int[] outputSlots = (owner instanceof InventoryBlock ib) ? ib.getOutputSlots() : new int[] { 24, 25 };
+                    int[] outputSlots = (owner instanceof InventoryBlock ib) ? ib.getOutputSlots() : owner.getRefundOutputSlots();
                     for (ItemStack result : craftingOp.getResults()) {
                         if (result != null && !result.getType().isAir()) {
                             if (menu != null) {
@@ -343,13 +343,13 @@ public class MachineProcessor<T extends MachineOperation> {
                         menu.markDirty();
                     }
                 } else {
-                    int[] inputSlots = (owner instanceof InventoryBlock ib) ? ib.getInputSlots() : new int[] { 19, 20 };
+                    int[] inputSlots = (owner instanceof InventoryBlock ib) ? ib.getInputSlots() : owner.getRefundInputSlots();
                     for (ItemStack ingredient : craftingOp.getIngredients()) {
                         if (ingredient != null && !ingredient.getType().isAir()) {
                             if (menu != null) {
                                 ItemStack remaining = menu.pushItem(ingredient.clone(), inputSlots);
                                 if (remaining != null && remaining.getAmount() > 0) {
-                                    int[] outputSlots = (owner instanceof InventoryBlock ib) ? ib.getOutputSlots() : new int[] { 24, 25 };
+                                    int[] outputSlots = (owner instanceof InventoryBlock ib) ? ib.getOutputSlots() : owner.getRefundOutputSlots();
                                     remaining = menu.pushItem(remaining, outputSlots);
                                     if (remaining != null && remaining.getAmount() > 0) {
                                         world.dropItemNaturally(loc, remaining);
