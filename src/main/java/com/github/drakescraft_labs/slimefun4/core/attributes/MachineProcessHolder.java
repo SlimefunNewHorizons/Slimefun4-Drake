@@ -26,4 +26,15 @@ public interface MachineProcessHolder<T extends MachineOperation> extends ItemAt
     @Nonnull
     MachineProcessor<T> getMachineProcessor();
 
+    /**
+     * Whether an operation held by this machine can be returned safely when the
+     * server stops. Implementations must opt in only after removing every input
+     * from their inventory when the operation starts.
+     *
+     * @return {@code true} when in-flight {@code CraftingOperation} inputs are refundable
+     */
+    default boolean canRefundInFlightOperation() {
+        return false;
+    }
+
 }
