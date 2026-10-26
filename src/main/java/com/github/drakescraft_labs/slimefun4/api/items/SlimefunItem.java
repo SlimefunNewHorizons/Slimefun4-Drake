@@ -1199,10 +1199,8 @@ public class SlimefunItem implements Placeable {
             return getById(stack.getItemId());
         }
 
-        Optional<String> itemID = Slimefun.getItemDataService().getItemData(item);
-
-        return itemID.map(SlimefunItem::getById).orElse(null);
-
+        String itemID = Slimefun.getItemDataService().getItemDataString(item);
+        return itemID != null ? getById(itemID) : null;
     }
 
     /**

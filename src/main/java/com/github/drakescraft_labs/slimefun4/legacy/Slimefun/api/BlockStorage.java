@@ -848,12 +848,54 @@ public class BlockStorage {
         return storage.locationsByChunk.get(chunk.getX(), chunk.getZ());
     }
 
+    private static java.lang.reflect.Method fastPathRegister;
+    private static java.lang.reflect.Method fastPathUnregister;
+    private static volatile boolean fastPathChecked = false;
+
+    private static void initFastPath() {
+        if (fastPathChecked) return;
+        synchronized (BlockStorage.class) {
+            if (fastPathChecked) return;
+            fastPathChecked = true;
+            try {
+                Class<?> fpClass = Class.forName("org.purpurmc.purpur.slimefun.SlimefunFastPath");
+                fastPathRegister = fpClass.getMethod("registerSlimefunBlock", int.class, int.class, int.class, int.class);
+                fastPathUnregister = fpClass.getMethod("unregisterSlimefunBlock", int.class, int.class, int.class, int.class);
+                Slimefun.logger().info("[DrakesPurpur] SlimefunFastPath detected at kernel level. Block bypass active.");
+            } catch (Throwable ignored) {
+                fastPathRegister = null;
+                fastPathUnregister = null;
+            }
+        }
+    }
+
+    private void notifyFastPath(@Nonnull Location location, boolean register) {
+        if (!fastPathChecked) {
+            initFastPath();
+        }
+        if (fastPathRegister != null && location.getWorld() != null) {
+            try {
+                int worldId = location.getWorld().getUID().hashCode();
+                int x = location.getBlockX();
+                int y = location.getBlockY();
+                int z = location.getBlockZ();
+                if (register) {
+                    fastPathRegister.invoke(null, worldId, x, y, z);
+                } else {
+                    fastPathUnregister.invoke(null, worldId, x, y, z);
+                }
+            } catch (Throwable ignored) {}
+        }
+    }
+
     private void indexLocation(@Nonnull Location location) {
         locationsByChunk.add(location);
+        notifyFastPath(location, true);
     }
 
     private void unindexLocation(@Nonnull Location location) {
         locationsByChunk.remove(location);
+        notifyFastPath(location, false);
     }
 
     @Nonnull

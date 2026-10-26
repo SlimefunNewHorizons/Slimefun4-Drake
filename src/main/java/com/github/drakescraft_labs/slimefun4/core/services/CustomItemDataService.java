@@ -99,12 +99,36 @@ public class CustomItemDataService implements Keyed {
      * 
      * @return An {@link Optional} describing the result
      */
-    public @Nonnull Optional<String> getItemData(@Nullable ItemStack item) {
+    /**
+     * High-performance zero-allocation method to retrieve custom item ID.
+     * Returns null directly if not present, bypassing Optional allocations.
+     *
+     * @param item The ItemStack to check
+     * @return The item ID string or null
+     */
+    public @Nullable String getItemDataString(@Nullable ItemStack item) {
         if (item == null || item.getType() == Material.AIR || !item.hasItemMeta()) {
-            return Optional.empty();
+            return null;
         }
+        return getItemDataString(item.getItemMeta());
+    }
 
-        return getItemData(item.getItemMeta());
+    /**
+     * High-performance zero-allocation method to retrieve custom item ID from ItemMeta.
+     *
+     * @param meta The ItemMeta to check
+     * @return The item ID string or null
+     */
+    public @Nullable String getItemDataString(@Nullable ItemMeta meta) {
+        if (meta == null) {
+            return null;
+        }
+        PersistentDataContainer container = meta.getPersistentDataContainer();
+        return container.get(namespacedKey, PersistentDataType.STRING);
+    }
+
+    public @Nonnull Optional<String> getItemData(@Nullable ItemStack item) {
+        return Optional.ofNullable(getItemDataString(item));
     }
 
     /**
@@ -117,10 +141,7 @@ public class CustomItemDataService implements Keyed {
      * @return An {@link Optional} describing the result
      */
     public @Nonnull Optional<String> getItemData(@Nonnull ItemMeta meta) {
-        Validate.notNull(meta, "Cannot read data from null!");
-
-        PersistentDataContainer container = meta.getPersistentDataContainer();
-        return Optional.ofNullable(container.get(namespacedKey, PersistentDataType.STRING));
+        return Optional.ofNullable(getItemDataString(meta));
     }
 
     /**
