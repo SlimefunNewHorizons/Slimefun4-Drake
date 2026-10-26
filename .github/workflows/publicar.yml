@@ -31,7 +31,7 @@ jobs:
     uses: SlimefunNewHorizons/.github/.github/workflows/publicar.yml@main
     with:
       maven-args: '-DlegacyMockBukkitTests'  # suite COMPLETA (1852 tests): ya no hace falta el subconjunto estable
-      modrinth: false  # el core se distribuye por GitHub Releases
+      modrinth: false  # el core se distribuye por GitHub Releases; si se activa, el script compartido pisa la descripcion con README.md y el Discord: la pagina la gestiona modrinth-sync.yml
       dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
       force: ${{ github.event_name == 'workflow_dispatch' && inputs.force }}
     secrets:

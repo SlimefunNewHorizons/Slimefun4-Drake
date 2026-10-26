@@ -1,12 +1,12 @@
 
 > [!IMPORTANT]
-> **dough va SHADEADO dentro de Slimefun, no como jar suelto.** El código fuente
-> vive en el repo `dough-core`, pero Slimefun lo consume como dependencia Maven
-> (`com.github.drakescraft_labs:dough-core`) y al empaquetar lo reubica a
-> `com.github.drakescraft_labs.slimefun4.libraries.dough`. **No existe un
-> `dough.jar` en producción.** Por tanto, cualquier cambio en `dough-core` exige:
-> `mvn install` en dough-core → **recompilar Slimefun** (y todo plugin que lo
-> shadee) → subir esos jars. Subir dough suelto no aplica el cambio.
+> **dough is SHADED inside Slimefun, not shipped as a standalone jar.** Its source
+> code lives in the `dough-core` repository, but Slimefun consumes it as a Maven
+> dependency (`com.github.drakescraft_labs:dough-core`) and relocates it to
+> `com.github.drakescraft_labs.slimefun4.libraries.dough` when packaging. **There is
+> no `dough.jar` in production.** Therefore, any change to `dough-core` requires:
+> `mvn install` in dough-core → **rebuild Slimefun** (and every plugin that shades
+> it) → deploy those jars. Uploading dough on its own does not apply the change.
 
 <div align="center">
 
@@ -18,13 +18,13 @@
 
 </div>
 
-> ### 🏰 ¡Únete a la Comunidad Oficial de DrakesCraft!
+> ### 🏰 Join the Official DrakesCraft Community!
 > 
-> * 🎮 **IP del Servidor**: `mc.drakescraft.cl` *(Java 1.21.11 & Bedrock)*
-> * 💬 **Discord Oficial**: [discord.gg/drakescraft](https://discord.gg/rv3vtXZTk7)
-> * 🌐 **Web & Guía**: [web.drakescraft.cl](https://web.drakescraft.cl) — 🛒 **Tienda**: [web.drakescraft.cl/store](https://web.drakescraft.cl/store.html)
+> * 🎮 **Server IP**: `mc.drakescraft.cl` *(Java 1.21.11 & Bedrock)*
+> * 💬 **Official Discord**: [discord.gg/rsjbf3KgKh](https://discord.gg/rsjbf3KgKh)
+> * 🌐 **Website & Guide**: [web.drakescraft.cl](https://web.drakescraft.cl) — 🛒 **Store**: [web.drakescraft.cl/store](https://web.drakescraft.cl/store.html)
 > 
-> *¡Juega con este addon y más de 80 expansiones optimizadas en vivo en nuestra network de supervivencia técnica!*
+> *Play with this core and 80+ optimized expansions live on our technical survival network!*
 
 ---
 
@@ -89,10 +89,10 @@ registry bootstrap failure is infrastructure debt, not a valid SFMaster result.
 4. Restart during a maintenance window and verify the startup log, addon load list, BlockStorage load and no duplicate-plugin warning.
 5. Smoke-test the Slimefun Guide, a machine, a CargoNet operation and an EnergyNet operation before calling the update complete.
 
-## Guías DrakesCraft
+## DrakesCraft guides
 
-- [Progresión y automatización](docs/GUIA_DE_PROGRESION_Y_AUTOMATIZACION.md)
-- [Integridad de redes](https://github.com/SlimefunNewHorizons/NetworksV6-drake/blob/main/docs/INTEGRIDAD_DE_RED_DRAKESCRAFT.md)
+- [Progression and automation](docs/GUIA_DE_PROGRESION_Y_AUTOMATIZACION.md)
+- [Network integrity](https://github.com/SlimefunNewHorizons/NetworksV6-drake/blob/main/docs/INTEGRIDAD_DE_RED_DRAKESCRAFT.md)
 
 ## Maintainers
 

@@ -1,0 +1,36 @@
+# Syncs the Modrinth page (description from .modrinth/description.md + sidebar links) via the Modrinth API.
+# Jar uploads stay in publicar.yml; this only touches the project page.
+name: Modrinth page sync
+
+on:
+  push:
+    branches: [main]
+    paths: ['.modrinth/**', '.github/scripts/modrinth-sync.mjs']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Print the payload without calling Modrinth'
+        type: boolean
+        default: false
+
+concurrency:
+  group: modrinth-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '20'
+      - run: node .github/scripts/modrinth-sync.mjs
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          MODRINTH_PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
+          MODRINTH_ORG: ${{ vars.MODRINTH_ORG }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
