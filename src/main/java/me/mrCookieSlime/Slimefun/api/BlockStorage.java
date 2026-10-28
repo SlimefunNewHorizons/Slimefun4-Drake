@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -465,7 +466,7 @@ public class BlockStorage {
      * @return the number of passes attempted
      */
     public synchronized int flushUntilClean(int maxPasses) {
-        return io.github.thebusybiscuit.slimefun4.core.services.PersistenceDrain.drain(
+        int passes = io.github.thebusybiscuit.slimefun4.core.services.PersistenceDrain.drain(
             maxPasses,
             () -> {
                 computeChanges();
@@ -473,6 +474,8 @@ public class BlockStorage {
             },
             this::save
         );
+        SfStores.get().flush(); // el escritor asíncrono debe haber persistido antes de seguir (apagado)
+        return passes;
     }
 
     public synchronized void save() {
@@ -488,33 +491,36 @@ public class BlockStorage {
 
         int remaining = maxChangesToSave <= 0 ? Integer.MAX_VALUE : maxChangesToSave;
 
-        // Usa iterator directo en lugar de copiar el mapa completo — O(k) en vez de O(n)
+        // Lote: un solo writeAll (fsync en bloque en disco, una transacción en SQL)
+        Map<String, String> batch = new HashMap<>();
+        List<String> batchKeys = new ArrayList<>();
+        List<String> deletes = new ArrayList<>();
         Iterator<Map.Entry<String, Config>> blockIt = blocksCache.entrySet().iterator();
         while (blockIt.hasNext() && remaining > 0) {
             Map.Entry<String, Config> entry = blockIt.next();
             Config cfg = entry.getValue();
-            boolean persisted = false;
-
             String vpath = cfg.getFile().getPath().replace('\\', '/');
 
-            try {
-                if (cfg.getKeys().isEmpty()) {
-                    SfStores.get().delete(vpath);
-                } else {
-                    SfStores.get().write(vpath, cfg.getConfiguration().saveToString());
-                }
-                persisted = true;
-            } catch (IOException x) {
-                Slimefun.logger().log(Level.SEVERE, x, () -> "Could not persist BlockStorage entry " + vpath);
-            }
-
-            // Keep failed entries queued so a later save can retry them.
-            if (persisted) {
-                blockIt.remove();
-                remaining--;
+            if (cfg.getKeys().isEmpty()) {
+                deletes.add(vpath);
             } else {
-                break;
+                batch.put(vpath, cfg.getConfiguration().saveToString());
             }
+            batchKeys.add(entry.getKey());
+            remaining--;
+        }
+
+        try {
+            for (String vpath : deletes) {
+                SfStores.get().delete(vpath);
+            }
+            SfStores.get().writeAll(batch);
+            // Solo si todo el lote se persistió se descartan; si no, quedan en cola para reintentar.
+            for (String key : batchKeys) {
+                blocksCache.remove(key);
+            }
+        } catch (IOException x) {
+            Slimefun.logger().log(Level.SEVERE, x, () -> "Could not persist BlockStorage batch (" + batch.size() + " files)");
         }
 
         Iterator<Map.Entry<Location, BlockMenu>> invIt = inventories.entrySet().iterator();
