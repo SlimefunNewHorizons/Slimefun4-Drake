@@ -93,6 +93,18 @@ Category pages and search results both pass through the same checks.
 - **dough-core** `1.3.1-Universal-26.x-SNAPSHOT` (namespace `io.github.bakedlibs`; fixes `CustomGameProfile` against the final Authlib), published at `maven.drakescraft.cl`.
 - **Attribution (GPL-3.0)**: SlimefunGuguProject/Slimefun4, Slimefun5/Slimefun5 and Slimefun-United.
 
+## Ported improvements
+
+Fixes ported from other Slimefun forks and unmerged upstream PRs (all GPL-3, each covered by JUnit tests):
+
+| Change | Origin | Commit |
+| --- | --- | --- |
+| Cargo frequency parsing without regex for single digits, overflow-safe, invalid nodes logged once | wickidcow/Slimefun-Legacy `f7c4ce9` | `fcef7af58` |
+| Piglin bartering drops shuffled (no iteration-order bias) | Slimefun/Slimefun4 PR #4337 | `1ab50213c` |
+| Swapping hands (F) blocked while a backpack is open | Slimefun/Slimefun4 PR #4275 | `0be7a9257` |
+| Pickaxe of Vein Mining no longer breaks Slimefun blocks | Slimefun/Slimefun4 PR #4343 | `bc60de004` |
+| Research placeholders/stats ignore researches without enabled items, no division by zero | Slimefun/Slimefun4 PR #4320 | `9ac85bf20` |
+
 ## Build and validation
 
 ```bash
