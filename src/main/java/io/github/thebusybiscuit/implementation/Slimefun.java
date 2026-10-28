@@ -474,6 +474,9 @@ public class Slimefun extends JavaPlugin implements SlimefunAddon {
             backupService.run();
         }
 
+        // Cierra el backend de storage (SQL) tras el ultimo guardado
+        io.github.thebusybiscuit.slimefun4.storage.backend.SfStores.close();
+
         // Close and unload any resources from our Metrics Service
         metricsService.cleanUp();
         nativeAccelerationService.stop(this);

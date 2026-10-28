@@ -1,5 +1,6 @@
 package me.mrCookieSlime.Slimefun.api.inventory;
 
+import io.github.thebusybiscuit.slimefun4.storage.backend.SfStores;
 import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
@@ -35,6 +36,11 @@ import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 final class InventoryFileWriter {
 
     private InventoryFileWriter() {}
+
+    /** Ruta virtual estable del almacén (siempre con '/'). */
+    static String path(File file) {
+        return file.getPath().replace('\\', '/');
+    }
 
     /**
      * Loads an existing inventory file, or an empty configuration when it does not exist
@@ -79,7 +85,7 @@ final class InventoryFileWriter {
      */
     static void save(@Nonnull YamlConfiguration cfg, @Nonnull File file) {
         try {
-            cfg.save(file);
+            SfStores.get().write(path(file), cfg.saveToString());
         } catch (IOException x) {
             Slimefun.logger().log(Level.SEVERE, "Exception while saving a Config file", x);
         }

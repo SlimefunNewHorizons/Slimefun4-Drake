@@ -1,5 +1,6 @@
 package me.mrCookieSlime.Slimefun.api;
 
+import io.github.thebusybiscuit.slimefun4.storage.backend.SfStores;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -134,12 +135,7 @@ public class BlockStorage {
         Slimefun.logger().log(Level.INFO, "This may take a long time...");
 
         File dir = new File(PATH_BLOCKS + w.getName());
-
-        if (dir.exists()) {
-            loadBlocks(dir);
-        } else {
-            dir.mkdirs();
-        }
+        loadBlocks(dir);
 
         loadChunks();
 
@@ -151,7 +147,9 @@ public class BlockStorage {
     }
 
     private void loadBlocks(File directory) {
-        long total = directory.listFiles().length;
+        java.util.List<Map.Entry<String, String>> found = new ArrayList<>();
+        SfStores.get().forEach(directory.getPath().replace('\\', '/'), (name, content) -> found.add(Map.entry(name, content)));
+        long total = found.size();
         long start = System.currentTimeMillis();
         long done = 0;
         long timestamp = System.currentTimeMillis();
@@ -159,7 +157,8 @@ public class BlockStorage {
         int delay = Slimefun.getCfg().getInt("URID.info-delay");
 
         try {
-            for (File file : directory.listFiles()) {
+            for (Map.Entry<String, String> entry : found) {
+                File file = new File(directory, entry.getKey());
                 if (file.getName().equals("null.sfb")) {
                     Slimefun.logger().log(Level.WARNING, "File with corrupted blocks detected!");
                     Slimefun.logger().log(Level.WARNING, "Slimefun will simply skip this File, you should look inside though!");
@@ -171,7 +170,13 @@ public class BlockStorage {
                         timestamp = System.currentTimeMillis();
                     }
 
-                    FileConfiguration cfg = YamlConfiguration.loadConfiguration(file);
+                    YamlConfiguration cfg = new YamlConfiguration();
+                    try {
+                        cfg.loadFromString(entry.getValue());
+                    } catch (org.bukkit.configuration.InvalidConfigurationException x) {
+                        Slimefun.logger().log(Level.WARNING, "Fichero de bloques ilegible: " + file.getName());
+                        continue;
+                    }
 
                     for (String key : cfg.getKeys(false)) {
                         loadBlock(file, cfg, key);
@@ -305,21 +310,11 @@ public class BlockStorage {
                 continue;
             }
 
-            File temporary = new File(file.getParentFile(), file.getName() + ".compact.tmp");
             try {
-                yaml.save(temporary);
-                try {
-                    Files.move(temporary.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-                } catch (IOException atomicMoveFailure) {
-                    Files.move(temporary.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                }
+                SfStores.get().write(file.getPath().replace('\\', '/'), yaml.saveToString());
                 Slimefun.logger().log(Level.INFO, "[DuplicateBlock] Compacted stale entries in {0}", file.getName());
             } catch (IOException ex) {
                 Slimefun.logger().log(Level.SEVERE, ex, () -> "Could not compact duplicate BlockStorage file " + file.getName());
-            } finally {
-                if (temporary.exists() && !temporary.delete()) {
-                    Slimefun.logger().log(Level.WARNING, "Could not remove temporary duplicate file {0}", temporary.getName());
-                }
             }
         }
         compactedSources.clear();
@@ -364,9 +359,15 @@ public class BlockStorage {
 
     private void loadChunks() {
         File chunks = new File(PATH_CHUNKS + "chunks.sfc");
+        String stored = SfStores.get().read(chunks.getPath().replace('\\', '/'));
 
-        if (chunks.exists()) {
-            FileConfiguration cfg = YamlConfiguration.loadConfiguration(chunks);
+        if (stored != null) {
+            YamlConfiguration cfg = new YamlConfiguration();
+            try {
+                cfg.loadFromString(stored);
+            } catch (org.bukkit.configuration.InvalidConfigurationException x) {
+                Slimefun.logger().log(Level.WARNING, "chunks.sfc ilegible, se ignora");
+            }
 
             for (String key : cfg.getKeys(false)) {
                 try {
@@ -382,7 +383,11 @@ public class BlockStorage {
     }
 
     private void loadInventories() {
-        for (File file : new File("data-storage/Slimefun/stored-inventories").listFiles()) {
+        java.util.List<Map.Entry<String, String>> invFiles = new ArrayList<>();
+        SfStores.get().forEach("data-storage/Slimefun/stored-inventories", (name, content) -> invFiles.add(Map.entry(name, content)));
+
+        for (Map.Entry<String, String> invFile : invFiles) {
+            File file = new File("data-storage/Slimefun/stored-inventories", invFile.getKey());
             if (file.getName().startsWith(world.getName()) && file.getName().endsWith(".sfi")) {
                 try {
                     Location l = deserializeLocation(file.getName().replace(".sfi", ""));
@@ -392,7 +397,7 @@ public class BlockStorage {
                         continue;
                     }
 
-                    io.github.bakedlibs.dough.config.Config cfg = new io.github.bakedlibs.dough.config.Config(file);
+                    io.github.bakedlibs.dough.config.Config cfg = new io.github.bakedlibs.dough.config.Config(file, YamlConfiguration.loadConfiguration(new java.io.StringReader(invFile.getValue())));
                     BlockMenuPreset preset = BlockMenuPreset.getPreset(cfg.getString("preset"));
 
                     if (preset == null) {
@@ -414,10 +419,14 @@ public class BlockStorage {
 
         universalInventoriesLoaded = true;
 
-        for (File file : new File("data-storage/Slimefun/universal-inventories").listFiles()) {
+        java.util.List<Map.Entry<String, String>> uniFiles = new ArrayList<>();
+        SfStores.get().forEach("data-storage/Slimefun/universal-inventories", (name, content) -> uniFiles.add(Map.entry(name, content)));
+
+        for (Map.Entry<String, String> uniFile : uniFiles) {
+            File file = new File("data-storage/Slimefun/universal-inventories", uniFile.getKey());
             if (file.getName().endsWith(".sfi")) {
                 try {
-                    io.github.bakedlibs.dough.config.Config cfg = new io.github.bakedlibs.dough.config.Config(file);
+                    io.github.bakedlibs.dough.config.Config cfg = new io.github.bakedlibs.dough.config.Config(file, YamlConfiguration.loadConfiguration(new java.io.StringReader(uniFile.getValue())));
                     BlockMenuPreset preset = BlockMenuPreset.getPreset(cfg.getString("preset"));
 
                     if (preset != null) {
@@ -486,39 +495,17 @@ public class BlockStorage {
             Config cfg = entry.getValue();
             boolean persisted = false;
 
-            if (cfg.getKeys().isEmpty()) {
-                File file = cfg.getFile();
+            String vpath = cfg.getFile().getPath().replace('\\', '/');
 
-                if (file.exists()) {
-                    try {
-                        Files.delete(file.toPath());
-                        persisted = true;
-                    } catch (IOException e) {
-                        Slimefun.logger().log(Level.WARNING, e, () -> "Could not delete file \"" + file.getName() + '"');
-                    }
+            try {
+                if (cfg.getKeys().isEmpty()) {
+                    SfStores.get().delete(vpath);
                 } else {
-                    persisted = true;
+                    SfStores.get().write(vpath, cfg.getConfiguration().saveToString());
                 }
-            } else {
-                File tmpFile = new File(cfg.getFile().getParentFile(), cfg.getFile().getName() + ".tmp");
-
-                try {
-                    cfg.getFile().getParentFile().mkdirs();
-                    cfg.save(tmpFile);
-                    try {
-                        Files.move(tmpFile.toPath(), cfg.getFile().toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-                    } catch (IOException atomicMoveFailure) {
-                        // Some filesystems do not support atomic replacement.
-                        Files.move(tmpFile.toPath(), cfg.getFile().toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    }
-                    persisted = true;
-                } catch (IOException x) {
-                    Slimefun.logger().log(Level.SEVERE, x, () -> "Could not persist BlockStorage entry for Slimefun " + Slimefun.getVersion());
-                } finally {
-                    if (tmpFile.exists() && !tmpFile.delete()) {
-                        Slimefun.logger().log(Level.WARNING, "Could not remove temporary BlockStorage file \"{0}\"", tmpFile.getName());
-                    }
-                }
+                persisted = true;
+            } catch (IOException x) {
+                Slimefun.logger().log(Level.SEVERE, x, () -> "Could not persist BlockStorage entry " + vpath);
             }
 
             // Keep failed entries queued so a later save can retry them.
@@ -564,33 +551,21 @@ public class BlockStorage {
 
     public static synchronized void saveChunks() {
         if (chunkChanges > 0) {
-            File chunks = new File(PATH_CHUNKS + "chunks.sfc");
-            File temporary = new File(PATH_CHUNKS + "chunks.sfc.tmp");
-            Config cfg = new Config(temporary.getPath());
+            YamlConfiguration cfg = new YamlConfiguration();
 
             for (Map.Entry<String, BlockInfoConfig> entry : Slimefun.getRegistry().getChunks().entrySet()) {
                 // Saving empty chunk data is pointless
                 if (!entry.getValue().getKeys().isEmpty()) {
-                    cfg.setValue(entry.getKey(), entry.getValue().toJSON());
+                    cfg.set(entry.getKey(), entry.getValue().toJSON());
                 }
             }
 
             try {
-                cfg.save(temporary);
-                try {
-                    Files.move(temporary.toPath(), chunks.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-                } catch (IOException atomicMoveFailure) {
-                    // Networked filesystems may not support atomic replacement.
-                    Files.move(temporary.toPath(), chunks.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                }
+                SfStores.get().write((PATH_CHUNKS + "chunks.sfc").replace('\\', '/'), cfg.saveToString());
                 chunkChanges = 0;
             } catch (IOException ex) {
                 // Keep the dirty marker so the next persistence pass retries safely.
                 Slimefun.logger().log(Level.SEVERE, ex, () -> "Could not persist BlockStorage chunk index");
-            } finally {
-                if (temporary.exists() && !temporary.delete()) {
-                    Slimefun.logger().log(Level.WARNING, "Could not remove temporary BlockStorage chunk file \"{0}\"", temporary.getName());
-                }
             }
         }
     }
@@ -846,9 +821,10 @@ public class BlockStorage {
                 Slimefun.getRegistry().getUniversalInventories().computeIfAbsent(id, key -> new UniversalBlockMenu(preset));
             } else if (!storage.hasInventory(l)) {
                 File file = new File(PATH_INVENTORIES + serializeLocation(l) + ".sfi");
+                String invContent = SfStores.get().read(file.getPath().replace('\\', '/'));
 
-                if (file.exists()) {
-                    BlockMenu inventory = new BlockMenu(preset, l, new io.github.bakedlibs.dough.config.Config(file));
+                if (invContent != null) {
+                    BlockMenu inventory = new BlockMenu(preset, l, new io.github.bakedlibs.dough.config.Config(file, YamlConfiguration.loadConfiguration(new java.io.StringReader(invContent))));
                     storage.inventories.put(l, inventory);
                 } else {
                     storage.loadInventory(l, preset);

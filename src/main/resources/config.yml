@@ -94,6 +94,15 @@ researches:
   enable-fireworks: true
   disable-learning-animation: false
 
+storage:
+  # file | sqlite | mysql | postgres. Con una base de datos, los ficheros .sfb/.sfc/.sfi se importan solos
+  # la primera vez (los de disco no se tocan). Cambiar de backend requiere reiniciar.
+  backend: file
+  sqlite-file: data-storage/Slimefun/slimefun.db
+  jdbc-url: ''
+  jdbc-user: ''
+  jdbc-password: ''
+
 URID:
   info-delay: 3000
   custom-ticker-delay: 10

@@ -341,6 +341,7 @@
     </dependencyManagement>
 
     <dependencies>
+        <dependency><groupId>org.xerial</groupId><artifactId>sqlite-jdbc</artifactId><version>3.50.3.0</version><scope>test</scope></dependency>
         <!-- Development dependencies -->
         <dependency>
             <groupId>com.google.code.findbugs</groupId>

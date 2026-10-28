@@ -1,5 +1,6 @@
 package me.mrCookieSlime.Slimefun.api.inventory;
 
+import io.github.thebusybiscuit.slimefun4.storage.backend.SfStores;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -200,9 +201,9 @@ public class BlockMenu extends DirtyChestMenu {
     public void delete(Location l) {
         File file = new File("data-storage/Slimefun/stored-inventories/" + serializeLocation(l) + ".sfi");
 
-        if (file.exists()) {
+        if (SfStores.get().exists(InventoryFileWriter.path(file))) {
             try {
-                Files.delete(file.toPath());
+                SfStores.get().delete(InventoryFileWriter.path(file));
             } catch (IOException e) {
                 Slimefun.logger().log(Level.WARNING, e, () -> "Could not delete file \"" + file.getName() + '"');
             }
