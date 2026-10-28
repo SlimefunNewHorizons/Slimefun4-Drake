@@ -48,6 +48,9 @@ public class CargoNet extends AbstractItemNetwork implements HologramOwner {
     private final Set<Location> outputNodes = new HashSet<>();
 
     protected final Map<Location, Integer> roundRobin = new HashMap<>();
+
+    // Diagnostic only: stops a malformed frequency from flooding the log every tick
+    private final Map<Location, String> reportedInvalidFrequencies = new HashMap<>();
     private int tickDelayThreshold = 0;
 
     public static @Nullable CargoNet getNetworkFromLocation(@Nonnull Location l) {
@@ -107,6 +110,7 @@ public class CargoNet extends AbstractItemNetwork implements HologramOwner {
     @Override
     public void onClassificationChange(Location l, NetworkComponent from, NetworkComponent to) {
         connectorCache.remove(l);
+        reportedInvalidFrequencies.remove(l);
 
         if (from == NetworkComponent.TERMINUS) {
             inputNodes.remove(l);
@@ -217,16 +221,57 @@ public class CargoNet extends AbstractItemNetwork implements HologramOwner {
      * 
      * @return The frequency of the given node
      */
-    private static int getFrequency(@Nonnull Location node) {
+    private int getFrequency(@Nonnull Location node) {
         String frequency = BlockStorage.getLocationInfo(node, "frequency");
 
         if (frequency == null) {
+            reportedInvalidFrequencies.remove(node);
             return 0;
-        } else if (!CommonPatterns.NUMERIC.matcher(frequency).matches()) {
-            Slimefun.logger().log(Level.SEVERE, () -> "Failed to parse a Cargo Node Frequency (" + node.getWorld().getName() + " - " + node.getBlockX() + ',' + node.getBlockY() + ',' + node.getBlockZ() + "): " + frequency);
-            return 0;
-        } else {
-            return Integer.parseInt(frequency);
         }
+
+        int parsed = parseFrequency(frequency);
+
+        if (parsed < 0) {
+            if (shouldReportInvalidFrequency(reportedInvalidFrequencies, node, frequency)) {
+                Slimefun.logger().log(Level.SEVERE, () -> "Failed to parse a Cargo Node Frequency (" + node.getWorld().getName() + " - " + node.getBlockX() + ',' + node.getBlockY() + ',' + node.getBlockZ() + "): " + frequency);
+            }
+            return 0;
+        }
+
+        reportedInvalidFrequencies.remove(node);
+        return parsed;
+    }
+
+    /**
+     * Parses a node frequency, skipping the regex for single digits (the common case).
+     * Returns -1 for malformed or out-of-range values.
+     * (Origin: wickidcow/Slimefun-Legacy f7c4ce9, GPL-3)
+     */
+    static int parseFrequency(@Nullable String frequency) {
+        if (frequency == null) {
+            return -1;
+        }
+
+        if (frequency.length() == 1) {
+            char digit = frequency.charAt(0);
+            if (digit >= '0' && digit <= '9') {
+                return digit - '0';
+            }
+        }
+
+        if (!CommonPatterns.NUMERIC.matcher(frequency).matches()) {
+            return -1;
+        }
+
+        try {
+            return Integer.parseInt(frequency);
+        } catch (NumberFormatException x) {
+            return -1;
+        }
+    }
+
+    /** Reports a bad value once per node, and again only if it changes. */
+    static boolean shouldReportInvalidFrequency(@Nonnull Map<Location, String> reported, @Nonnull Location node, @Nonnull String frequency) {
+        return !frequency.equals(reported.put(node, frequency));
     }
 }
