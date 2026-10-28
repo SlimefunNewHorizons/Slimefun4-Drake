@@ -35,7 +35,7 @@ class TestMultiBlocks {
     void testInvalidConstructors() {
         SlimefunItem item = TestUtilities.mockSlimefunItem(plugin, "MULTIBLOCK_TEST", new CustomItemStack(Material.BRICK, "&5Multiblock Test"));
 
-        Assertions.assertThrows(NullPointerException.class, () -> new MultiBlock(null, null, null));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> new MultiBlock(null, null, null));
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> new MultiBlock(item, null, null));
         Assertions.assertThrows(IllegalArgumentException.class, () -> new MultiBlock(item, new Material[4], null));

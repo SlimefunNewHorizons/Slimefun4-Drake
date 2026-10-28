@@ -42,7 +42,7 @@ class TestProfileResearches {
         Player player = server.addPlayer();
         PlayerProfile profile = TestUtilities.awaitProfile(player);
 
-        Assertions.assertThrows(NullPointerException.class, () -> profile.setResearched(null, true));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> profile.setResearched(null, true));
 
         NamespacedKey key = new NamespacedKey(plugin, "player_profile_test");
         Research research = new Research(key, 250, "Test", 100);

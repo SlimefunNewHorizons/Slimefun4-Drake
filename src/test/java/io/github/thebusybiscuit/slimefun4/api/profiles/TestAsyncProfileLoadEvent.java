@@ -86,7 +86,7 @@ class TestAsyncProfileLoadEvent {
         AsyncProfileLoadEvent event = new AsyncProfileLoadEvent(profile);
 
         // Profile is null
-        Assertions.assertThrows(NullPointerException.class, () -> event.setProfile(null));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> event.setProfile(null));
 
         // UUID mismatch
         Assertions.assertThrows(IllegalArgumentException.class, () -> event.setProfile(profile2));

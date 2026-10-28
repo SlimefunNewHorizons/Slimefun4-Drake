@@ -60,7 +60,7 @@ class TestPermissionsService {
         PermissionsService service = new PermissionsService(plugin);
         SlimefunItem item = TestUtilities.mockSlimefunItem(plugin, "PERMISSIONS_TEST", new CustomItemStack(Material.EMERALD, "&bBad omen"));
 
-        Assertions.assertThrows(NullPointerException.class, () -> service.setPermission(null, null));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> service.setPermission(null, null));
 
         service.setPermission(item, "slimefun.tests");
 

@@ -77,7 +77,7 @@ class TestItemGroups {
         item.setItemGroup(itemGroup);
 
         Assertions.assertEquals(1, itemGroup.getItems().size());
-        Assertions.assertThrows(NullPointerException.class, () -> itemGroup.add(null));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> itemGroup.add(null));
     }
 
     @Test

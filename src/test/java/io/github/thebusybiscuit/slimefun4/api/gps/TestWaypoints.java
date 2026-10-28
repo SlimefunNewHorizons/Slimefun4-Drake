@@ -49,7 +49,7 @@ class TestWaypoints {
         Waypoint waypoint = new Waypoint(player.getUniqueId(), "hello", player.getLocation(), "HELLO");
         profile.addWaypoint(waypoint);
 
-        Assertions.assertThrows(NullPointerException.class, () -> profile.addWaypoint(null));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> profile.addWaypoint(null));
 
         Assertions.assertFalse(profile.getWaypoints().isEmpty());
         Assertions.assertEquals(1, profile.getWaypoints().size());
@@ -67,7 +67,7 @@ class TestWaypoints {
         Assertions.assertEquals(1, profile.getWaypoints().size());
 
         profile.removeWaypoint(waypoint);
-        Assertions.assertThrows(NullPointerException.class, () -> profile.removeWaypoint(null));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> profile.removeWaypoint(null));
 
         Assertions.assertTrue(profile.getWaypoints().isEmpty());
         Assertions.assertEquals(0, profile.getWaypoints().size());

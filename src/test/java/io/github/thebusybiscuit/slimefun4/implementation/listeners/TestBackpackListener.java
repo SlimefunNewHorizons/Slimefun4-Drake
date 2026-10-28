@@ -98,8 +98,8 @@ class TestBackpackListener {
     void testIllegalSetId() {
         Player player = server.addPlayer();
 
-        Assertions.assertThrows(NullPointerException.class, () -> listener.setBackpackId(null, null, 1, 1));
-        Assertions.assertThrows(NullPointerException.class, () -> listener.setBackpackId(player, null, 1, 1));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> listener.setBackpackId(null, null, 1, 1));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> listener.setBackpackId(player, null, 1, 1));
         Assertions.assertThrows(IllegalArgumentException.class, () -> listener.setBackpackId(player, new ItemStack(Material.REDSTONE), 1, 1));
         Assertions.assertThrows(IllegalArgumentException.class, () -> listener.setBackpackId(player, new CustomItemStack(Material.REDSTONE, "Hi", "lore"), 1, 1));
         Assertions.assertThrows(IllegalArgumentException.class, () -> listener.setBackpackId(player, new CustomItemStack(Material.REDSTONE, "Hi", "lore", "no id"), 1, 1));

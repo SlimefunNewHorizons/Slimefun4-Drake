@@ -123,7 +123,7 @@ class TestSlimefunTags {
         Assertions.assertEquals(SlimefunTag.ORES, SlimefunTag.getTag("ORES"));
         Assertions.assertEquals(SlimefunTag.SHULKER_BOXES, SlimefunTag.getTag("SHULKER_BOXES"));
         Assertions.assertNull(SlimefunTag.getTag("hello"));
-        Assertions.assertThrows(NullPointerException.class, () -> SlimefunTag.getTag(null));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> SlimefunTag.getTag(null));
     }
 
     private void assertNotCyclic(@Nonnull SlimefunTag tag) {

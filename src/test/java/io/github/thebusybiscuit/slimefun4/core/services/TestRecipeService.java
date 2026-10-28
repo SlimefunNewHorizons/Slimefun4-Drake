@@ -144,7 +144,7 @@ class TestRecipeService {
     void testShapelessRecipeShape() {
         MinecraftRecipeService service = new MinecraftRecipeService(plugin);
 
-        Assertions.assertThrows(NullPointerException.class, () -> service.getRecipeShape(null));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> service.getRecipeShape(null));
 
         NamespacedKey key = new NamespacedKey(plugin, "shapeless_test");
         ShapelessRecipe recipe = new ShapelessRecipe(key, new ItemStack(Material.TNT_MINECART));
@@ -163,7 +163,7 @@ class TestRecipeService {
         MinecraftRecipeService service = new MinecraftRecipeService(plugin);
         AtomicReference<RecipeSnapshot> reference = new AtomicReference<>();
 
-        Assertions.assertThrows(NullPointerException.class, () -> service.subscribe(null));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> service.subscribe(null));
 
         service.subscribe(reference::set);
         service.refresh();

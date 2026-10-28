@@ -50,12 +50,14 @@ class TestBlockStorageIdChange {
 
         BlockStorage.addBlockInfo(l, "id", "CROP_STICKS");
         storage.save();
+        flushStore();
 
         File oldFile = storedBlocksFile(world, "CROP_STICKS");
         Assertions.assertTrue(oldFile.exists(), "el id inicial deberia haberse persistido");
 
         BlockStorage.addBlockInfo(l, "id", "CULTIVATION_PLANT");
         storage.save();
+        flushStore();
 
         Assertions.assertEquals("CULTIVATION_PLANT", BlockStorage.getLocationInfo(l, "id"));
         Assertions.assertTrue(
@@ -77,6 +79,7 @@ class TestBlockStorageIdChange {
         BlockStorage.addBlockInfo(l, "id", "CROP_STICKS");
         BlockStorage.addBlockInfo(l, "owner", "pacox77");
         storage.save();
+        flushStore();
 
         Assertions.assertTrue(
             storedBlocksFile(world, "CROP_STICKS").exists(),
@@ -84,5 +87,9 @@ class TestBlockStorageIdChange {
         );
         Assertions.assertEquals("CROP_STICKS", BlockStorage.getLocationInfo(l, "id"));
         Assertions.assertEquals("pacox77", BlockStorage.getLocationInfo(l, "owner"));
+    }
+
+    private static void flushStore() {
+        io.github.thebusybiscuit.slimefun4.storage.backend.SfStores.get().flush();
     }
 }

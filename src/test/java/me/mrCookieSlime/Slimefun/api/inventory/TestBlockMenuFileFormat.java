@@ -87,6 +87,7 @@ class TestBlockMenuFileFormat {
         menu.replaceExistingItem(4, item);
         menu.markDirty();
         menu.save(l);
+        flushStore();
 
         File file = inventoryFile(l);
         Assertions.assertTrue(file.exists(), "el menu deberia haber escrito su .sfi");
@@ -108,6 +109,7 @@ class TestBlockMenuFileFormat {
         menu.replaceExistingItem(4, new ItemStack(Material.DIAMOND, 7));
         menu.markDirty();
         menu.save(l);
+        flushStore();
 
         Assertions.assertNotNull(new Config(inventoryFile(l)).getItem("4"), "precondicion: la ranura estaba escrita");
 
@@ -116,7 +118,12 @@ class TestBlockMenuFileFormat {
         menu.replaceExistingItem(4, null);
         menu.markDirty();
         menu.save(l);
+        flushStore();
 
         Assertions.assertNull(new Config(inventoryFile(l)).getItem("4"), "la ranura vaciada no debe seguir en disco");
+    }
+
+    private static void flushStore() {
+        io.github.thebusybiscuit.slimefun4.storage.backend.SfStores.get().flush();
     }
 }
