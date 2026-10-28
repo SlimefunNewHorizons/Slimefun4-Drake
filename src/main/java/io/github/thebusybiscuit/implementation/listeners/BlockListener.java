@@ -78,6 +78,13 @@ public class BlockListener implements Listener {
     private final Map<UUID, Long> fastPlaceCooldowns = new ConcurrentHashMap<>();
     private final Map<UUID, Long> unresolvedItemCooldowns = new ConcurrentHashMap<>();
 
+    /** Evita que los cooldowns por jugador crezcan sin límite: con muchas entradas se descartan las ya caducadas. */
+    static void purgeStale(@Nonnull Map<UUID, Long> cooldowns, long now) {
+        if (cooldowns.size() > 128) {
+            cooldowns.values().removeIf(last -> now - last > 2000L);
+        }
+    }
+
     private void warnFastPlacement(@Nullable Player player) {
         if (player == null) {
             return;
@@ -87,6 +94,7 @@ public class BlockListener implements Listener {
         Long lastWarn = fastPlaceCooldowns.get(player.getUniqueId());
 
         if (lastWarn == null || (now - lastWarn) > 2000L) {
+            purgeStale(fastPlaceCooldowns, now);
             fastPlaceCooldowns.put(player.getUniqueId(), now);
             player.sendMessage(
                 ChatColor.GOLD + "" + ChatColor.BOLD + "DrakesCraft " + ChatColor.DARK_GRAY + "· " +
@@ -106,6 +114,7 @@ public class BlockListener implements Listener {
         Long lastWarn = unresolvedItemCooldowns.get(player.getUniqueId());
 
         if (lastWarn == null || (now - lastWarn) > 2000L) {
+            purgeStale(unresolvedItemCooldowns, now);
             unresolvedItemCooldowns.put(player.getUniqueId(), now);
             player.sendMessage(
                 ChatColor.GOLD + "" + ChatColor.BOLD + "DrakesCraft " + ChatColor.DARK_GRAY + "· " +

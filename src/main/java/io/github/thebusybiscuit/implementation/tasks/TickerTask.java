@@ -388,6 +388,7 @@ public class TickerTask implements Runnable {
 
         ChunkPosition chunk = new ChunkPosition(l.getWorld(), l.getBlockX() >> 4, l.getBlockZ() >> 4);
         Set<Location> locations = tickingLocations.get(chunk);
+        bugs.remove(new BlockPosition(l));
 
         if (locations != null) {
             locations.remove(l);

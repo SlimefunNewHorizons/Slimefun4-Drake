@@ -21,7 +21,6 @@ import org.bukkit.inventory.ItemStack;
 
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -34,7 +33,7 @@ import java.util.UUID;
 public class RadiationTask extends AbstractArmorTask {
 
     private static final int GRACE_PERIOD_DURATION = Slimefun.getCfg().getInt("options.radiation-grace-period");
-    private static final Map<UUID, Long> ACTIVE_GRACE_PERIODS = new HashMap<>();
+    private static final Map<UUID, Long> ACTIVE_GRACE_PERIODS = new java.util.concurrent.ConcurrentHashMap<>();
 
     private final RadiationSymptom[] symptoms = RadiationSymptom.values();
 
@@ -134,6 +133,8 @@ public class RadiationTask extends AbstractArmorTask {
      * @param player The player to add the grace period to.
      */
     public static void addGracePeriod(@Nonnull Player player) {
+        long now = System.currentTimeMillis();
+        ACTIVE_GRACE_PERIODS.values().removeIf(end -> end < now); // jugadores que se desconectaron con el periodo activo
         ACTIVE_GRACE_PERIODS.put(player.getUniqueId(), System.currentTimeMillis() + (GRACE_PERIOD_DURATION * 1000L));
     }
 }
