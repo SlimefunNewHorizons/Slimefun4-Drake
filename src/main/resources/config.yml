@@ -178,3 +178,8 @@ research-ranks:
 - Great Master
 - Proficient Master
 - The Chosen One
+
+# /sf addons check (solo lectura): coordenadas Maven de cada addon para comparar versiones
+# addons:
+#   maven:
+#     MiAddon: com/ejemplo/miaddon
