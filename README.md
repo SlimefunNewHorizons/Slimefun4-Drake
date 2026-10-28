@@ -67,6 +67,18 @@ Category pages and search results both pass through the same checks.
 - `/sf give` remains a staff operation. Odysseia blocks paid pass holders from
   using it and owns guide expiry, transfer prevention, and legacy audits.
 
+## Línea Universal 26.x (rama `port-26x`)
+
+> `main` es producción **1.21.11** y **no** incluye nada de esta sección. `port-26x` es la línea Universal para Java 25 y Paper/Purpur 26.2.
+
+- **Storage opt-in (`SfStore`)**: `storage.backend` = `file` (disco con fsync, por defecto), `sqlite`, `mysql` o `postgres`. Claves: `sqlite-file`, `jdbc-url`, `jdbc-user`, `jdbc-password`. La primera vez con SQL se importa solo desde disco (los ficheros no se tocan); si el SQL falla, cae a disco. Cambiar de backend exige reiniciar.
+- **Comandos nuevos**: `/sf tick` (tick-freeze), `/sf itemid`, `/sf balance [addon]`, `/sf addons` (versiones y objetos por addon), `/sf storage [status|export]`.
+- **`core/balance`**: `BalanceService`, tomado de Slimefun5.
+- **Crafter Smart Port** (`CRAFTER_SMART_PORT`): interactor bajo un autocrafter; idea de SlimefunGuguProject/Slimefun4.
+- **Cargo**: `ItemStackWrapper` con una sola lectura de meta (de Slimefun5).
+- **dough-core** `1.3.1-Universal-26.x-SNAPSHOT` (namespace `io.github.bakedlibs`; arregla `CustomGameProfile` vs Authlib final), publicado en `maven.drakescraft.cl`.
+- **Atribución (GPL-3.0)**: SlimefunGuguProject/Slimefun4, Slimefun5/Slimefun5 y Slimefun-United.
+
 ## Build and validation
 
 ```bash
