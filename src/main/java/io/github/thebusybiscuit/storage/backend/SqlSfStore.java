@@ -58,11 +58,52 @@ public class SqlSfStore implements SfStore {
         }
     }
 
+    private long lastOk;
+    private long failedAt;
+
     private synchronized Connection conn() throws SQLException {
-        if (connection == null || connection.isClosed() || !connection.isValid(2)) {
-            connection = user == null || user.isEmpty() ? DriverManager.getConnection(url) : DriverManager.getConnection(url, user, password);
+        long now = System.nanoTime();
+        // isValid() es un ida y vuelta de red: solo se comprueba si la conexion lleva >10 s sin usarse
+        if (connection != null && now - lastOk < 10_000_000_000L && !connection.isClosed()) {
+            lastOk = now;
+            return connection;
         }
+        if (connection == null || connection.isClosed() || !connection.isValid(2)) {
+            // con la BD caida no se reintenta en cada operacion (el hilo principal se quedaria esperando el connect-timeout)
+            if (failedAt != 0 && now - failedAt < 5_000_000_000L) {
+                throw new SQLException("BD no disponible (reintento en breve)");
+            }
+            try {
+                java.util.Properties props = new java.util.Properties();
+                if (user != null && !user.isEmpty()) {
+                    props.setProperty("user", user);
+                    props.setProperty("password", password == null ? "" : password);
+                }
+                if (sqlite) {
+                    props.setProperty("busy_timeout", "5000");
+                } else if (postgres) {
+                    props.setProperty("connectTimeout", "5");
+                    props.setProperty("socketTimeout", "15");
+                } else {
+                    props.setProperty("connectTimeout", "5000");
+                    props.setProperty("socketTimeout", "15000");
+                }
+                connection = DriverManager.getConnection(url, props);
+                failedAt = 0;
+            } catch (SQLException e) {
+                failedAt = now;
+                connection = null;
+                throw e;
+            }
+        }
+        lastOk = now;
         return connection;
+    }
+
+    private PreparedStatement prep(String sql) throws SQLException {
+        PreparedStatement ps = conn().prepareStatement(sql);
+        ps.setQueryTimeout(10);
+        return ps;
     }
 
     /** Perfilado ligero de consultas (idea de SQLProfiler/SlowSqlCheckTask de Gugu): avisa de las lentas (&gt;250 ms). */
@@ -101,7 +142,7 @@ public class SqlSfStore implements SfStore {
     }
 
     private @Nullable String doRead(String path) {
-        try (PreparedStatement ps = conn().prepareStatement("SELECT content FROM sf_files WHERE path=?")) {
+        try (PreparedStatement ps = prep("SELECT content FROM sf_files WHERE path=?")) {
             ps.setString(1, path);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? rs.getString(1) : null;
@@ -113,7 +154,7 @@ public class SqlSfStore implements SfStore {
 
     @Override
     public synchronized boolean exists(@Nonnull String path) {
-        try (PreparedStatement ps = conn().prepareStatement("SELECT 1 FROM sf_files WHERE path=?")) {
+        try (PreparedStatement ps = prep("SELECT 1 FROM sf_files WHERE path=?")) {
             ps.setString(1, path);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next();
@@ -137,7 +178,7 @@ public class SqlSfStore implements SfStore {
         String sql = postgres
             ? "INSERT INTO sf_files (path, dir, content) VALUES (?,?,?) ON CONFLICT (path) DO UPDATE SET content=EXCLUDED.content"
             : sqlite ? "INSERT OR REPLACE INTO sf_files (path, dir, content) VALUES (?,?,?)" : "REPLACE INTO sf_files (path, dir, content) VALUES (?,?,?)";
-        try (PreparedStatement ps = conn().prepareStatement(sql)) {
+        try (PreparedStatement ps = prep(sql)) {
             ps.setString(1, path);
             ps.setString(2, dirOf(path));
             ps.setString(3, content);
@@ -149,7 +190,7 @@ public class SqlSfStore implements SfStore {
 
     @Override
     public synchronized void delete(@Nonnull String path) throws IOException {
-        try (PreparedStatement ps = conn().prepareStatement("DELETE FROM sf_files WHERE path=?")) {
+        try (PreparedStatement ps = prep("DELETE FROM sf_files WHERE path=?")) {
             ps.setString(1, path);
             ps.executeUpdate();
         } catch (SQLException e) {
@@ -159,7 +200,7 @@ public class SqlSfStore implements SfStore {
 
     @Override
     public synchronized void forEach(@Nonnull String dir, @Nonnull BiConsumer<String, String> action) {
-        try (PreparedStatement ps = conn().prepareStatement("SELECT path, content FROM sf_files WHERE dir=?")) {
+        try (PreparedStatement ps = prep("SELECT path, content FROM sf_files WHERE dir=?")) {
             ps.setString(1, dir);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
