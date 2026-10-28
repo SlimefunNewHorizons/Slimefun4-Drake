@@ -217,6 +217,13 @@
                                 <exclude>META-INF/*</exclude>
                             </excludes>
                         </filter>
+                        <!-- dough-core trae un Validate parcheado de commons-lang 2.x; usamos el original (commons-lang 2.6) para no romper addons como Bump -->
+                        <filter>
+                            <artifact>com.github.drakescraft_labs:dough-core</artifact>
+                            <excludes>
+                                <exclude>org/apache/commons/lang/**</exclude>
+                            </excludes>
+                        </filter>
                     </filters>
                 </configuration>
 
@@ -356,6 +363,12 @@
             <artifactId>dough-core</artifactId>
             <version>${dough.version}</version>
             <scope>compile</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.github.drakescraft_labs</groupId>
+                    <artifactId>commons-lang-drake-patched</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.papermc</groupId>
