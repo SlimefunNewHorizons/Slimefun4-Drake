@@ -26,6 +26,11 @@ public class SqlSfStore implements SfStore {
     private final boolean postgres;
     private Connection connection;
 
+    private final java.util.concurrent.atomic.LongAdder ops = new java.util.concurrent.atomic.LongAdder();
+    private final java.util.concurrent.atomic.LongAdder nanos = new java.util.concurrent.atomic.LongAdder();
+    private final java.util.concurrent.atomic.LongAdder slow = new java.util.concurrent.atomic.LongAdder();
+    private volatile long worstMillis;
+
     public SqlSfStore(@Nonnull String url, @Nullable String user, @Nullable String password) throws SQLException {
         this.url = url;
         this.user = user;
@@ -60,6 +65,26 @@ public class SqlSfStore implements SfStore {
         return connection;
     }
 
+    /** Perfilado ligero de consultas (idea de SQLProfiler/SlowSqlCheckTask de Gugu): avisa de las lentas (&gt;250 ms). */
+    private void track(String path, long t0) {
+        long n = System.nanoTime() - t0;
+        ops.increment();
+        nanos.add(n);
+        long ms = n / 1_000_000L;
+        if (ms > worstMillis) {
+            worstMillis = ms;
+        }
+        if (ms > 250) {
+            slow.increment();
+            io.github.thebusybiscuit.slimefun4.implementation.Slimefun.logger().log(java.util.logging.Level.WARNING, "Consulta SQL lenta ({0} ms): {1}", new Object[] { ms, path });
+        }
+    }
+
+    public String stats() {
+        long o = ops.sum();
+        return o + " consultas, media " + (o == 0 ? 0 : nanos.sum() / o / 1000) + " us, peor " + worstMillis + " ms, lentas " + slow.sum();
+    }
+
     private static String dirOf(String path) {
         int i = path.lastIndexOf('/');
         return i < 0 ? "" : path.substring(0, i);
@@ -67,6 +92,15 @@ public class SqlSfStore implements SfStore {
 
     @Override
     public synchronized @Nullable String read(@Nonnull String path) {
+        long t0 = System.nanoTime();
+        try {
+            return doRead(path);
+        } finally {
+            track(path, t0);
+        }
+    }
+
+    private @Nullable String doRead(String path) {
         try (PreparedStatement ps = conn().prepareStatement("SELECT content FROM sf_files WHERE path=?")) {
             ps.setString(1, path);
             try (ResultSet rs = ps.executeQuery()) {
@@ -91,6 +125,15 @@ public class SqlSfStore implements SfStore {
 
     @Override
     public synchronized void write(@Nonnull String path, @Nonnull String content) throws IOException {
+        long t0 = System.nanoTime();
+        try {
+            doWrite(path, content);
+        } finally {
+            track(path, t0);
+        }
+    }
+
+    private void doWrite(String path, String content) throws IOException {
         String sql = postgres
             ? "INSERT INTO sf_files (path, dir, content) VALUES (?,?,?) ON CONFLICT (path) DO UPDATE SET content=EXCLUDED.content"
             : sqlite ? "INSERT OR REPLACE INTO sf_files (path, dir, content) VALUES (?,?,?)" : "REPLACE INTO sf_files (path, dir, content) VALUES (?,?,?)";
@@ -161,6 +204,22 @@ public class SqlSfStore implements SfStore {
             throw e;
         } finally {
             c.setAutoCommit(true);
+        }
+        return n;
+    }
+
+    /** Vuelca todas las filas a ficheros bajo {@code outDir} (misma estructura relativa). @return nº de ficheros. */
+    public synchronized int exportToDisk(@Nonnull String outDir) {
+        int n = 0;
+        try (Statement st = conn().createStatement(); ResultSet rs = st.executeQuery("SELECT path, content FROM sf_files")) {
+            while (rs.next()) {
+                java.nio.file.Path target = java.nio.file.Paths.get(outDir, rs.getString(1));
+                java.nio.file.Files.createDirectories(target.getParent());
+                java.nio.file.Files.writeString(target, rs.getString(2));
+                n++;
+            }
+        } catch (SQLException | IOException e) {
+            throw new IllegalStateException("export", e);
         }
         return n;
     }
