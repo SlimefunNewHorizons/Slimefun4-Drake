@@ -496,4 +496,16 @@
             <url>https://nexus.neetgames.com/repository/maven-public</url>
         </repository>
     </repositories>
+    <profiles>
+        <!-- Compila contra la API real de Minecraft 26.2 (Java 25). El jar por defecto usa la API 1.21.11 (bytecode Java 21) y corre en ambas.
+             Uso: mvn -DskipTests -Pmc26 compile. Los tests no corren con este perfil (MockBukkit aun no soporta 26.2). -->
+        <profile>
+            <id>mc26</id>
+            <properties>
+                <paper.version>26.2.build.133-stable</paper.version>
+                <java.version>25</java.version>
+            </properties>
+        </profile>
+    </profiles>
+
 </project>
