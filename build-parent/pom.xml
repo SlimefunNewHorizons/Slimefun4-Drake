@@ -34,11 +34,8 @@
         <slimefun.version>RC-37</slimefun.version>
         <!-- Must match this reactor's core, never the production Drake coordinates. -->
         <slimefun.drake.version>11.0-Universal-26.x-SNAPSHOT</slimefun.drake.version>
-        <!--
-          Paper 26.2 makes Authlib's GameProfile final. Consume our universal Dough
-          implementation, which uses PlayerProfile and keeps upstream public packages.
-        -->
-        <dough.version>1.3.1-DRAKE-v11-SNAPSHOT</dough.version>
+        <!-- Universal ABI: consume Dough from its upstream coordinates, not the legacy Drake snapshot. -->
+        <dough.version>a2364de77c</dough.version>
         <infinitylib.version>1.3.11-DRAKE-SNAPSHOT</infinitylib.version>
         <sefilib.version>0.3.1-DRAKE-SNAPSHOT</sefilib.version>
         <networks.version>11.0.0-drake.6</networks.version>
@@ -174,10 +171,10 @@
             <scope>provided</scope>
         </dependency>
 
-            <!-- Universal Dough keeps io.github.bakedlibs.dough public packages. -->
+            <!-- Dough upstream. Its public packages are io.github.bakedlibs.dough. -->
             <dependency>
-            <groupId>com.github.drakescraft_labs</groupId>
-            <artifactId>dough-core</artifactId>
+            <groupId>com.github.baked-libs.dough</groupId>
+            <artifactId>dough-api</artifactId>
             <version>${dough.version}</version>
             <scope>provided</scope>
         </dependency>

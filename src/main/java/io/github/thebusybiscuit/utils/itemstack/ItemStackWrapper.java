@@ -35,13 +35,11 @@ public final class ItemStackWrapper extends ItemStack {
         super(item.getType());
 
         amount = item.getAmount();
-        hasItemMeta = item.hasItemMeta();
-
-        if (hasItemMeta) {
-            meta = item.getItemMeta();
-        } else {
-            meta = null;
-        }
+        // Se lee el meta una sola vez: hasItemMeta() en CraftBukkit construye un ItemMeta completo y lo descarta
+        // (idea de Slimefun5, la parte dominante del coste de envolver items en el cargo).
+        ItemMeta itemMeta = item.getItemMeta();
+        hasItemMeta = itemMeta != null && !org.bukkit.Bukkit.getItemFactory().equals(itemMeta, null);
+        meta = hasItemMeta ? itemMeta : null;
     }
 
     @Override
