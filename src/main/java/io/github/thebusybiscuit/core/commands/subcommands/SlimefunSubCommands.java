@@ -39,6 +39,7 @@ public final class SlimefunSubCommands {
         commands.add(new StorageCommand(plugin, cmd));
         commands.add(new ItemIdCommand(plugin, cmd));
         commands.add(new BalanceCommand(plugin, cmd));
+        commands.add(new AddonsCommand(plugin, cmd));
         commands.add(new TeleporterCommand(plugin, cmd));
         commands.add(new OpenGuideCommand(plugin, cmd));
         commands.add(new SearchCommand(plugin, cmd));
