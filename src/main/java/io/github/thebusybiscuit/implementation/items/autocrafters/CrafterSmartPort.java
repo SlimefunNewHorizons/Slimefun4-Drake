@@ -160,8 +160,13 @@ public class CrafterSmartPort extends SlimefunItem {
             @Override
             public void setIngredientCount(Block b, int count) {
                 int c = Math.max(1, Math.min(64, count));
+                String value = String.valueOf(c);
+                // se llama en cada tick del autocrafter: solo se escribe si cambia
+                if (value.equals(BlockStorage.getLocationInfo(b.getLocation(), "ingredientCount"))) {
+                    return;
+                }
                 menu.replaceExistingItem(COUNT_SLOT, countItem(c));
-                BlockStorage.addBlockInfo(b, "ingredientCount", String.valueOf(c));
+                BlockStorage.addBlockInfo(b, "ingredientCount", value);
             }
         };
     }
