@@ -66,6 +66,8 @@ public class TickerTask implements Runnable {
     private int tickRate;
     private boolean halted = false;
     private boolean running = false;
+    private volatile boolean tickFreeze = false;
+    private volatile java.util.function.Predicate<Location> freezePredicate = l -> true;
 
     /**
      * Cache volátil de chunks activos dentro de la distancia de simulación de jugadores
@@ -250,6 +252,10 @@ public class TickerTask implements Runnable {
     }
 
     private void tickLocation(@Nonnull Set<BlockTicker> tickers, @Nonnull List<Runnable> syncTasks, @Nonnull Location l) {
+        if (tickFreeze && freezePredicate.test(l)) {
+            return;
+        }
+
         Config data = BlockStorage.getLocationInfo(l);
         String id = data.getString("id");
         if (id == null) {
@@ -333,6 +339,19 @@ public class TickerTask implements Runnable {
         } else {
             bugs.put(position, errors);
         }
+    }
+
+    public boolean isTickFreeze() {
+        return tickFreeze;
+    }
+
+    public void setTickFreeze(boolean freeze) {
+        this.tickFreeze = freeze;
+    }
+
+    /** Solo los bloques que cumplan el predicado quedan congelados (por defecto, todos). */
+    public void setTickFreezePredicate(@Nonnull java.util.function.Predicate<Location> predicate) {
+        this.freezePredicate = predicate;
     }
 
     public boolean isHalted() {
