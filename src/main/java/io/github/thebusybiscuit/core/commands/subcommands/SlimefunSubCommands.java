@@ -37,6 +37,7 @@ public final class SlimefunSubCommands {
         commands.add(new TimingsCommand(plugin, cmd));
         commands.add(new TickCommand(plugin, cmd));
         commands.add(new StorageCommand(plugin, cmd));
+        commands.add(new DiagCommand(plugin, cmd));
         commands.add(new ItemIdCommand(plugin, cmd));
         commands.add(new BalanceCommand(plugin, cmd));
         commands.add(new AddonsCommand(plugin, cmd));

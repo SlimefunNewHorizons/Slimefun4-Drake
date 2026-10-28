@@ -85,6 +85,9 @@ public class SlimefunProfiler {
     private long totalElapsedTime;
 
     private final Map<ProfiledBlock, Long> timings = new ConcurrentHashMap<>();
+
+    /** Media móvil (ns por tick) del coste de cada addon; acotada: las entradas inactivas decaen y se eliminan. */
+    private final Map<String, Double> addonAverages = new ConcurrentHashMap<>();
     private final Queue<PerformanceInspector> requests = new ConcurrentLinkedQueue<>();
 
     private final AtomicLong totalMsTicked = new AtomicLong();
@@ -226,6 +229,8 @@ public class SlimefunProfiler {
 
         totalElapsedTime = timings.values().stream().mapToLong(Long::longValue).sum();
 
+        updateAddonAverages(getByPlugin());
+
         averageTimingsPerMachine.getAndSet(timings.values().stream().mapToLong(Long::longValue).average().orElse(0));
 
         /*
@@ -258,6 +263,17 @@ public class SlimefunProfiler {
         Validate.notNull(inspector, "Cannot request a summary for null");
 
         requests.add(inspector);
+    }
+
+    void updateAddonAverages(@Nonnull Map<String, Long> current) {
+        current.forEach((name, ns) -> addonAverages.merge(name, (double) ns, (old, now) -> old * 0.8 + now * 0.2));
+        addonAverages.replaceAll((name, avg) -> current.containsKey(name) ? avg : avg * 0.8);
+        addonAverages.values().removeIf(avg -> avg < 1000);
+    }
+
+    /** Coste medio por tick (ns, media móvil) de cada addon con tickers. Copia: seguro desde el hilo principal. */
+    public @Nonnull Map<String, Double> getAddonAverages() {
+        return new HashMap<>(addonAverages);
     }
 
     @Nonnull

@@ -25,6 +25,8 @@ public class CachedSfStore implements SfStore {
 
     private static final Logger LOG = Logger.getLogger("Slimefun.SfStore");
     private static final int MAX_BATCH = 512;
+    /** Tope del cache de lectura: es solo un acelerador (write-through), evictar nunca pierde datos. */
+    static final int MAX_CACHE = 20_000;
 
     /** Valor en vuelo o cacheado; {@code content == null} significa borrado. Se compara por identidad. */
     private static final class Slot {
@@ -44,6 +46,23 @@ public class CachedSfStore implements SfStore {
     private final LinkedBlockingQueue<Op> queue = new LinkedBlockingQueue<>();
     private final Thread writer;
     private volatile boolean closed;
+    private final java.util.concurrent.atomic.LongAdder reads = new java.util.concurrent.atomic.LongAdder();
+    private final java.util.concurrent.atomic.LongAdder cacheHits = new java.util.concurrent.atomic.LongAdder();
+    private final java.util.concurrent.atomic.LongAdder writeOps = new java.util.concurrent.atomic.LongAdder();
+    private final java.util.concurrent.atomic.LongAdder failures = new java.util.concurrent.atomic.LongAdder();
+    private final java.util.concurrent.atomic.LongAdder discarded = new java.util.concurrent.atomic.LongAdder();
+
+    /** Estado para diagnóstico (/sf diag); lectura barata, sin bloquear. */
+    public record Stats(int queued, int pending, int cacheEntries, long cacheChars, long reads, long cacheHits, long writes, long failures, long discarded) {
+    }
+
+    public @Nonnull Stats stats() {
+        long chars = 0;
+        for (Slot s : cache.values()) {
+            chars += s.content == null ? 0 : s.content.length();
+        }
+        return new Stats(queue.size(), pending.size(), cache.size(), chars, reads.sum(), cacheHits.sum(), writeOps.sum(), failures.sum(), discarded.sum());
+    }
 
     public CachedSfStore(@Nonnull SfStore delegate) {
         this.delegate = delegate;
@@ -57,6 +76,27 @@ public class CachedSfStore implements SfStore {
         return path.contains("-inventories/");
     }
 
+    private void remember(String path, Slot slot) {
+        if (cache.size() < MAX_CACHE) {
+            cache.putIfAbsent(path, slot);
+        }
+    }
+
+    /** Si el cache supera el tope, descarta ~10 % de entradas (las ya persistidas se releen del backend). */
+    private void trim() {
+        int excess = cache.size() - MAX_CACHE;
+        if (excess <= 0) {
+            return;
+        }
+        int drop = excess + MAX_CACHE / 10;
+        for (String k : cache.keySet()) {
+            if (drop-- <= 0) {
+                break;
+            }
+            cache.remove(k);
+        }
+    }
+
     @Override
     public SfStore unwrap() {
         return delegate.unwrap();
@@ -64,17 +104,23 @@ public class CachedSfStore implements SfStore {
 
     @Override
     public @Nullable String read(@Nonnull String path) {
+        reads.increment();
         Slot s = pending.get(path);
         if (s != null) {
+            cacheHits.increment();
             return s.content;
         }
         if (cacheable(path)) {
             s = cache.get(path);
             if (s != null) {
+                cacheHits.increment();
                 return s.content;
             }
             String v = delegate.read(path);
-            cache.putIfAbsent(path, new Slot(v));
+            if (v == null) {
+                return null; // no se cachean los ausentes: cada borrado dejaba una entrada para siempre
+            }
+            remember(path, new Slot(v));
             Slot now = cache.get(path);
             return now == null ? v : now.content;
         }
@@ -98,7 +144,12 @@ public class CachedSfStore implements SfStore {
         // pending antes que cache y cola: cualquier lector ve ya el valor nuevo
         pending.put(path, slot);
         if (cacheable(path)) {
-            cache.put(path, slot);
+            if (content == null) {
+                cache.remove(path);
+            } else {
+                cache.put(path, slot);
+                trim();
+            }
         }
         queue.add(new Op(path, slot, null));
     }
@@ -126,7 +177,7 @@ public class CachedSfStore implements SfStore {
         boolean cache = cacheable(dir + "/");
         delegate.forEach(dir, (name, content) -> {
             if (cache) {
-                this.cache.putIfAbsent(dir + "/" + name, new Slot(content));
+                remember(dir + "/" + name, new Slot(content));
             }
             action.accept(name, content);
         });
@@ -183,6 +234,9 @@ public class CachedSfStore implements SfStore {
         Map<String, String> writes = new LinkedHashMap<>();
         List<Op> inWrites = new ArrayList<>();
         for (Op op : ops) {
+            if (op.marker() == null) {
+                writeOps.increment();
+            }
             if (op.marker() != null) {
                 flushWrites(writes, inWrites);
                 op.marker().countDown();
@@ -220,6 +274,7 @@ public class CachedSfStore implements SfStore {
                 action.run();
                 return;
             } catch (IOException | RuntimeException e) {
+                failures.increment();
                 LOG.log(Level.SEVERE, e, () -> "SfStore: fallo al persistir " + what);
                 try {
                     Thread.sleep(500L * attempt);
@@ -228,6 +283,7 @@ public class CachedSfStore implements SfStore {
                 }
             }
         }
+        discarded.increment();
         LOG.severe("SfStore: se descarta la escritura tras 3 intentos: " + what);
     }
 }
