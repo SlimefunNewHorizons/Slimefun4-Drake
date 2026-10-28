@@ -1,6 +1,7 @@
 package io.github.thebusybiscuit.slimefun4.storage.backend;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.function.BiConsumer;
 
 import javax.annotation.Nonnull;
@@ -24,7 +25,26 @@ public interface SfStore {
     /** Escritura atómica y durable (fsync en disco, transacción en SQL). */
     void write(@Nonnull String path, @Nonnull String content) throws IOException;
 
+    /**
+     * Escritura por lote: todo el lote es durable al volver. En disco se escriben todos los temporales y se
+     * hace fsync en bloque (un solo paso al final) antes de los renombrados atómicos; en SQL va en una transacción.
+     */
+    default void writeAll(@Nonnull Map<String, String> batch) throws IOException {
+        for (Map.Entry<String, String> e : batch.entrySet()) {
+            write(e.getKey(), e.getValue());
+        }
+    }
+
     void delete(@Nonnull String path) throws IOException;
+
+    /** Bloquea hasta que todo lo escrito hasta ahora está persistido (no-op en backends síncronos). */
+    default void flush() {
+    }
+
+    /** @return el backend real bajo cualquier decorador (cache/async). */
+    default SfStore unwrap() {
+        return this;
+    }
 
     /** Recorre los ficheros directos de {@code dir}: nombre (sin directorio) y contenido. */
     void forEach(@Nonnull String dir, @Nonnull BiConsumer<String, String> action);

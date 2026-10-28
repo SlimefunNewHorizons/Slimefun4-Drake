@@ -8,6 +8,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
@@ -34,19 +37,72 @@ public class FileSfStore implements SfStore {
 
     @Override
     public void write(@Nonnull String path, @Nonnull String content) throws IOException {
-        Path target = Paths.get(path);
-        Path tmp = target.resolveSibling(target.getFileName() + ".tmp");
-        if (target.getParent() != null) {
-            Files.createDirectories(target.getParent());
+        writeAll(Map.of(path, content));
+    }
+
+    /** Máximo de temporales abiertos a la vez (descriptores de fichero). */
+    private static final int CHUNK = 256;
+
+    @Override
+    public void writeAll(@Nonnull Map<String, String> batch) throws IOException {
+        List<Map.Entry<String, String>> entries = new ArrayList<>(batch.entrySet());
+        for (int i = 0; i < entries.size(); i += CHUNK) {
+            writeChunk(entries.subList(i, Math.min(entries.size(), i + CHUNK)));
         }
-        try (FileChannel ch = FileChannel.open(tmp, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)) {
-            ch.write(StandardCharsets.UTF_8.encode(content));
-            ch.force(true);
-        }
+    }
+
+    private static void writeChunk(List<Map.Entry<String, String>> chunk) throws IOException {
+        int n = chunk.size();
+        Path[] targets = new Path[n];
+        Path[] tmps = new Path[n];
+        FileChannel[] chans = new FileChannel[n];
+        java.util.Set<Path> dirs = new java.util.LinkedHashSet<>();
         try {
-            Files.move(tmp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException atomicMoveFailure) {
-            Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
+            // 1) escribir todos los temporales sin sincronizar
+            for (int i = 0; i < n; i++) {
+                Path target = Paths.get(chunk.get(i).getKey());
+                targets[i] = target;
+                tmps[i] = target.resolveSibling(target.getFileName() + ".tmp");
+                if (target.getParent() != null) {
+                    Files.createDirectories(target.getParent());
+                    dirs.add(target.getParent());
+                }
+                chans[i] = FileChannel.open(tmps[i], StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+                java.nio.ByteBuffer buf = StandardCharsets.UTF_8.encode(chunk.get(i).getValue());
+                while (buf.hasRemaining()) {
+                    chans[i].write(buf);
+                }
+            }
+            // 2) fsync en bloque, solo ahora que todo está escrito
+            for (FileChannel ch : chans) {
+                ch.force(true);
+            }
+        } finally {
+            for (FileChannel ch : chans) {
+                if (ch != null) {
+                    try {
+                        ch.close();
+                    } catch (IOException ignored) {
+                        // cierre best-effort
+                    }
+                }
+            }
+        }
+        // 3) renombrados atómicos: ningún destino queda a 0 bytes ni a medias
+        for (int i = 0; i < n; i++) {
+            try {
+                Files.move(tmps[i], targets[i], StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException atomicMoveFailure) {
+                Files.move(tmps[i], targets[i], StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+        // 4) fsync de cada directorio una vez, para que los renombrados sobrevivan a un corte
+        for (Path d : dirs) {
+            try (FileChannel dc = FileChannel.open(d, StandardOpenOption.READ)) {
+                dc.force(true);
+            } catch (IOException | UnsupportedOperationException ignored) {
+                // Windows no permite abrir directorios: best-effort
+            }
         }
     }
 

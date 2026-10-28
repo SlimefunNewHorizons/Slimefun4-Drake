@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Map;
 import java.util.function.BiConsumer;
 
 import javax.annotation.Nonnull;
@@ -185,6 +186,43 @@ public class SqlSfStore implements SfStore {
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new IOException("SQL write " + path, e);
+        }
+    }
+
+    @Override
+    public synchronized void writeAll(@Nonnull Map<String, String> batch) throws IOException {
+        if (batch.isEmpty()) {
+            return;
+        }
+        long t0 = System.nanoTime();
+        String sql = postgres
+            ? "INSERT INTO sf_files (path, dir, content) VALUES (?,?,?) ON CONFLICT (path) DO UPDATE SET content=EXCLUDED.content"
+            : sqlite ? "INSERT OR REPLACE INTO sf_files (path, dir, content) VALUES (?,?,?)" : "REPLACE INTO sf_files (path, dir, content) VALUES (?,?,?)";
+        Connection c = null;
+        try {
+            c = conn();
+            boolean prev = c.getAutoCommit();
+            c.setAutoCommit(false);
+            try (PreparedStatement ps = c.prepareStatement(sql)) {
+                ps.setQueryTimeout(30);
+                for (Map.Entry<String, String> e : batch.entrySet()) {
+                    ps.setString(1, e.getKey());
+                    ps.setString(2, dirOf(e.getKey()));
+                    ps.setString(3, e.getValue());
+                    ps.addBatch();
+                }
+                ps.executeBatch();
+                c.commit();
+            } catch (SQLException e) {
+                c.rollback();
+                throw e;
+            } finally {
+                c.setAutoCommit(prev);
+            }
+        } catch (SQLException e) {
+            throw new IOException("SQL batch write (" + batch.size() + ")", e);
+        } finally {
+            track("batch x" + batch.size(), t0);
         }
     }
 
