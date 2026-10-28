@@ -2687,6 +2687,10 @@ public final class SlimefunItemSetup {
         .setEnergyConsumption(16)
         .register(plugin);
 
+        new io.github.thebusybiscuit.slimefun4.implementation.items.autocrafters.CrafterSmartPort(itemGroups.cargo, SlimefunItems.CRAFTER_SMART_PORT, RecipeType.ENHANCED_CRAFTING_TABLE,
+        new ItemStack[] {SlimefunItems.CARGO_MOTOR, new ItemStack(Material.BARREL), SlimefunItems.CARGO_MOTOR, new ItemStack(Material.HOPPER), SlimefunItems.CRAFTING_MOTOR, new ItemStack(Material.HOPPER), null, null, null})
+        .register(plugin);
+
         new EnhancedAutoCrafter(itemGroups.cargo, SlimefunItems.ENHANCED_AUTO_CRAFTER, RecipeType.ENHANCED_CRAFTING_TABLE,
         new ItemStack[] {null, SlimefunItems.CRAFTING_MOTOR, null, new ItemStack(Material.CRAFTING_TABLE), new ItemStack(Material.DISPENSER), new ItemStack(Material.CRAFTING_TABLE), null, SlimefunItems.CARGO_MOTOR, null})
         .setCapacity(256)

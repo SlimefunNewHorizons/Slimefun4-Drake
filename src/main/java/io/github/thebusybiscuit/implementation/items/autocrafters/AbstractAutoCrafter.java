@@ -171,6 +171,21 @@ public abstract class AbstractAutoCrafter extends SlimefunItem implements Energy
         // The block below where we would expect our inventory holder.
         Block targetBlock = b.getRelative(BlockFace.DOWN);
 
+        // Smart Port (u otro interactor registrado): trabaja sobre su BlockMenu en lugar de un cofre
+        CrafterInteractable interactor = CrafterInteractorManager.getInteractor(targetBlock);
+
+        if (interactor != null) {
+            interactor.setIngredientCount(targetBlock, recipe.getIngredients().size());
+
+            if (craft(interactor, recipe)) {
+                Location loc = b.getLocation().add(0.5, 0.8, 0.5);
+                b.getWorld().spawnParticle(VersionedParticle.HAPPY_VILLAGER, loc, 6);
+                removeCharge(b.getLocation(), getEnergyConsumption());
+            }
+
+            return;
+        }
+
         // Make sure this is a Chest
         if (isValidInventory(targetBlock)) {
             BlockState state = PaperLibUtils.getBlockState(targetBlock, false).getState();
@@ -454,6 +469,67 @@ public abstract class AbstractAutoCrafter extends SlimefunItem implements Energy
         }
 
         return false;
+    }
+
+    /**
+     * Variante de {@link #craft(Inventory, AbstractRecipe)} para un {@link CrafterInteractable}
+     * (p. ej. el {@link CrafterSmartPort}). No gestiona la energía.
+     */
+    public boolean craft(@Nonnull CrafterInteractable inv, @Nonnull AbstractRecipe recipe) {
+        if (!recipe.isEnabled() || !inv.canOutput(recipe.getResult())) {
+            return false;
+        }
+
+        Map<Integer, Integer> itemQuantities = new HashMap<>();
+
+        for (Predicate<ItemStack> predicate : recipe.getIngredients()) {
+            boolean found = false;
+
+            for (int slot : inv.getInputSlots()) {
+                ItemStack item = inv.getItem(slot);
+
+                if (item != null) {
+                    int amount = itemQuantities.getOrDefault(slot, item.getAmount());
+
+                    if (amount > 0 && matches(item, predicate)) {
+                        itemQuantities.put(slot, amount - 1);
+                        found = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!found) {
+                return false;
+            }
+        }
+
+        List<ItemStack> leftoverItems = new ArrayList<>();
+
+        for (Map.Entry<Integer, Integer> entry : itemQuantities.entrySet()) {
+            ItemStack item = inv.getItem(entry.getKey());
+
+            if (item != null) {
+                ItemStack leftover = getLeftoverItem(item);
+
+                if (leftover != null) {
+                    leftover.setAmount(item.getAmount() - entry.getValue());
+                    leftoverItems.add(leftover);
+                }
+
+                inv.setAmount(entry.getKey(), entry.getValue());
+            }
+        }
+
+        boolean success = inv.addOutput(recipe.getResult().clone());
+
+        if (success) {
+            for (ItemStack leftoverItem : leftoverItems) {
+                inv.addOutput(leftoverItem);
+            }
+        }
+
+        return success;
     }
 
     /**
