@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import io.github.thebusybiscuit.slimefun4.api.player.PlayerProfile;
 import io.github.thebusybiscuit.slimefun4.api.researches.Research;
@@ -102,4 +103,15 @@ class TestProfileResearches {
         Assertions.assertTrue(profile.getResearches().isEmpty());
     }
 
+
+    @Test
+    @DisplayName("Test researches without enabled items are not counted")
+    void testCountNonEmptyResearches() {
+        Research empty = new Research(new NamespacedKey(plugin, "count_empty_test"), 9901, "Empty", 1);
+        Research second = new Research(new NamespacedKey(plugin, "count_empty_test_2"), 9902, "Empty 2", 1);
+        PlayerProfile profile = Mockito.mock(PlayerProfile.class, Mockito.CALLS_REAL_METHODS);
+
+        Assertions.assertEquals(0, profile.countNonEmptyResearches(Arrays.asList(empty, second)));
+        Assertions.assertEquals(0, profile.countNonEmptyResearches(java.util.List.of()));
+    }
 }

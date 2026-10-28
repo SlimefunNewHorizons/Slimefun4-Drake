@@ -288,14 +288,35 @@ public class PlayerProfile {
         return Optional.empty();
     }
 
-    private int countNonEmptyResearches(@Nonnull Collection<Research> researches) {
+    /**
+     * Counts the {@link Research Researches} that contain at least one enabled item.
+     * Researches whose items are all disabled are not obtainable and must not skew progress.
+     * (Origin: Slimefun/Slimefun4 PR #4320)
+     *
+     * @param researches
+     *            The researches to count
+     *
+     * @return The amount of researches with enabled items
+     */
+    public int countNonEmptyResearches(@Nonnull Collection<Research> researches) {
         int count = 0;
+
         for (Research research : researches) {
             if (research.hasEnabledItems()) {
                 count++;
             }
         }
+
         return count;
+    }
+
+    /**
+     * Counts every registered {@link Research} that has at least one enabled item.
+     *
+     * @return The amount of obtainable researches
+     */
+    public static int countAllNonEmptyResearches() {
+        return Slimefun.getRegistry().getResearches().stream().filter(Research::hasEnabledItems).mapToInt(r -> 1).sum();
     }
 
     /**
@@ -309,7 +330,7 @@ public class PlayerProfile {
         List<String> titles = Slimefun.getRegistry().getResearchRanks();
 
         int allResearches = countNonEmptyResearches(Slimefun.getRegistry().getResearches());
-        float fraction = (float) countNonEmptyResearches(getResearches()) / allResearches;
+        float fraction = allResearches == 0 ? 0 : (float) countNonEmptyResearches(getResearches()) / allResearches;
         int index = (int) (fraction * (titles.size() - 1));
 
         return titles.get(index);
@@ -327,7 +348,7 @@ public class PlayerProfile {
         int levels = getResearches().stream().mapToInt(Research::getCost).sum();
         int allResearches = countNonEmptyResearches(Slimefun.getRegistry().getResearches());
 
-        float progress = Math.round(((unlockedResearches * 100.0F) / allResearches) * 100.0F) / 100.0F;
+        float progress = allResearches == 0 ? 0 : Math.round(((unlockedResearches * 100.0F) / allResearches) * 100.0F) / 100.0F;
 
         sender.sendMessage("");
         sender.sendMessage(ChatColors.color("&7Statistics for Player: &b" + name));
