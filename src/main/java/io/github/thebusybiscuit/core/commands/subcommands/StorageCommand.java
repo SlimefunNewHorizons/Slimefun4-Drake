@@ -37,7 +37,7 @@ class StorageCommand extends SubCommand {
             return;
         }
 
-        SfStore store = SfStores.get();
+        SfStore store = SfStores.get().unwrap();
         String sub = args.length > 1 ? args[1].toLowerCase() : "status";
 
         if (sub.equals("export")) {

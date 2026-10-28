@@ -42,7 +42,7 @@ public final class SfStores {
             // sin plugin (tests): disco
         }
         if (backend == null || backend.equalsIgnoreCase("file")) {
-            return new FileSfStore();
+            return new CachedSfStore(new FileSfStore());
         }
         try {
             var cfg = Slimefun.getCfg();
@@ -56,10 +56,10 @@ public final class SfStores {
                 Slimefun.logger().log(Level.INFO, "Storage {0}: importados {1} ficheros desde disco (los originales no se tocan)", new Object[] { backend, imported });
             }
             Slimefun.logger().log(Level.INFO, "Storage activo: {0}", backend);
-            return sql;
+            return new CachedSfStore(sql);
         } catch (Exception | LinkageError e) {
             Slimefun.logger().log(Level.SEVERE, e, () -> "No se pudo iniciar el storage '" + "SQL" + "', se usa disco");
-            return new FileSfStore();
+            return new CachedSfStore(new FileSfStore());
         }
     }
 }
