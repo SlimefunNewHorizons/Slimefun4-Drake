@@ -8,6 +8,15 @@ import org.junit.jupiter.api.Test;
 class RustNativeEngineTest {
 
     @Test
+    void addSaturatingMatchesSumInJava() {
+        int[][] cases = {{Integer.MAX_VALUE, 1}, {Integer.MIN_VALUE, -1}, {5, -7}, {0, 0}};
+        for (int[] c : cases) {
+            assertEquals(RustNativeEngine.sumInJava(c),
+                io.github.thebusybiscuit.slimefun4.api.services.NativeAccelerationService.addSaturating(c[0], c[1]));
+        }
+    }
+
+    @Test
     void sumsValuesWithJavaFallback() {
         assertEquals(60, RustNativeEngine.sumInJava(new int[] {10, 20, 30}));
     }
@@ -25,7 +34,7 @@ class RustNativeEngineTest {
         Assumptions.assumeTrue(library != null && !library.isBlank());
 
         RustNativeEngine.loadLibraryForTesting(library);
-        assertEquals(1, RustNativeEngine.nativeAbiVersionForTesting());
+        assertEquals(2, RustNativeEngine.nativeAbiVersionForTesting());
 
         int[][] samples = {
             {10, 20, 30},

@@ -138,6 +138,8 @@ native-engine:
   enabled: true
   library: "native/libslimefun_ffi.so"
   minimum-batch-size: 2
+  # Suma por JNI: mas lenta que Java en todos los tamanos medidos. Dejar en false.
+  native-sum: false
 
 research-ranks:
 - Chicken

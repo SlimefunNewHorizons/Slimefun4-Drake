@@ -18,7 +18,8 @@ import io.github.thebusybiscuit.slimefun4.api.services.NativeAccelerationService
  */
 public final class RustNativeEngine implements NativeAccelerationService {
 
-    private static final int SUPPORTED_ABI = 1;
+    private static final int MIN_ABI = 1;
+    private static final int MAX_ABI = 2;
 
     private final AtomicLong nativeCalls = new AtomicLong();
     private final AtomicLong fallbackCalls = new AtomicLong();
@@ -27,9 +28,12 @@ public final class RustNativeEngine implements NativeAccelerationService {
     private volatile boolean available;
     private volatile int abiVersion;
     private int minimumBatchSize = 2;
+    /** Off by default: benchmarks (docs/RUST_NATIVO.md) show JNI sum never beats Java. */
+    private boolean nativeSum;
 
     public void start(@Nonnull JavaPlugin plugin, @Nonnull Config config) {
         minimumBatchSize = Math.max(1, config.getInt("native-engine.minimum-batch-size"));
+        nativeSum = config.contains("native-engine.native-sum") && config.getBoolean("native-engine.native-sum");
         plugin.getServer().getServicesManager().register(
             NativeAccelerationService.class,
             this,
@@ -62,8 +66,8 @@ public final class RustNativeEngine implements NativeAccelerationService {
 
             System.load(library.toString());
             abiVersion = nativeAbiVersion();
-            if (abiVersion != SUPPORTED_ABI) {
-                throw new IllegalStateException("ABI " + abiVersion + " incompatible; esperado " + SUPPORTED_ABI);
+            if (abiVersion < MIN_ABI || abiVersion > MAX_ABI) {
+                throw new IllegalStateException("ABI " + abiVersion + " incompatible; esperado " + MIN_ABI + "-" + MAX_ABI);
             }
             if (nativeSumSaturating(new int[] {Integer.MAX_VALUE, 1}) != Integer.MAX_VALUE) {
                 throw new IllegalStateException("La autoprueba de saturación falló");
@@ -99,7 +103,7 @@ public final class RustNativeEngine implements NativeAccelerationService {
 
     @Override
     public int sumSaturating(@Nonnull int[] values) {
-        if (!available || values.length < minimumBatchSize) {
+        if (!available || !nativeSum || values.length < minimumBatchSize) {
             fallbackCalls.incrementAndGet();
             return sumInJava(values);
         }

@@ -8,6 +8,15 @@ import javax.annotation.Nonnull;
  */
 public interface NativeAccelerationService {
 
+    /**
+     * Saturating int addition, allocation-free. This is what hot paths (EnergyNet) must use:
+     * benchmarks show the JNI sum never beats it and it avoids the temporary arrays.
+     */
+    static int addSaturating(int a, int b) {
+        long sum = (long) a + b;
+        return sum > Integer.MAX_VALUE ? Integer.MAX_VALUE : sum < Integer.MIN_VALUE ? Integer.MIN_VALUE : (int) sum;
+    }
+
     boolean isAvailable();
 
     int getAbiVersion();

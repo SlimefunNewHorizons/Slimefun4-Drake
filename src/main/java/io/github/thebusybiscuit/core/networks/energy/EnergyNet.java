@@ -1,6 +1,5 @@
 package io.github.thebusybiscuit.slimefun4.core.networks.energy;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,6 +16,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 
+import io.github.thebusybiscuit.slimefun4.api.services.NativeAccelerationService;
 import io.github.thebusybiscuit.slimefun4.api.ErrorReport;
 import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;
 import io.github.thebusybiscuit.slimefun4.api.network.Network;
@@ -160,8 +160,7 @@ public class EnergyNet extends Network implements HologramOwner {
         } else {
             int generatorsSupply = tickAllGenerators(timestamp::getAndAdd);
             int capacitorsSupply = tickAllCapacitors();
-            int supply = Slimefun.getNativeAccelerationService()
-                .sumSaturating(new int[] {generatorsSupply, capacitorsSupply});
+            int supply = NativeAccelerationService.addSaturating(generatorsSupply, capacitorsSupply);
             int remainingEnergy = supply;
             int demand = 0;
 
@@ -236,8 +235,7 @@ public class EnergyNet extends Network implements HologramOwner {
 
     private int tickAllGenerators(@Nonnull LongConsumer timings) {
         Set<Location> explodedBlocks = new HashSet<>();
-        int[] generated = new int[generators.size()];
-        int generatedCount = 0;
+        int generated = 0;
 
         for (Map.Entry<Location, EnergyNetProvider> entry : generators.entrySet()) {
             long timestamp = Slimefun.getProfiler().newEntry();
@@ -262,7 +260,7 @@ public class EnergyNet extends Network implements HologramOwner {
                         loc.getWorld().createExplosion(loc, 0F, false);
                     });
                 } else {
-                    generated[generatedCount++] = energy;
+                    generated = NativeAccelerationService.addSaturating(generated, energy);
                 }
             } catch (Exception | LinkageError throwable) {
                 explodedBlocks.add(loc);
@@ -278,20 +276,17 @@ public class EnergyNet extends Network implements HologramOwner {
             generators.keySet().removeAll(explodedBlocks);
         }
 
-        return Slimefun.getNativeAccelerationService()
-            .sumSaturating(Arrays.copyOf(generated, generatedCount));
+        return generated;
     }
 
     private int tickAllCapacitors() {
-        int[] stored = new int[capacitors.size()];
-        int storedCount = 0;
+        int stored = 0;
 
         for (Map.Entry<Location, EnergyNetComponent> entry : capacitors.entrySet()) {
-            stored[storedCount++] = entry.getValue().getCharge(entry.getKey());
+            stored = NativeAccelerationService.addSaturating(stored, entry.getValue().getCharge(entry.getKey()));
         }
 
-        return Slimefun.getNativeAccelerationService()
-            .sumSaturating(Arrays.copyOf(stored, storedCount));
+        return stored;
     }
 
     private void updateHologram(@Nonnull Block b, double supply, double demand) {
