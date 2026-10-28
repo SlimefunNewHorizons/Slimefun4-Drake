@@ -24,13 +24,13 @@
     </issueManagement>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <maven.compiler.release>${java.version}</maven.compiler.release>
 
-        <paper.version>1.21.11-R0.1-SNAPSHOT</paper.version>
+        <paper.version>26.2.build.133-stable</paper.version>
         <slimefun.version>RC-37</slimefun.version>
         <!-- Must match this reactor's core, never the production Drake coordinates. -->
         <slimefun.drake.version>11.0-Universal-26.x-SNAPSHOT</slimefun.drake.version>
@@ -233,8 +233,8 @@
             </dependency>
             <dependency>
                 <groupId>org.mockbukkit.mockbukkit</groupId>
-                <artifactId>mockbukkit-v1.21</artifactId>
-                <version>4.116.3</version>
+                <artifactId>mockbukkit-v26.2</artifactId>
+                <version>4.116.1</version>
                 <scope>test</scope>
             </dependency>
 
@@ -341,7 +341,7 @@
         </dependency>
         <dependency>
             <groupId>org.mockbukkit.mockbukkit</groupId>
-            <artifactId>mockbukkit-v1.21</artifactId>
+            <artifactId>mockbukkit-v26.2</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -496,16 +496,5 @@
             <url>https://nexus.neetgames.com/repository/maven-public</url>
         </repository>
     </repositories>
-    <profiles>
-        <!-- Compila contra la API real de Minecraft 26.2 (Java 25). El jar por defecto usa la API 1.21.11 (bytecode Java 21) y corre en ambas.
-             Uso: mvn -DskipTests -Pmc26 compile. Los tests no corren con este perfil (MockBukkit aun no soporta 26.2). -->
-        <profile>
-            <id>mc26</id>
-            <properties>
-                <paper.version>26.2.build.133-stable</paper.version>
-                <java.version>25</java.version>
-            </properties>
-        </profile>
-    </profiles>
 
 </project>
