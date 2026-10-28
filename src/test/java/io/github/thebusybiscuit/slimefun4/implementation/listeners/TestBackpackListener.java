@@ -15,6 +15,7 @@ import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType.SlotType;
 import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
@@ -29,6 +30,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import io.github.bakedlibs.dough.items.CustomItemStack;
 import io.github.thebusybiscuit.slimefun4.api.exceptions.TagMisconfigurationException;
 import io.github.thebusybiscuit.slimefun4.api.items.ItemGroup;
+import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;
 import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItemStack;
 import io.github.thebusybiscuit.slimefun4.api.player.PlayerBackpack;
 import io.github.thebusybiscuit.slimefun4.api.player.PlayerProfile;
@@ -141,6 +143,36 @@ class TestBackpackListener {
         PlayerDropItemEvent event = new PlayerDropItemEvent(player, item);
         listener.onItemDrop(event);
 
+        Assertions.assertFalse(event.isCancelled());
+    }
+
+    @Test
+    @DisplayName("Test swapping a backpack between hands is blocked while one is open")
+    void testSwapHandsWithBackpack() throws InterruptedException {
+        Player player = server.addPlayer();
+        openMockBackpack(player, "SWAP_HANDS_BACKPACK_TEST", 27);
+        ItemStack backpackItem = SlimefunItem.getById("SWAP_HANDS_BACKPACK_TEST").getItem().clone();
+
+        PlayerSwapHandItemsEvent event = new PlayerSwapHandItemsEvent(player, backpackItem, new ItemStack(Material.STONE));
+        listener.onItemSwap(event);
+        Assertions.assertTrue(event.isCancelled());
+
+        event = new PlayerSwapHandItemsEvent(player, new ItemStack(Material.STONE), backpackItem);
+        listener.onItemSwap(event);
+        Assertions.assertTrue(event.isCancelled());
+    }
+
+    @Test
+    @DisplayName("Test swapping normal items or with no backpack open is not blocked")
+    void testSwapHandsNormalItems() throws InterruptedException {
+        Player player = server.addPlayer();
+        PlayerSwapHandItemsEvent event = new PlayerSwapHandItemsEvent(player, new ItemStack(Material.STONE), new ItemStack(Material.DIAMOND));
+        listener.onItemSwap(event);
+        Assertions.assertFalse(event.isCancelled());
+
+        openMockBackpack(player, "SWAP_HANDS_NORMAL_TEST", 27);
+        event = new PlayerSwapHandItemsEvent(player, new ItemStack(Material.STONE), new ItemStack(Material.AIR));
+        listener.onItemSwap(event);
         Assertions.assertFalse(event.isCancelled());
     }
 

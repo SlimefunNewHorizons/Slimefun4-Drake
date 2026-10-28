@@ -22,6 +22,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -86,6 +87,25 @@ public class BackpackListener implements Listener {
                 e.setCancelled(true);
             }
         }
+    }
+
+    /**
+     * Prevents swapping a {@link SlimefunBackpack} between hands while a backpack is open,
+     * which would desync the open session from the item (origin: Slimefun/Slimefun4 PR #4275).
+     */
+    @EventHandler
+    public void onItemSwap(PlayerSwapHandItemsEvent e) {
+        if (!backpacks.containsKey(e.getPlayer().getUniqueId())) {
+            return;
+        }
+
+        if (isBackpack(e.getMainHandItem()) || isBackpack(e.getOffHandItem())) {
+            e.setCancelled(true);
+        }
+    }
+
+    private boolean isBackpack(@Nullable ItemStack item) {
+        return item != null && !item.getType().isAir() && SlimefunItem.getByItem(item) instanceof SlimefunBackpack;
     }
 
     @EventHandler(ignoreCancelled = true)
