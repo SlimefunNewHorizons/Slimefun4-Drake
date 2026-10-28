@@ -45,9 +45,18 @@ class StorageCommand extends SubCommand {
                 sender.sendMessage("[Slimefun] El backend ya es 'file'; no hay nada que exportar.");
                 return;
             }
-            Slimefun.runSync(() -> sender.sendMessage("[Slimefun] Exportando..."));
-            int n = ((SqlSfStore) store).exportToDisk("data-storage/Slimefun/export");
-            sender.sendMessage("[Slimefun] Exportados " + n + " ficheros a data-storage/Slimefun/export/. Para volver a disco, mueve su contenido a data-storage/Slimefun/ y pon storage.backend: file.");
+            sender.sendMessage("[Slimefun] Exportando...");
+            // fuera del hilo principal: miles de filas + ficheros bloquearian el tick
+            org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(Slimefun.instance(), () -> {
+                String msg;
+                try {
+                    int n = ((SqlSfStore) store).exportToDisk("data-storage/Slimefun/export");
+                    msg = "[Slimefun] Exportados " + n + " ficheros a data-storage/Slimefun/export/. Para volver a disco, mueve su contenido a data-storage/Slimefun/ y pon storage.backend: file.";
+                } catch (RuntimeException e) {
+                    msg = "[Slimefun] Fallo al exportar: " + e.getMessage();
+                }
+                sender.sendMessage(msg);
+            });
             return;
         }
 
