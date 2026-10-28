@@ -1,12 +1,12 @@
 
 > [!IMPORTANT]
-> **dough va SHADEADO dentro de Slimefun, no como jar suelto.** El código fuente
-> vive en el repo `dough-core`, pero Slimefun lo consume como dependencia Maven
-> (`com.github.drakescraft_labs:dough-core`) y al empaquetar lo reubica a
-> `com.github.drakescraft_labs.slimefun4.libraries.dough`. **No existe un
-> `dough.jar` en producción.** Por tanto, cualquier cambio en `dough-core` exige:
-> `mvn install` en dough-core → **recompilar Slimefun** (y todo plugin que lo
-> shadee) → subir esos jars. Subir dough suelto no aplica el cambio.
+> **dough is SHADED inside Slimefun, not shipped as a standalone jar.** The source
+> lives in the `dough-core` repo, but Slimefun consumes it as a Maven dependency
+> (`com.github.drakescraft_labs:dough-core`) and relocates it when packaging to
+> `com.github.drakescraft_labs.slimefun4.libraries.dough`. **There is no
+> `dough.jar` in production.** Therefore, any change to `dough-core` requires:
+> `mvn install` in dough-core -> **rebuild Slimefun** (and every plugin that
+> shades it) -> upload those jars. Uploading dough on its own has no effect.
 
 <div align="center">
 
@@ -18,13 +18,13 @@
 
 </div>
 
-> ### 🏰 ¡Únete a la Comunidad Oficial de DrakesCraft!
+> ### 🏰 Join the Official DrakesCraft Community!
 > 
-> * 🎮 **IP del Servidor**: `mc.drakescraft.cl` *(Java 1.21.11 & Bedrock)*
-> * 💬 **Discord Oficial**: [discord.gg/drakescraft](https://discord.gg/rv3vtXZTk7)
-> * 🌐 **Web & Guía**: [web.drakescraft.cl](https://web.drakescraft.cl) — 🛒 **Tienda**: [web.drakescraft.cl/store](https://web.drakescraft.cl/store.html)
+> * 🎮 **Server IP**: `mc.drakescraft.cl` *(Java 1.21.11 & Bedrock)*
+> * 💬 **Official Discord**: [discord.gg/drakescraft](https://discord.gg/rv3vtXZTk7)
+> * 🌐 **Web & Guide**: [web.drakescraft.cl](https://web.drakescraft.cl) — 🛒 **Store**: [web.drakescraft.cl/store](https://web.drakescraft.cl/store.html)
 > 
-> *¡Juega con este addon y más de 80 expansiones optimizadas en vivo en nuestra network de supervivencia técnica!*
+> *Play with this addon and 80+ more optimized expansions live on our technical survival network!*
 
 ---
 
@@ -42,6 +42,19 @@ updates do not serialize stale `ItemStack` data. The feature is controlled by
 The runtime is hybrid. `Slimefun-Rust` is the shared acceleration layer for
 deterministic work across this core, addons and DrakesCraft-owned plugins. Java
 remains authoritative for Bukkit state and supplies a transparent fallback.
+
+## Version compatibility
+
+| Line | Branch | Minecraft | Java | Compile-time Paper API | Status |
+|---|---|---|---|---|---|
+| Production | `main` | Paper/Purpur 1.21.11 | 21 | `1.21.11-R0.1-SNAPSHOT` | production |
+| Universal 26.x | `port-26x` | Paper/Purpur 26.2 (same codebase as production 1.21.11) | 21 bytecode (major 65); runs on 21+ | `1.21.11-R0.1-SNAPSHOT` (`build-parent/pom.xml`, `paper.version`) | test (verified on Paper/Purpur 26.2) |
+
+The Universal core is `11.0-Universal-26.x-SNAPSHOT` (package `io.github.thebusybiscuit.slimefun4`, `plugin.yml` `api-version: 1.21`). Production (`main`) uses the package `com.github.drakescraft_labs.slimefun4`.
+
+**Minecraft versions older than 1.21.11 are not supported and not tested.** The `MinecraftVersion` enum inherits 1.16+ logic from upstream, but nothing below 1.21.11 is guaranteed to work.
+
+Addons for the 26.x line are obtained with `ai-hub/scripts/portar_addons.py`.
 
 ## Runtime contract
 
@@ -67,17 +80,18 @@ Category pages and search results both pass through the same checks.
 - `/sf give` remains a staff operation. Odysseia blocks paid pass holders from
   using it and owns guide expiry, transfer prevention, and legacy audits.
 
-## Línea Universal 26.x (rama `port-26x`)
+## Universal 26.x line (branch `port-26x`)
 
-> `main` es producción **1.21.11** y **no** incluye nada de esta sección. `port-26x` es la línea Universal para Java 25 y Paper/Purpur 26.2.
+> `main` is production **1.21.11** and does **not** include anything from this section. `port-26x` is the Universal line for Paper/Purpur 26.2 (see [Version compatibility](#version-compatibility)).
 
-- **Storage opt-in (`SfStore`)**: `storage.backend` = `file` (disco con fsync, por defecto), `sqlite`, `mysql` o `postgres`. Claves: `sqlite-file`, `jdbc-url`, `jdbc-user`, `jdbc-password`. La primera vez con SQL se importa solo desde disco (los ficheros no se tocan); si el SQL falla, cae a disco. Cambiar de backend exige reiniciar.
-- **Comandos nuevos**: `/sf tick` (tick-freeze), `/sf itemid`, `/sf balance [addon]`, `/sf addons` (versiones y objetos por addon), `/sf storage [status|export]`.
-- **`core/balance`**: `BalanceService`, tomado de Slimefun5.
-- **Crafter Smart Port** (`CRAFTER_SMART_PORT`): interactor bajo un autocrafter; idea de SlimefunGuguProject/Slimefun4.
-- **Cargo**: `ItemStackWrapper` con una sola lectura de meta (de Slimefun5).
-- **dough-core** `1.3.1-Universal-26.x-SNAPSHOT` (namespace `io.github.bakedlibs`; arregla `CustomGameProfile` vs Authlib final), publicado en `maven.drakescraft.cl`.
-- **Atribución (GPL-3.0)**: SlimefunGuguProject/Slimefun4, Slimefun5/Slimefun5 y Slimefun-United.
+- **Opt-in storage backends (`SfStore`)**: `storage.backend` = `file` (disk with fsync, default), `sqlite`, `mysql` or `postgres`. Keys: `sqlite-file`, `jdbc-url`, `jdbc-user`, `jdbc-password`. SQL backends are wrapped in `CachedSfStore`: writes are asynchronous and everything is flushed on shutdown. The first time SQL is used, data is imported from disk (the files are not touched); if SQL fails, it falls back to disk. Changing backend requires a restart.
+- **New commands**: `/sf tick` (tick freeze), `/sf storage [status|export]`, `/sf balance [addon]`, `/sf itemid`, `/sf addons` (versions and item count per addon).
+- **`core/balance`**: `BalanceService`, taken from Slimefun5.
+- **Crafter Smart Port** (`CRAFTER_SMART_PORT`): interactor placed under an autocrafter; idea from SlimefunGuguProject/Slimefun4.
+- **Cargo**: `ItemStackWrapper` with a single meta read (from Slimefun5).
+- **Tests**: the test suite (1834 tests) is green.
+- **dough-core** `1.3.1-Universal-26.x-SNAPSHOT` (namespace `io.github.bakedlibs`; fixes `CustomGameProfile` against the final Authlib), published at `maven.drakescraft.cl`.
+- **Attribution (GPL-3.0)**: SlimefunGuguProject/Slimefun4, Slimefun5/Slimefun5 and Slimefun-United.
 
 ## Build and validation
 
@@ -101,10 +115,10 @@ registry bootstrap failure is infrastructure debt, not a valid SFMaster result.
 4. Restart during a maintenance window and verify the startup log, addon load list, BlockStorage load and no duplicate-plugin warning.
 5. Smoke-test the Slimefun Guide, a machine, a CargoNet operation and an EnergyNet operation before calling the update complete.
 
-## Guías DrakesCraft
+## DrakesCraft guides
 
-- [Progresión y automatización](docs/GUIA_DE_PROGRESION_Y_AUTOMATIZACION.md)
-- [Integridad de redes](https://github.com/DrakesCraft-Labs/NetworksV6-drake/blob/main/docs/INTEGRIDAD_DE_RED_DRAKESCRAFT.md)
+- [Progression and automation](docs/GUIA_DE_PROGRESION_Y_AUTOMATIZACION.md)
+- [Network integrity](https://github.com/DrakesCraft-Labs/NetworksV6-drake/blob/main/docs/INTEGRIDAD_DE_RED_DRAKESCRAFT.md)
 
 ## Maintainers
 
