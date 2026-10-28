@@ -285,6 +285,20 @@ public final class SlimefunRegistry {
         return barterDrops;
     }
 
+    /**
+     * Returns a shuffled snapshot of the bartering drops, so that the iteration order
+     * of the underlying {@link Set} does not bias which item wins a roll.
+     * (Origin: Slimefun/Slimefun4 PR #4337)
+     *
+     * @return A shuffled {@link List} of bartering drops
+     */
+    @Nonnull
+    public List<ItemStack> getRandomizedBarteringDrops() {
+        List<ItemStack> list = new ArrayList<>(barterDrops);
+        Collections.shuffle(list, java.util.concurrent.ThreadLocalRandom.current());
+        return list;
+    }
+
     @Nonnull
     public Set<SlimefunItem> getRadioactiveItems() {
         return radioactive;

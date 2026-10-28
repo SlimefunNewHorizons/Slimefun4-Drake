@@ -1,6 +1,6 @@
 package io.github.thebusybiscuit.slimefun4.implementation.listeners.entity;
 
-import java.util.Set;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import javax.annotation.Nonnull;
@@ -78,7 +78,7 @@ public class PiglinListener implements Listener {
     @EventHandler
     public void onPiglinDropItem(EntityDropItemEvent e) {
         if (e.getEntity() instanceof Piglin) {
-            Set<ItemStack> drops = Slimefun.getRegistry().getBarteringDrops();
+            List<ItemStack> drops = Slimefun.getRegistry().getRandomizedBarteringDrops();
 
             /*
              * NOTE: Getting a new random number each iteration because multiple items could have the same
