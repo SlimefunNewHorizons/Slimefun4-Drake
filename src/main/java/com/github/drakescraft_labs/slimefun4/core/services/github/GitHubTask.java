@@ -40,6 +40,7 @@ class GitHubTask implements Runnable {
     private final GitHubService gitHubService;
     private final AtomicInteger consecutiveRateLimits = new AtomicInteger();
     private final AtomicBoolean rateLimitRetryQueued = new AtomicBoolean();
+    private final AtomicBoolean skinRefreshInProgress = new AtomicBoolean();
 
     GitHubTask(@Nonnull GitHubService github) {
         gitHubService = github;
@@ -66,39 +67,47 @@ class GitHubTask implements Runnable {
      * the {@link UUID} and received skin inside a local cache {@link File}.
      */
     private void grabTextures() {
-        /**
-         * Store all queried usernames to prevent 429 responses for pinging
-         * the same URL twice in one run.
-         */
-        Map<String, String> skins = new HashMap<>();
-        int requests = 0;
+        if (!skinRefreshInProgress.compareAndSet(false, true)) {
+            return;
+        }
 
-        for (Contributor contributor : gitHubService.getContributors().values()) {
-            int newRequests = requestTexture(contributor, skins);
-            requests += newRequests;
+        try {
+            /**
+             * Store all queried usernames to prevent 429 responses for pinging
+             * the same URL twice in one run.
+             */
+            Map<String, String> skins = new HashMap<>();
+            int requests = 0;
 
-            if (newRequests < 0 || requests >= MAX_REQUESTS_PER_MINUTE) {
-                break;
+            for (Contributor contributor : gitHubService.getContributors().values()) {
+                int newRequests = requestTexture(contributor, skins);
+                requests += newRequests;
+
+                if (newRequests < 0 || requests >= MAX_REQUESTS_PER_MINUTE) {
+                    break;
+                }
             }
-        }
 
-        if (requests >= MAX_REQUESTS_PER_MINUTE && Slimefun.instance() != null && Slimefun.instance().isEnabled()) {
-            // Slow down API requests and wait a minute after more than x requests were made
-            Bukkit.getScheduler().runTaskLaterAsynchronously(Slimefun.instance(), this::grabTextures, 2 * 60 * 20L);
-        }
-
-        for (GitHubConnector connector : gitHubService.getConnectors()) {
-            if (connector instanceof ContributionsConnector contributionsConnector && !contributionsConnector.hasFinished()) {
-                return;
+            if (requests >= MAX_REQUESTS_PER_MINUTE && Slimefun.instance() != null && Slimefun.instance().isEnabled()) {
+                // Slow down API requests and wait a minute after more than x requests were made
+                Bukkit.getScheduler().runTaskLaterAsynchronously(Slimefun.instance(), this::grabTextures, 2 * 60 * 20L);
             }
-        }
 
-        /**
-         * We only wanna save this if all Connectors finished already.
-         * This will run multiple times but thats okay, this way we get as much
-         * data as possible stored.
-         */
-        gitHubService.saveCache();
+            for (GitHubConnector connector : gitHubService.getConnectors()) {
+                if (connector instanceof ContributionsConnector contributionsConnector && !contributionsConnector.hasFinished()) {
+                    return;
+                }
+            }
+
+            /**
+             * We only wanna save this if all Connectors finished already.
+             * This will run multiple times but thats okay, this way we get as much
+             * data as possible stored.
+             */
+            gitHubService.saveCache();
+        } finally {
+            skinRefreshInProgress.set(false);
+        }
     }
 
     private int requestTexture(@Nonnull Contributor contributor, @Nonnull Map<String, String> skins) {
