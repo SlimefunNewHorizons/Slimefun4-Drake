@@ -274,4 +274,17 @@ public class CargoNet extends AbstractItemNetwork implements HologramOwner {
     static boolean shouldReportInvalidFrequency(@Nonnull Map<Location, String> reported, @Nonnull Location node, @Nonnull String frequency) {
         return !frequency.equals(reported.put(node, frequency));
     }
+
+    @Override
+    public @Nonnull Optional<Block> getAttachedBlock(@Nonnull Location l) {
+        return super.getAttachedBlock(l);
+    }
+
+    public @Nonnull Set<Location> getInputNodes() {
+        return inputNodes;
+    }
+
+    public @Nonnull Set<Location> getOutputNodes() {
+        return outputNodes;
+    }
 }

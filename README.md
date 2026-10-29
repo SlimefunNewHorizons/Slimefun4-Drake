@@ -104,6 +104,7 @@ Fixes ported from other Slimefun forks and unmerged upstream PRs (all GPL-3, eac
 | Swapping hands (F) blocked while a backpack is open | Slimefun/Slimefun4 PR #4275 | `0be7a9257` |
 | Pickaxe of Vein Mining no longer breaks Slimefun blocks | Slimefun/Slimefun4 PR #4343 | `bc60de004` |
 | Research placeholders/stats ignore researches without enabled items, no division by zero | Slimefun/Slimefun4 PR #4320 | `9ac85bf20` |
+| Cargo Grid Monitor GUI on the Cargo Manager (plain click opens it; sneak+click keeps the visualizer toggle). Compiles and passes the suite; **not yet tried in-game** | SlimeCore-MC/Slimefun4Core (GPL-3, R2Ksanu / RuTwoK Labs) | this commit |
 
 ## Build and validation
 
