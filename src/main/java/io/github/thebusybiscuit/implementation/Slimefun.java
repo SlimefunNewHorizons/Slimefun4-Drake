@@ -448,6 +448,13 @@ public class Slimefun extends JavaPlugin implements SlimefunAddon {
         // Kill our Profiler Threads
         profiler.kill();
 
+        // Complete legacy addon machine operations before inventory data is saved.
+        try {
+            io.github.thebusybiscuit.core.machines.LegacyProcessingRecovery.completeAllActiveOperations();
+        } catch (Throwable t) {
+            getLogger().log(Level.SEVERE, "Failed to complete legacy machine operations during onDisable", t);
+        }
+
         // Guardado completo al apagar: todos los perfiles en memoria + bloques pendientes (evita pérdidas)
         autoSavingService.shutdownSave();
 
