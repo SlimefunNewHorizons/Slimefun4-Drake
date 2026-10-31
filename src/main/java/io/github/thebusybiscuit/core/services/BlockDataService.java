@@ -22,7 +22,6 @@ import org.bukkit.plugin.Plugin;
 
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 import io.papermc.lib.PaperLib;
-import io.github.thebusybiscuit.slimefun4.utils.PaperLibUtils;
 
 /**
  * The {@link BlockDataService} is similar to the {@link CustomItemDataService},
@@ -101,7 +100,7 @@ public class BlockDataService implements Keyed {
     public Optional<String> getBlockData(@Nonnull Block b) {
         Validate.notNull(b, "The block cannot be null!");
 
-        BlockState state = PaperLibUtils.getBlockState(b, false).getState();
+        BlockState state = b.getState(false);
         PersistentDataContainer container = getPersistentDataContainer(state);
 
         if (container != null) {

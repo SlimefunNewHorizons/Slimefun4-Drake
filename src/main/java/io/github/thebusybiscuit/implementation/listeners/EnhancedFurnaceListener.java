@@ -20,7 +20,6 @@ import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 import io.github.thebusybiscuit.slimefun4.implementation.items.blocks.EnhancedFurnace;
 import io.github.thebusybiscuit.slimefun4.utils.tags.SlimefunTag;
 import io.papermc.lib.PaperLib;
-import io.github.thebusybiscuit.slimefun4.utils.PaperLibUtils;
 
 import me.mrCookieSlime.Slimefun.api.BlockStorage;
 
@@ -70,7 +69,7 @@ public class EnhancedFurnaceListener implements Listener {
         SlimefunItem sfItem = BlockStorage.check(e.getBlock());
 
         if (sfItem instanceof EnhancedFurnace enhancedFurnace && !enhancedFurnace.isDisabledIn(e.getBlock().getWorld())) {
-            BlockState state = PaperLibUtils.getBlockState(e.getBlock(), false).getState();
+            BlockState state = e.getBlock().getState(false);
 
             if (state instanceof Furnace furnace) {
                 FurnaceInventory inventory = furnace.getInventory();

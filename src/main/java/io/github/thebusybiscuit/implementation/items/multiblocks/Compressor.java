@@ -27,7 +27,6 @@ import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 import io.github.thebusybiscuit.slimefun4.implementation.SlimefunItems;
 import io.github.thebusybiscuit.slimefun4.utils.SlimefunUtils;
 import io.papermc.lib.PaperLib;
-import io.github.thebusybiscuit.slimefun4.utils.PaperLibUtils;
 
 public class Compressor extends MultiBlockMachine {
 
@@ -59,7 +58,7 @@ public class Compressor extends MultiBlockMachine {
     @Override
     public void onInteract(Player p, Block b) {
         Block dispBlock = b.getRelative(BlockFace.DOWN);
-        BlockState state = PaperLibUtils.getBlockState(dispBlock, false).getState();
+        BlockState state = dispBlock.getState(false);
 
         if (state instanceof Dispenser dispenser) {
             Inventory inv = dispenser.getInventory();

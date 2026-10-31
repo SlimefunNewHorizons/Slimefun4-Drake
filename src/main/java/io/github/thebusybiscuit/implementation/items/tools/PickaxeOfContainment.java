@@ -22,7 +22,6 @@ import io.github.thebusybiscuit.slimefun4.implementation.items.blocks.BrokenSpaw
 import io.github.thebusybiscuit.slimefun4.implementation.items.blocks.RepairedSpawner;
 import io.github.thebusybiscuit.slimefun4.utils.SlimefunUtils;
 import io.papermc.lib.PaperLib;
-import io.github.thebusybiscuit.slimefun4.utils.PaperLibUtils;
 
 import me.mrCookieSlime.Slimefun.api.BlockStorage;
 
@@ -72,7 +71,7 @@ public class PickaxeOfContainment extends SimpleSlimefunItem<ToolUseHandler> {
             spawner = (AbstractMonsterSpawner) SlimefunItems.BROKEN_SPAWNER.getItem();
         }
 
-        BlockState state = PaperLibUtils.getBlockState(b, false).getState();
+        BlockState state = b.getState(false);
 
         if (state instanceof CreatureSpawner creatureSpawner) {
             EntityType entityType = creatureSpawner.getSpawnedType();

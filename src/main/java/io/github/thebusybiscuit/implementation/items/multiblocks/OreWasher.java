@@ -27,7 +27,6 @@ import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 import io.github.thebusybiscuit.slimefun4.implementation.SlimefunItems;
 import io.github.thebusybiscuit.slimefun4.utils.SlimefunUtils;
 import io.papermc.lib.PaperLib;
-import io.github.thebusybiscuit.slimefun4.utils.PaperLibUtils;
 
 /**
  * The {@link OreWasher} is a special {@link MultiBlockMachine} which allows you to
@@ -93,7 +92,7 @@ public class OreWasher extends MultiBlockMachine {
     @Override
     public void onInteract(Player p, Block b) {
         Block dispBlock = b.getRelative(BlockFace.UP);
-        BlockState state = PaperLibUtils.getBlockState(dispBlock, false).getState();
+        BlockState state = dispBlock.getState(false);
 
         if (state instanceof Dispenser disp) {
             Inventory inv = disp.getInventory();

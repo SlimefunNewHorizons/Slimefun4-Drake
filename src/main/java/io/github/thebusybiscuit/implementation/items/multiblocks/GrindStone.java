@@ -28,7 +28,6 @@ import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 import io.github.thebusybiscuit.slimefun4.implementation.SlimefunItems;
 import io.github.thebusybiscuit.slimefun4.utils.SlimefunUtils;
 import io.papermc.lib.PaperLib;
-import io.github.thebusybiscuit.slimefun4.utils.PaperLibUtils;
 
 public class GrindStone extends MultiBlockMachine {
 
@@ -119,7 +118,7 @@ public class GrindStone extends MultiBlockMachine {
     @Override
     public void onInteract(Player p, Block b) {
         Block possibleDispenser = b.getRelative(BlockFace.DOWN);
-        BlockState state = PaperLibUtils.getBlockState(possibleDispenser, false).getState();
+        BlockState state = possibleDispenser.getState(false);
 
         if (state instanceof Dispenser dispenser) {
             Inventory inv = dispenser.getInventory();

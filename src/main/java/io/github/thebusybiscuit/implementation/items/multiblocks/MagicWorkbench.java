@@ -26,7 +26,6 @@ import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 import io.github.thebusybiscuit.slimefun4.implementation.items.backpacks.SlimefunBackpack;
 import io.github.thebusybiscuit.slimefun4.utils.SlimefunUtils;
 import io.papermc.lib.PaperLib;
-import io.github.thebusybiscuit.slimefun4.utils.PaperLibUtils;
 
 public class MagicWorkbench extends AbstractCraftingTable {
 
@@ -44,7 +43,7 @@ public class MagicWorkbench extends AbstractCraftingTable {
             return;
         }
 
-        BlockState state = PaperLibUtils.getBlockState(possibleDispener, false).getState();
+        BlockState state = possibleDispener.getState(false);
 
         if (state instanceof Dispenser dispenser) {
             Inventory inv = dispenser.getInventory();
