@@ -117,7 +117,7 @@ public class SqlSfStore implements SfStore {
         return ps;
     }
 
-    /** Perfilado ligero de consultas (idea de SQLProfiler/SlowSqlCheckTask de Gugu): avisa de las lentas (&gt;250 ms). */
+    /** Perfilado ligero de consultas (idea de SQLProfiler/SlowSqlCheckTask de Gugu): avisa de las lentas (&gt;500 ms). */
     private void track(String path, long t0) {
         long n = System.nanoTime() - t0;
         ops.increment();
@@ -126,7 +126,7 @@ public class SqlSfStore implements SfStore {
         if (ms > worstMillis) {
             worstMillis = ms;
         }
-        if (ms > 250) {
+        if (ms > 500) {
             slow.increment();
             io.github.thebusybiscuit.slimefun4.implementation.Slimefun.logger().log(java.util.logging.Level.WARNING, "Consulta SQL lenta ({0} ms): {1}", new Object[] { ms, path });
         }
