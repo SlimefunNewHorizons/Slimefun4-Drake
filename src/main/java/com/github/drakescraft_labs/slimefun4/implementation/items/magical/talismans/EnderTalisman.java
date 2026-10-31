@@ -22,6 +22,9 @@ import com.github.drakescraft_labs.slimefun4.implementation.SlimefunItems;
 class EnderTalisman extends Talisman {
 
     private static final LockedItemGroup ENDER_TALISMANS_ITEMGROUP = new LockedItemGroup(new NamespacedKey(Slimefun.instance(), "ender_talismans"), new CustomItemStack(SlimefunItems.ENDER_TALISMAN, "&7Talismans - &aTier II"), 3, Talisman.TALISMANS_ITEMGROUP.getKey());
+    static {
+        ENDER_TALISMANS_ITEMGROUP.setCrossAddonItemGroup(true);
+    }
 
     @ParametersAreNonnullByDefault
     public EnderTalisman(Talisman parent, SlimefunItemStack item) {
