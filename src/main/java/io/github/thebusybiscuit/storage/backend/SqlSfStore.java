@@ -41,7 +41,9 @@ public class SqlSfStore implements SfStore {
         try (Statement st = conn().createStatement()) {
             if (sqlite) {
                 st.execute("PRAGMA journal_mode=WAL");
-                st.execute("PRAGMA synchronous=FULL");
+                st.execute("PRAGMA synchronous=NORMAL");
+                st.execute("PRAGMA temp_store=MEMORY");
+                st.execute("PRAGMA cache_size=-8000");
             }
             String text = postgres || sqlite ? "TEXT" : "LONGTEXT";
             st.execute("CREATE TABLE IF NOT EXISTS sf_files (path VARCHAR(512) NOT NULL PRIMARY KEY, dir VARCHAR(400) NOT NULL, content " + text + " NOT NULL)");
@@ -81,7 +83,7 @@ public class SqlSfStore implements SfStore {
                     props.setProperty("password", password == null ? "" : password);
                 }
                 if (sqlite) {
-                    props.setProperty("busy_timeout", "5000");
+                    props.setProperty("busy_timeout", "10000");
                 } else if (postgres) {
                     props.setProperty("connectTimeout", "5");
                     props.setProperty("socketTimeout", "15");
@@ -90,6 +92,14 @@ public class SqlSfStore implements SfStore {
                     props.setProperty("socketTimeout", "15000");
                 }
                 connection = DriverManager.getConnection(url, props);
+                if (sqlite) {
+                    try (Statement st = connection.createStatement()) {
+                        st.execute("PRAGMA journal_mode=WAL");
+                        st.execute("PRAGMA synchronous=NORMAL");
+                        st.execute("PRAGMA temp_store=MEMORY");
+                        st.execute("PRAGMA cache_size=-8000");
+                    }
+                }
                 failedAt = 0;
             } catch (SQLException e) {
                 failedAt = now;
