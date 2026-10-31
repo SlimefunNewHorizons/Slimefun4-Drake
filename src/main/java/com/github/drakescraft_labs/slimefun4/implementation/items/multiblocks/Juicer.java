@@ -27,7 +27,6 @@ import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
 import com.github.drakescraft_labs.slimefun4.implementation.items.food.Juice;
 import com.github.drakescraft_labs.slimefun4.utils.SlimefunUtils;
 import io.papermc.lib.PaperLib;
-import com.github.drakescraft_labs.slimefun4.utils.PaperLibUtils;
 import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
@@ -55,7 +54,7 @@ public class Juicer extends MultiBlockMachine {
     @Override
     public void onInteract(Player p, Block b) {
         Block possibleDispenser = b.getRelative(BlockFace.DOWN);
-        BlockState state = PaperLibUtils.getBlockState(possibleDispenser, false).getState();
+        BlockState state = possibleDispenser.getState(false);
 
         if (state instanceof Dispenser dispenser) {
             Inventory inv = dispenser.getInventory();

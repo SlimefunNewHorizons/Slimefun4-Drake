@@ -24,7 +24,6 @@ import dev.drake.dough.inventory.InvUtils;
 import com.github.drakescraft_labs.slimefun4.core.debug.Debug;
 import com.github.drakescraft_labs.slimefun4.core.debug.TestCase;
 import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
-import com.github.drakescraft_labs.slimefun4.utils.PaperLibUtils;
 import com.github.drakescraft_labs.slimefun4.utils.SlimefunUtils;
 import com.github.drakescraft_labs.slimefun4.utils.itemstack.ItemStackWrapper;
 import com.github.drakescraft_labs.slimefun4.utils.tags.SlimefunTag;
@@ -155,7 +154,7 @@ final class CargoUtils {
         } else if (hasInventory(target)) {
             Inventory inventory = inventories.get(target.getLocation());
             if (inventory == null) {
-                BlockState state = PaperLibUtils.getBlockState(target, false).getState();
+                BlockState state = target.getState(false);
                 if (state instanceof InventoryHolder inventoryHolder) {
                     inventory = inventoryHolder.getInventory();
                     inventories.put(target.getLocation(), inventory);
@@ -201,7 +200,7 @@ final class CargoUtils {
         } else if (hasInventory(target)) {
             Inventory inventory = inventories.get(target.getLocation());
             if (inventory == null) {
-                BlockState state = PaperLibUtils.getBlockState(target, false).getState();
+                BlockState state = target.getState(false);
                 if (state instanceof InventoryHolder inventoryHolder) {
                     inventory = inventoryHolder.getInventory();
                     inventories.put(target.getLocation(), inventory);
@@ -349,7 +348,7 @@ final class CargoUtils {
         Inventory inventory = inventories.get(target.getLocation());
 
         if (inventory == null) {
-            BlockState state = PaperLibUtils.getBlockState(target, false).getState();
+            BlockState state = target.getState(false);
 
             if (state instanceof InventoryHolder inventoryHolder) {
                 inventory = inventoryHolder.getInventory();
@@ -374,7 +373,7 @@ final class CargoUtils {
                     return withdrawFromVanillaInventory(network, node, template, inventory);
                 }
 
-                BlockState state = PaperLibUtils.getBlockState(target, false).getState();
+                BlockState state = target.getState(false);
 
                 if (state instanceof InventoryHolder inventoryHolder) {
                     inventory = inventoryHolder.getInventory();
@@ -463,7 +462,7 @@ final class CargoUtils {
                 return withdrawFromVanillaInventory(network, node, inventory);
             }
 
-            BlockState state = PaperLibUtils.getBlockState(target, false).getState();
+            BlockState state = target.getState(false);
 
             if (state instanceof InventoryHolder inventoryHolder) {
                 inventory = inventoryHolder.getInventory();
@@ -511,7 +510,7 @@ final class CargoUtils {
                     return insertIntoVanillaInventory(stack, wrapper, smartFill, inventory);
                 }
 
-                BlockState state = PaperLibUtils.getBlockState(target, false).getState();
+                BlockState state = target.getState(false);
 
                 if (state instanceof InventoryHolder inventoryHolder) {
                     inventory = inventoryHolder.getInventory();

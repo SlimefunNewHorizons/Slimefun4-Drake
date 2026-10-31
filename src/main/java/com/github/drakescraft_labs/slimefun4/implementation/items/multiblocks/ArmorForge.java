@@ -24,7 +24,6 @@ import com.github.drakescraft_labs.slimefun4.core.services.sounds.SoundEffect;
 import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
 import com.github.drakescraft_labs.slimefun4.utils.SlimefunUtils;
 import io.papermc.lib.PaperLib;
-import com.github.drakescraft_labs.slimefun4.utils.PaperLibUtils;
 
 public class ArmorForge extends AbstractCraftingTable {
 
@@ -36,7 +35,7 @@ public class ArmorForge extends AbstractCraftingTable {
     @Override
     public void onInteract(Player p, Block b) {
         Block possibleDispenser = b.getRelative(BlockFace.DOWN);
-        BlockState state = PaperLibUtils.getBlockState(possibleDispenser, false).getState();
+        BlockState state = possibleDispenser.getState(false);
 
         if (state instanceof Dispenser dispenser) {
             Inventory inv = dispenser.getInventory();

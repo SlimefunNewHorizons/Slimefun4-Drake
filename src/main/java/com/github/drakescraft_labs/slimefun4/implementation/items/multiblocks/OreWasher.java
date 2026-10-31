@@ -26,7 +26,6 @@ import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
 import com.github.drakescraft_labs.slimefun4.implementation.SlimefunItems;
 import com.github.drakescraft_labs.slimefun4.utils.SlimefunUtils;
 import io.papermc.lib.PaperLib;
-import com.github.drakescraft_labs.slimefun4.utils.PaperLibUtils;
 import com.github.drakescraft_labs.slimefun4.utils.BlockEffects;
 
 /**
@@ -93,7 +92,7 @@ public class OreWasher extends MultiBlockMachine {
     @Override
     public void onInteract(Player p, Block b) {
         Block dispBlock = b.getRelative(BlockFace.UP);
-        BlockState state = PaperLibUtils.getBlockState(dispBlock, false).getState();
+        BlockState state = dispBlock.getState(false);
 
         if (state instanceof Dispenser disp) {
             Inventory inv = disp.getInventory();

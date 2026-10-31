@@ -26,7 +26,6 @@ import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
 import com.github.drakescraft_labs.slimefun4.implementation.handlers.VanillaInventoryDropHandler;
 import com.github.drakescraft_labs.slimefun4.implementation.items.multiblocks.Smeltery;
 import io.papermc.lib.PaperLib;
-import com.github.drakescraft_labs.slimefun4.utils.PaperLibUtils;
 
 import com.github.drakescraft_labs.slimefun4.legacy.api.BlockStorage;
 
@@ -115,7 +114,7 @@ public class IgnitionChamber extends SlimefunItem {
             Block block = b.getRelative(face);
 
             if (block.getType() == Material.DROPPER && BlockStorage.check(block) instanceof IgnitionChamber) {
-                BlockState state = PaperLibUtils.getBlockState(b.getRelative(face), false).getState();
+                BlockState state = b.getRelative(face).getState(false);
 
                 if (state instanceof Dropper dropper) {
                     return dropper.getInventory();

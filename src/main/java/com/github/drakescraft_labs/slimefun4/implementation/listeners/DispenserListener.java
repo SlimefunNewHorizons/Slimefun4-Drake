@@ -16,7 +16,6 @@ import com.github.drakescraft_labs.slimefun4.api.items.SlimefunItem;
 import com.github.drakescraft_labs.slimefun4.core.handlers.BlockDispenseHandler;
 import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
 import io.papermc.lib.PaperLib;
-import com.github.drakescraft_labs.slimefun4.utils.PaperLibUtils;
 
 import com.github.drakescraft_labs.slimefun4.legacy.api.BlockStorage;
 
@@ -46,7 +45,7 @@ public class DispenserListener implements Listener {
             // Fixes #2959
             if (machine != null && !machine.isDisabledIn(e.getBlock().getWorld())) {
                 machine.callItemHandler(BlockDispenseHandler.class, handler -> {
-                    BlockState state = PaperLibUtils.getBlockState(b, false).getState();
+                    BlockState state = b.getState(false);
 
                     if (state instanceof Dispenser dispenser) {
                         BlockFace face = ((Directional) b.getBlockData()).getFacing();

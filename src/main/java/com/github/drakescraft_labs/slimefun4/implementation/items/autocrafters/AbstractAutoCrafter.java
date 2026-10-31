@@ -43,7 +43,6 @@ import com.github.drakescraft_labs.slimefun4.utils.HeadTexture;
 import com.github.drakescraft_labs.slimefun4.utils.compatibility.VersionedParticle;
 import com.github.drakescraft_labs.slimefun4.utils.tags.SlimefunTag;
 import io.papermc.lib.PaperLib;
-import com.github.drakescraft_labs.slimefun4.utils.PaperLibUtils;
 import io.papermc.lib.features.blockstatesnapshot.BlockStateSnapshotResult;
 
 import me.mrCookieSlime.CSCoreLibPlugin.Configuration.Config;
@@ -173,7 +172,7 @@ public abstract class AbstractAutoCrafter extends SlimefunItem implements Energy
 
         // Make sure this is a Chest
         if (isValidInventory(targetBlock)) {
-            BlockState state = PaperLibUtils.getBlockState(targetBlock, false).getState();
+            BlockState state = targetBlock.getState(false);
 
             if (state instanceof InventoryHolder inventoryHolder) {
                 Inventory inv = inventoryHolder.getInventory();
@@ -241,8 +240,7 @@ public abstract class AbstractAutoCrafter extends SlimefunItem implements Energy
     protected void setSelectedRecipe(@Nonnull Block b, @Nullable AbstractRecipe recipe) {
         Validate.notNull(b, "The Block cannot be null!");
 
-        BlockStateSnapshotResult result = PaperLibUtils.getBlockState(b, false);
-        BlockState state = result.getState();
+        BlockState state = b.getState(false);
 
         if (state instanceof Skull skull) {
             if (recipe == null) {
@@ -257,9 +255,7 @@ public abstract class AbstractAutoCrafter extends SlimefunItem implements Energy
             }
 
             // Fixes #2899 - Update the BlockState if necessary
-            if (result.isSnapshot()) {
-                state.update(true, false);
-            }
+            state.update(true, false);
         }
     }
 
@@ -327,7 +323,7 @@ public abstract class AbstractAutoCrafter extends SlimefunItem implements Energy
     private void setRecipeEnabled(Player p, Block b, boolean enabled) {
         p.closeInventory();
         SoundEffect.AUTO_CRAFTER_GUI_CLICK_SOUND.playFor(p);
-        BlockState state = PaperLibUtils.getBlockState(b, false).getState();
+        BlockState state = b.getState(false);
 
         // Make sure the block is still a Skull
         if (state instanceof Skull skull) {

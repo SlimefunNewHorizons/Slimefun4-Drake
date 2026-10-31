@@ -17,7 +17,6 @@ import org.bukkit.inventory.ItemStack;
 import com.github.drakescraft_labs.slimefun4.api.items.SlimefunItem;
 import com.github.drakescraft_labs.slimefun4.core.handlers.BlockBreakHandler;
 import io.papermc.lib.PaperLib;
-import com.github.drakescraft_labs.slimefun4.utils.PaperLibUtils;
 
 /**
  * This is an implementation of {@link BlockBreakHandler} which is suited for any {@link SlimefunItem}
@@ -64,7 +63,7 @@ public class VanillaInventoryDropHandler<T extends BlockState & InventoryHolder>
         }
 
         Block b = e.getBlock();
-        BlockState state = PaperLibUtils.getBlockState(b, false).getState();
+        BlockState state = b.getState(false);
 
         if (blockStateClass.isInstance(state)) {
             T inventoryHolder = blockStateClass.cast(state);

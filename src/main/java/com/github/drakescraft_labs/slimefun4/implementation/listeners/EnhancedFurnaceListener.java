@@ -20,7 +20,6 @@ import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
 import com.github.drakescraft_labs.slimefun4.implementation.items.blocks.EnhancedFurnace;
 import com.github.drakescraft_labs.slimefun4.utils.tags.SlimefunTag;
 import io.papermc.lib.PaperLib;
-import com.github.drakescraft_labs.slimefun4.utils.PaperLibUtils;
 
 import com.github.drakescraft_labs.slimefun4.legacy.api.BlockStorage;
 
@@ -70,7 +69,7 @@ public class EnhancedFurnaceListener implements Listener {
         SlimefunItem sfItem = BlockStorage.check(e.getBlock());
 
         if (sfItem instanceof EnhancedFurnace enhancedFurnace && !enhancedFurnace.isDisabledIn(e.getBlock().getWorld())) {
-            BlockState state = PaperLibUtils.getBlockState(e.getBlock(), false).getState();
+            BlockState state = e.getBlock().getState(false);
 
             if (state instanceof Furnace furnace) {
                 FurnaceInventory inventory = furnace.getInventory();

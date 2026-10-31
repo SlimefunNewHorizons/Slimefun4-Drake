@@ -13,6 +13,7 @@ import org.bukkit.Nameable;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.Dispenser;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -35,7 +36,6 @@ import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
 import com.github.drakescraft_labs.slimefun4.implementation.handlers.VanillaInventoryDropHandler;
 import com.github.drakescraft_labs.slimefun4.utils.tags.SlimefunTag;
 import io.papermc.lib.PaperLib;
-import com.github.drakescraft_labs.slimefun4.utils.PaperLibUtils;
 import io.papermc.lib.features.blockstatesnapshot.BlockStateSnapshotResult;
 
 import com.github.drakescraft_labs.slimefun4.legacy.api.BlockStorage;
@@ -221,15 +221,12 @@ public class BlockPlacer extends SlimefunItem {
                     ItemMeta meta = item.getItemMeta();
 
                     if (meta.hasDisplayName()) {
-                        BlockStateSnapshotResult blockState = PaperLibUtils.getBlockState(facedBlock, false);
+                        BlockState blockState = facedBlock.getState(false);
 
-                        if (blockState.getState() instanceof Nameable nameable) {
+                        if (blockState instanceof Nameable nameable) {
                             nameable.setCustomName(meta.getDisplayName());
-
-                            if (blockState.isSnapshot()) {
-                                // Update block state after changing name
-                                blockState.getState().update(true, false);
-                            }
+                            // Update block state after changing name
+                            blockState.update(true, false);
                         }
                     }
 
