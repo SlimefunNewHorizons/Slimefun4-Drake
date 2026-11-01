@@ -41,6 +41,7 @@ public class AutoSavingService implements Listener {
     private int dynamicBatchSize;
     private final AtomicBoolean playerPersistenceRunning = new AtomicBoolean();
     private final AtomicBoolean blockPersistenceRunning = new AtomicBoolean();
+    private final AtomicBoolean periodicSaveWaiting = new AtomicBoolean();
     private int blockSaveMaxRetries = 30;
 
     /**
@@ -147,6 +148,7 @@ public class AutoSavingService implements Listener {
      * This method saves the data of every {@link Block} marked dirty by {@link BlockStorage}.
      */
     private void saveAllBlocks() {
+        periodicSaveWaiting.set(true);
         saveAllBlocksWithRetry(0);
     }
 
@@ -160,8 +162,10 @@ public class AutoSavingService implements Listener {
         }
 
         try {
+            periodicSaveWaiting.set(false);
             saveAllBlocksNow();
         } finally {
+            periodicSaveWaiting.set(false);
             blockPersistenceRunning.set(false);
         }
     }
@@ -186,11 +190,13 @@ public class AutoSavingService implements Listener {
 
     private void retrySaveAllBlocks(int attempt) {
         if (attempt >= blockSaveMaxRetries) {
+            periodicSaveWaiting.set(false);
             Slimefun.logger().log(Level.WARNING, "Periodic block auto-save skipped: block persistence stayed busy for {0} retries.", blockSaveMaxRetries);
             return;
         }
 
         if (plugin == null || !plugin.isEnabled()) {
+            periodicSaveWaiting.set(false);
             return;
         }
 
@@ -241,7 +247,7 @@ public class AutoSavingService implements Listener {
      * also avoiding one huge disk I/O spike when busy Slimefun worlds are active.
      */
     private void saveDirtyBlocksBatch() {
-        if (!blockPersistenceRunning.compareAndSet(false, true)) {
+        if (periodicSaveWaiting.get() || !blockPersistenceRunning.compareAndSet(false, true)) {
             return;
         }
 
@@ -328,7 +334,7 @@ public class AutoSavingService implements Listener {
         }
 
         Runnable saveTask = () -> {
-            if (!blockPersistenceRunning.compareAndSet(false, true)) {
+            if (periodicSaveWaiting.get() || !blockPersistenceRunning.compareAndSet(false, true)) {
                 return;
             }
 
