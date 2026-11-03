@@ -31,7 +31,7 @@ final class StartupBanner {
             "============================================================",
             "      DRAKES SLIMEFUN LABS runtime smoke marker",
             "      Slimefun Drake build: " + version,
-            "      Repo: https://github.com/DrakesCraft-Labs/drakes-slimefun-labs",
+            "      Repo: https://github.com/SlimefunNewHorizons/drakes-slimefun-labs",
             "============================================================",
             ""
         };

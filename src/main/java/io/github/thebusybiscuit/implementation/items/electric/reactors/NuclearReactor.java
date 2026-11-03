@@ -33,7 +33,7 @@ import io.github.thebusybiscuit.slimefun4.utils.RadiationUtils;
  * 7 blocks unless protected by a full hazmat suit.
  * 
  * @author TheBusyBiscuit
- * @author DrakesCraft-Labs
+ * @author SlimefunNewHorizons
  * 
  * @see NetherStarReactor
  *

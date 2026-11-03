@@ -405,7 +405,7 @@ public class Slimefun extends JavaPlugin implements SlimefunAddon {
 
     @Override
     public String getBugTrackerURL() {
-        return "https://github.com/DrakesCraft-Labs/Slimefun4-Drake/issues";
+        return "https://github.com/SlimefunNewHorizons/Slimefun4-Drake/issues";
     }
 
     /**

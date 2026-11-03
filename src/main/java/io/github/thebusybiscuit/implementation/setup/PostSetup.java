@@ -97,8 +97,8 @@ public final class PostSetup {
         sender.sendMessage(ChatColor.GREEN + "Slimefun DrakesCraft is maintained for this server by DrakesCraft Labs.");
         sender.sendMessage(ChatColor.GREEN + "Report issues in the repository below.");
         sender.sendMessage("");
-        sender.sendMessage(ChatColor.GREEN + " - Repository: https://github.com/DrakesCraft-Labs/Slimefun4-Drake");
-        sender.sendMessage(ChatColor.GREEN + " - Issues: https://github.com/DrakesCraft-Labs/Slimefun4-Drake/issues");
+        sender.sendMessage(ChatColor.GREEN + " - Repository: https://github.com/SlimefunNewHorizons/Slimefun4-Drake");
+        sender.sendMessage(ChatColor.GREEN + " - Issues: https://github.com/SlimefunNewHorizons/Slimefun4-Drake/issues");
 
         sender.sendMessage("");
 

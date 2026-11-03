@@ -131,7 +131,7 @@ registry bootstrap failure is infrastructure debt, not a valid SFMaster result.
 ## DrakesCraft guides
 
 - [Progression and automation](docs/GUIA_DE_PROGRESION_Y_AUTOMATIZACION.md)
-- [Network integrity](https://github.com/DrakesCraft-Labs/NetworksV6-drake/blob/main/docs/INTEGRIDAD_DE_RED_DRAKESCRAFT.md)
+- [Network integrity](https://github.com/SlimefunNewHorizons/NetworksV6-drake/blob/main/docs/INTEGRIDAD_DE_RED_DRAKESCRAFT.md)
 
 ## Using maven.drakescraft.cl
 

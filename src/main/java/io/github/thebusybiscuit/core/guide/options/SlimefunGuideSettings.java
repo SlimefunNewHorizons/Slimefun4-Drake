@@ -129,13 +129,13 @@ public final class SlimefunGuideSettings {
            "&7y adaptado exclusivamente para &6DrakesCraft&7.",
            "&7Mejoras de rendimiento, fixes y nuevos módulos.",
            "",
-           "&7\u21E8 &eClick para abrir GitHub (DrakesCraft-Labs)"
+           "&7\u21E8 &eClick para abrir GitHub (SlimefunNewHorizons)"
         ));
         // @formatter:on
 
         menu.addMenuClickHandler(6, (pl, slot, item, action) -> {
             pl.closeInventory();
-            ChatUtils.sendURL(pl, "https://github.com/DrakesCraft-Labs");
+            ChatUtils.sendURL(pl, "https://github.com/SlimefunNewHorizons");
             return false;
         });
 

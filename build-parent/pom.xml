@@ -11,16 +11,16 @@
 
     <name>DrakesCraft Slimefun Foundry</name>
     <description>Curated Slimefun 4 foundry for DrakesCraft: Paper 1.21.11 ports, addon stabilization, security patches, CI builds, runtime QA notes, and release-ready server artifacts.</description>
-    <url>https://github.com/DrakesCraft-Labs/drakes-slimefun-labs</url>
+    <url>https://github.com/SlimefunNewHorizons/drakes-slimefun-labs</url>
 
     <organization>
         <name>DrakesCraft Labs</name>
-        <url>https://github.com/DrakesCraft-Labs</url>
+        <url>https://github.com/SlimefunNewHorizons</url>
     </organization>
 
     <issueManagement>
         <system>GitHub Issues</system>
-        <url>https://github.com/DrakesCraft-Labs/drakes-slimefun-labs/issues</url>
+        <url>https://github.com/SlimefunNewHorizons/drakes-slimefun-labs/issues</url>
     </issueManagement>
 
     <properties>
@@ -349,8 +349,8 @@
     <distributionManagement>
         <repository>
             <id>github</id>
-            <name>GitHub DrakesCraft-Labs Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/DrakesCraft-Labs/drakes-slimefun-labs</url>
+            <name>GitHub SlimefunNewHorizons Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/SlimefunNewHorizons/drakes-slimefun-labs</url>
         </repository>
     </distributionManagement>
 
