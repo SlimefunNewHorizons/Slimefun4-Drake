@@ -523,15 +523,7 @@ public class BlockStorage {
             Slimefun.logger().log(Level.SEVERE, x, () -> "Could not persist BlockStorage batch (" + batch.size() + " files)");
         }
 
-        Iterator<Map.Entry<Location, BlockMenu>> invIt = inventories.entrySet().iterator();
-        while (invIt.hasNext() && remaining > 0) {
-            Map.Entry<Location, BlockMenu> entry = invIt.next();
-            BlockMenu menu = entry.getValue();
-            if (menu.isDirty()) {
-                menu.save(entry.getKey());
-                remaining--;
-            }
-        }
+        remaining = BlockMenu.saveAll(inventories, remaining);
 
         Iterator<Map.Entry<String, UniversalBlockMenu>> uniIt = Slimefun.getRegistry().getUniversalInventories().entrySet().iterator();
         while (uniIt.hasNext() && remaining > 0) {

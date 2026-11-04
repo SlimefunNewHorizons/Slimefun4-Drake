@@ -23,7 +23,7 @@ import me.mrCookieSlime.CSCoreLibPlugin.general.Inventory.ChestMenu;
 public class DirtyChestMenu extends ChestMenu {
 
     protected final BlockMenuPreset preset;
-    protected int changes = 1;
+    protected volatile int changes = 1;
 
     public DirtyChestMenu(@Nonnull BlockMenuPreset preset) {
         super(preset.getTitle());

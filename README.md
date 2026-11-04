@@ -108,6 +108,12 @@ Fixes ported from other Slimefun forks and unmerged upstream PRs (all GPL-3, eac
 
 ## Build and validation
 
+Bulk asynchronous inventory saves capture at most 16 ordinary menus per
+server-thread handoff. The controlled regression reduces 128 handoffs to eight;
+this is not a production latency measurement. See the
+[snapshot persistence fixture](docs/testing/snapshot-batch.md) for runtime and
+restart checks with synthetic inventories.
+
 Legacy machine recovery prepares reflective descriptors at item registration before addon JARs close. The closed-JAR and idempotence regressions run with `mvn test -Dtest=TestLegacyProcessingRecovery`; the disposable persistence fixture is documented in [docs/testing/legacy-recovery.md](docs/testing/legacy-recovery.md). A build alone does not establish runtime compatibility.
 
 
