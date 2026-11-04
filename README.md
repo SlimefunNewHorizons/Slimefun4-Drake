@@ -108,6 +108,9 @@ Fixes ported from other Slimefun forks and unmerged upstream PRs (all GPL-3, eac
 
 ## Build and validation
 
+Legacy machine recovery prepares reflective descriptors at item registration before addon JARs close. The closed-JAR and idempotence regressions run with `mvn test -Dtest=TestLegacyProcessingRecovery`; the disposable persistence fixture is documented in [docs/testing/legacy-recovery.md](docs/testing/legacy-recovery.md). A build alone does not establish runtime compatibility.
+
+
 ```bash
 mvn package -DskipTests
 mvn test -DlegacyMockBukkitTests \

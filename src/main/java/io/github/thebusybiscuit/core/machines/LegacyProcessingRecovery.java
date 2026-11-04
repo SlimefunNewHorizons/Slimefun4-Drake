@@ -6,6 +6,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
@@ -43,6 +44,37 @@ public final class LegacyProcessingRecovery {
     private static final String FIELD_NAME = "processing";
     private static final String RECIPE_CLASS = "MachineRecipe";
 
+    // ClassValue no retiene classloaders de addons descargados. Los Field quedan
+    // preparados mientras el JAR sigue abierto, incluso si la cache de Class se limpia.
+    private static final ClassValue<List<Field>> PROCESSING_FIELDS = new ClassValue<>() {
+        @Override
+        protected List<Field> computeValue(Class<?> itemType) {
+            List<Field> fields = new ArrayList<>();
+            for (Class<?> type = itemType; type != null && type != Object.class; type = type.getSuperclass()) {
+                try {
+                    Field field = type.getDeclaredField(FIELD_NAME);
+                    if (Map.class.isAssignableFrom(field.getType())) {
+                        field.setAccessible(true);
+                        fields.add(field);
+                    }
+                } catch (NoSuchFieldException ignored) {
+                    // La clase puede heredar el mapa de una maquina base.
+                }
+            }
+            return List.copyOf(fields);
+        }
+    };
+
+    /** Prepara la reflexion antes de que Paper cierre el classloader del addon. */
+    public static void prepare(@Nonnull SlimefunItem item) {
+        try {
+            PROCESSING_FIELDS.get(item.getClass());
+        } catch (LinkageError | RuntimeException e) {
+            // Un addon incompleto no debe impedir el registro de los demas items.
+            Bukkit.getLogger().log(Level.SEVERE, "[Slimefun] Could not prepare legacy operation recovery for " + item.getId(), e);
+        }
+    }
+
     private LegacyProcessingRecovery() {}
 
     /**
@@ -78,18 +110,7 @@ public final class LegacyProcessingRecovery {
         int delivered = 0;
         int stale = 0;
 
-        for (Class<?> type = item.getClass(); type != null && type != Object.class; type = type.getSuperclass()) {
-            Field field;
-            try {
-                field = type.getDeclaredField(FIELD_NAME);
-            } catch (NoSuchFieldException e) {
-                continue;
-            }
-            if (!Map.class.isAssignableFrom(field.getType())) {
-                continue;
-            }
-
-            field.setAccessible(true);
+        for (Field field : PROCESSING_FIELDS.get(item.getClass())) {
             Object value = Modifier.isStatic(field.getModifiers()) ? field.get(null) : field.get(item);
             if (!(value instanceof Map<?, ?> map) || map.isEmpty() || !seenMaps.add(map)) {
                 continue;
