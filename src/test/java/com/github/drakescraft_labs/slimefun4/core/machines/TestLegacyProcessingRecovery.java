@@ -1,7 +1,13 @@
 package com.github.drakescraft_labs.slimefun4.core.machines;
 
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
 
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -11,6 +17,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.world.WorldMock;
@@ -28,19 +35,34 @@ import com.github.drakescraft_labs.slimefun4.legacy.api.inventory.BlockMenu;
  * Máquinas legacy de addons (mapa {@code processing} en memoria): al apagar, lo que estaba en vuelo se entrega
  * a las ranuras de salida, una sola vez y sin perder ni duplicar nada.
  */
-class TestLegacyProcessingRecovery {
+public class TestLegacyProcessingRecovery {
 
     /** Máquina de prueba con el patrón heredado: mapa `processing` propio, fuera de MachineProcessor. */
-    static class LegacyLikeMachine extends AutoEnchanter {
+    public static class LegacyLikeMachine extends AutoEnchanter {
         public final Map<Block, MachineRecipe> processing = new HashMap<>();
 
-        LegacyLikeMachine(String id) {
+        public LegacyLikeMachine(String id) {
             super(new ItemGroup(org.bukkit.NamespacedKey.minecraft("legacy_" + id.toLowerCase()), new ItemStack(Material.BOOK)),
                 new SlimefunItemStack(id, Material.ENCHANTING_TABLE, "&cLegacy " + id),
                 RecipeType.ENHANCED_CRAFTING_TABLE, new ItemStack[] { new ItemStack(Material.DIRT) });
             setCapacity(100);
             setEnergyConsumption(10);
             setProcessingSpeed(1);
+        }
+    }
+
+    public static class UnloadedField {}
+
+    public static class ClosedJarMachine extends LegacyLikeMachine {
+        private UnloadedField lateLinkedField;
+
+        public ClosedJarMachine() {
+            super("TEST_LEGACY_CLOSED_JAR");
+        }
+
+        public void queue(Block block) {
+            processing.put(block, new MachineRecipe(10, new ItemStack[] { new ItemStack(Material.GOLD_INGOT) },
+                new ItemStack[] { new ItemStack(Material.GOLD_BLOCK, 3) }));
         }
     }
 
@@ -72,6 +94,63 @@ class TestLegacyProcessingRecovery {
 
     private static MachineRecipe recipe(Material input, Material output, int amount) {
         return new MachineRecipe(10, new ItemStack[] { new ItemStack(input) }, new ItemStack[] { new ItemStack(output, amount) });
+    }
+
+    @Test
+    @DisplayName("Recupera una operacion despues de cerrar el JAR sin enlazar campos tardios")
+    void recoversAfterAddonJarIsClosed(@TempDir Path temporary) throws Exception {
+        String machineName = ClosedJarMachine.class.getName();
+        String fieldName = UnloadedField.class.getName();
+        Path jar = temporary.resolve("legacy-addon.jar");
+        try (JarOutputStream output = new JarOutputStream(Files.newOutputStream(jar))) {
+            for (String name : new String[] { machineName, fieldName }) {
+                String resource = name.replace('.', '/') + ".class";
+                output.putNextEntry(new JarEntry(resource));
+                try (var input = getClass().getClassLoader().getResourceAsStream(resource)) {
+                    input.transferTo(output);
+                }
+                output.closeEntry();
+            }
+        }
+
+        LegacyLikeMachine machine;
+        Block block = world.getBlockAt(140, 64, 0);
+        block.setType(Material.ENCHANTING_TABLE);
+        try (URLClassLoader loader = new URLClassLoader(new URL[] { jar.toUri().toURL() }, getClass().getClassLoader()) {
+            @Override
+            protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+                if (name.equals(machineName) || name.equals(fieldName)) {
+                    Class<?> type = findLoadedClass(name);
+                    if (type == null) {
+                        type = findClass(name);
+                    }
+                    if (resolve) {
+                        resolveClass(type);
+                    }
+                    return type;
+                }
+                return super.loadClass(name, resolve);
+            }
+        }) {
+            Class<?> type = loader.loadClass(machineName);
+            machine = (LegacyLikeMachine) type.getConstructor().newInstance();
+            machine.register(plugin);
+            BlockStorage.store(block, machine.getId());
+            type.getMethod("queue", Block.class).invoke(machine, block);
+        }
+
+        Assertions.assertEquals(1, LegacyProcessingRecovery.completeAllActiveOperations());
+        Assertions.assertTrue(machine.processing.isEmpty());
+        BlockMenu menu = BlockStorage.getInventory(block);
+        int total = 0;
+        for (int slot : machine.getOutputSlots()) {
+            ItemStack stack = menu.getItemInSlot(slot);
+            if (stack != null && stack.getType() == Material.GOLD_BLOCK) {
+                total += stack.getAmount();
+            }
+        }
+        Assertions.assertEquals(3, total);
+        Assertions.assertEquals(0, LegacyProcessingRecovery.completeAllActiveOperations());
     }
 
     @Test

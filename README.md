@@ -69,6 +69,13 @@ Category pages and search results both pass through the same checks.
 
 ## Build and validation
 
+Legacy machine recovery prepares reflective field descriptors when items register,
+before an addon's JAR closes. `TestLegacyProcessingRecovery` covers delivery after
+closing a real JAR, idempotence, stale blocks and full output slots. The disposable
+`LegacyRecoveryProbe` fixture checks shutdown persistence across server starts;
+see [the runtime procedure](docs/testing/legacy-recovery.md). Compilation alone
+does not establish runtime compatibility with Paper 26.x.
+
 ```bash
 mvn package -DskipTests
 mvn test -DlegacyMockBukkitTests \

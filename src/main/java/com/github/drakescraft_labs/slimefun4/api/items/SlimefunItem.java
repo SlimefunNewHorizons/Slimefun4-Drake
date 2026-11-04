@@ -452,6 +452,7 @@ public class SlimefunItem implements Placeable {
 
             Slimefun.getRegistry().getAllSlimefunItems().add(this);
             Slimefun.getRegistry().getSlimefunItemIds().put(id, this);
+            com.github.drakescraft_labs.slimefun4.core.machines.LegacyProcessingRecovery.prepare(this);
 
             // Items that are "not-configurable" cannot be configured.
             if (!(this instanceof NotConfigurable)) {
