@@ -3,10 +3,15 @@ package com.github.drakescraft_labs.slimefun4.legacy.api.inventory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
@@ -21,6 +26,8 @@ import com.github.drakescraft_labs.slimefun4.implementation.Slimefun;
 
 // This class will be deprecated, relocated and rewritten in a future version.
 public class BlockMenu extends DirtyChestMenu {
+
+    private static final int SNAPSHOT_BATCH_SIZE = 16;
 
     private Location location;
 
@@ -63,6 +70,91 @@ public class BlockMenu extends DirtyChestMenu {
         }
 
         snapshot.save();
+    }
+
+    /**
+     * Saves dirty menus with at most sixteen snapshots per main-thread handoff.
+     * Disk writes remain on the calling thread; callers must not hold a lock needed by menus.
+     *
+     * @return The unused inventory budget
+     */
+    public static int saveAll(Map<Location, BlockMenu> inventories, int maxInventories) {
+        int remaining = Math.max(0, maxInventories);
+        Map<Location, BlockMenu> batch = new LinkedHashMap<>();
+
+        for (Map.Entry<Location, BlockMenu> entry : inventories.entrySet()) {
+            if (remaining == 0) {
+                break;
+            }
+            BlockMenu menu = entry.getValue();
+            if (!menu.isDirty()) {
+                continue;
+            }
+            // Preserve custom save overrides and the synchronous shutdown path.
+            if (Bukkit.isPrimaryThread() || menu.getClass() != BlockMenu.class) {
+                saveBatch(batch);
+                batch = new LinkedHashMap<>();
+                menu.save(entry.getKey());
+            } else {
+                batch.put(entry.getKey(), menu);
+                if (batch.size() == SNAPSHOT_BATCH_SIZE) {
+                    saveBatch(batch);
+                    batch = new LinkedHashMap<>();
+                }
+            }
+            remaining--;
+        }
+        saveBatch(batch);
+        return remaining;
+    }
+
+    private static void saveBatch(Map<Location, BlockMenu> batch) {
+        Slimefun plugin = Slimefun.instance();
+        if (batch.isEmpty() || plugin == null || !plugin.isEnabled()) {
+            return;
+        }
+
+        AtomicBoolean abandoned = new AtomicBoolean();
+        try {
+            List<MenuSnapshot> snapshots = Bukkit.getScheduler().callSyncMethod(plugin, () -> {
+                List<MenuSnapshot> copies = new ArrayList<>(batch.size());
+                try {
+                    if (!abandoned.get() && plugin.isEnabled()) {
+                        for (Map.Entry<Location, BlockMenu> entry : batch.entrySet()) {
+                            MenuSnapshot copy = entry.getValue().captureSnapshotOnPrimaryThread(entry.getKey());
+                            if (copy != null) {
+                                copies.add(copy);
+                            }
+                        }
+                    }
+                    return copies;
+                } finally {
+                    // An interrupted writer may abandon a task that is still queued or running.
+                    if (abandoned.get()) {
+                        batch.values().forEach(BlockMenu::markDirty);
+                    }
+                }
+            }).get();
+            for (MenuSnapshot snapshot : snapshots) {
+                snapshot.save();
+            }
+        } catch (InterruptedException ex) {
+            abandoned.set(true);
+            batch.values().forEach(BlockMenu::markDirty);
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while snapshotting Slimefun inventory batch", ex);
+        } catch (CancellationException | IllegalPluginAccessException ex) {
+            abandoned.set(true);
+            batch.values().forEach(BlockMenu::markDirty);
+        } catch (ExecutionException ex) {
+            abandoned.set(true);
+            batch.values().forEach(BlockMenu::markDirty);
+            throw new IllegalStateException("Could not save Slimefun inventory batch", ex);
+        } catch (RuntimeException | Error ex) {
+            abandoned.set(true);
+            batch.values().forEach(BlockMenu::markDirty);
+            throw ex;
+        }
     }
 
     /**

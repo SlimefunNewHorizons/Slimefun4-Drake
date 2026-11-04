@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -102,6 +104,103 @@ class TestBlockMenuAsyncSnapshot {
         Location location = menu.getLocation();
         return new Config(new File("data-storage/Slimefun/stored-inventories/"
             + location.getWorld().getName() + ';' + location.getBlockX() + ";64;0.sfi"));
+    }
+
+    private int drain(Future<?> pass) throws Exception {
+        int handoffs = 0;
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        while (!pass.isDone()) {
+            FutureTask<?> task = snapshots.poll(100, TimeUnit.MILLISECONDS);
+            if (task != null) {
+                task.run();
+                handoffs++;
+            }
+            Assertions.assertTrue(System.nanoTime() < deadline, "the writer must finish with a live server thread");
+        }
+        pass.get(5, TimeUnit.SECONDS);
+        return handoffs;
+    }
+
+    @Test
+    void testBatchedPassBoundsHandoffsAndSavesAllMenus() throws Exception {
+        World world = server.addSimpleWorld("async_snapshot_batch");
+        Map<Location, BlockMenu> menus = new LinkedHashMap<>();
+        for (int x = 0; x < 128; x++) {
+            BlockMenu menu = menu(world, x);
+            menus.put(menu.getLocation(), menu);
+        }
+        Future<Integer> pass = writer.submit(() -> BlockMenu.saveAll(menus, 128));
+        int handoffs = drain(pass);
+        Assertions.assertEquals(8, handoffs);
+        Assertions.assertEquals(0, pass.get());
+        for (BlockMenu menu : menus.values()) {
+            Assertions.assertEquals(7, saved(menu).getItem("4").getAmount());
+            Assertions.assertFalse(menu.isDirty());
+        }
+        System.out.println("#597 batched: menus=128, main-thread handoffs=" + handoffs);
+    }
+
+    @Test
+    void testBatchHonorsBudgetIncludingZero() throws Exception {
+        World world = server.addSimpleWorld("async_snapshot_budget");
+        Map<Location, BlockMenu> menus = new LinkedHashMap<>();
+        for (int x = 0; x < 33; x++) {
+            BlockMenu menu = menu(world, x);
+            menus.put(menu.getLocation(), menu);
+        }
+        Future<Integer> zero = writer.submit(() -> BlockMenu.saveAll(menus, 0));
+        Assertions.assertEquals(0, zero.get(5, TimeUnit.SECONDS));
+        Assertions.assertTrue(snapshots.isEmpty());
+        Future<Integer> pass = writer.submit(() -> BlockMenu.saveAll(menus, 17));
+        Assertions.assertEquals(2, drain(pass));
+        Assertions.assertEquals(16, menus.values().stream().filter(BlockMenu::isDirty).count());
+    }
+
+    @Test
+    void testInterruptedQueuedBatchDoesNotCleanMenusWhenItEventuallyRuns() throws Exception {
+        BlockMenu menu = menu(server.addSimpleWorld("async_snapshot_interrupted"), 1);
+        Future<?> pass = writer.submit(() -> BlockMenu.saveAll(Map.of(menu.getLocation(), menu), 1));
+        FutureTask<?> pending = nextSnapshot();
+        writer.shutdownNow();
+        Assertions.assertTrue(writer.awaitTermination(5, TimeUnit.SECONDS));
+        Assertions.assertThrows(java.util.concurrent.ExecutionException.class, () -> pass.get());
+        pending.run();
+        Assertions.assertTrue(menu.isDirty());
+        Assertions.assertNull(saved(menu).getItem("4"));
+    }
+
+    @Test
+    void testCancelledBatchRetainsDirtyState() throws Exception {
+        BlockMenu menu = menu(server.addSimpleWorld("async_snapshot_cancelled"), 1);
+        Future<?> pass = writer.submit(() -> BlockMenu.saveAll(Map.of(menu.getLocation(), menu), 1));
+        nextSnapshot().cancel(false);
+        pass.get(5, TimeUnit.SECONDS);
+        Assertions.assertTrue(menu.isDirty());
+        Assertions.assertNull(saved(menu).getItem("4"));
+    }
+
+    @Test
+    void testBatchPreservesPdcAndLeavesLaterChangesDirty() throws Exception {
+        BlockMenu menu = menu(server.addSimpleWorld("async_snapshot_batch_pdc"), 1);
+        NamespacedKey key = new NamespacedKey("slimefun", "batch_snapshot_test");
+        ItemStack live = menu.getItemInSlot(4);
+        var meta = live.getItemMeta();
+        meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, "original");
+        live.setItemMeta(meta);
+
+        Future<?> save = writer.submit(() -> BlockMenu.saveAll(Map.of(menu.getLocation(), menu), 1));
+        nextSnapshot().run();
+        live.setAmount(2);
+        meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, "changed");
+        live.setItemMeta(meta);
+        menu.markDirty();
+        save.get(5, TimeUnit.SECONDS);
+
+        ItemStack persisted = saved(menu).getItem("4");
+        Assertions.assertEquals(7, persisted.getAmount());
+        Assertions.assertEquals("original", persisted.getItemMeta().getPersistentDataContainer()
+            .get(key, PersistentDataType.STRING));
+        Assertions.assertTrue(menu.isDirty());
     }
 
     @Test

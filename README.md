@@ -105,6 +105,14 @@ registry bootstrap failure is infrastructure debt, not a valid SFMaster result.
 
 DrakesCraft Labs / JackStar. Upstream Slimefun licensing remains GPL-3.0.
 
+## Inventory snapshot batching
+
+Bulk asynchronous saves capture at most 16 ordinary menus per server-thread
+handoff. The unit regression reduces 128 handoffs to eight while checking item
+PDC, later dirty changes and abandoned batches. Runtime measurement and restart
+instructions are in [snapshot persistence tests](docs/testing/snapshot-batch.md).
+This scheduling count is not a production latency measurement.
+
 ## Support
 
 This repository is the operational reference for the DrakesCraft core. Attach
