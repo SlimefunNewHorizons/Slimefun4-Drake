@@ -6,11 +6,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
+import java.util.function.BooleanSupplier;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -54,7 +56,10 @@ class GitHubTask implements Runnable {
     }
 
     private void connectAndCache() {
-        gitHubService.getConnectors().forEach(GitHubConnector::download);
+        for (GitHubConnector connector : gitHubService.getConnectors()) {
+            if (!isRunning()) return;
+            connector.download();
+        }
     }
 
     /**
@@ -75,6 +80,7 @@ class GitHubTask implements Runnable {
             int requests = 0;
 
             for (Contributor contributor : gitHubService.getContributors().values()) {
+                if (!isRunning()) return;
                 int newRequests = requestTexture(contributor, skins);
                 requests += newRequests;
 
@@ -99,7 +105,7 @@ class GitHubTask implements Runnable {
              * This will run multiple times but thats okay, this way we get as much
              * data as possible stored.
              */
-            gitHubService.saveCache();
+            if (isRunning()) gitHubService.saveCache();
         } finally {
             skinRefreshInProgress.set(false);
         }
@@ -117,10 +123,13 @@ class GitHubTask implements Runnable {
             } catch (IllegalArgumentException x) {
                 // There cannot be a texture found because it is not a valid MC username
                 contributor.setTexture(null);
+            } catch (CancellationException x) {
+                return -1;
             } catch (InterruptedException x) {
                 Slimefun.logger().log(Level.WARNING, "The contributors thread was interrupted!");
                 Thread.currentThread().interrupt();
             } catch (Exception x) {
+                if (!isRunning()) return -1;
                 // Too many requests
                 Slimefun.logger().log(Level.WARNING, "Attempted to refresh skin cache, got this response: {0}: {1}", new Object[] { x.getClass().getSimpleName(), x.getMessage() });
                 Slimefun.logger().log(Level.WARNING, "This usually means mojang.com is temporarily down or started to rate-limit this connection, nothing to worry about!");
@@ -146,13 +155,13 @@ class GitHubTask implements Runnable {
             CompletableFuture<UUID> future = UUIDLookup.getUuidFromUsername(Slimefun.instance(), contributor.getMinecraftName());
 
             // Fixes #3241 - Do not wait for more than 30 seconds
-            uuid = Optional.ofNullable(future.get(30, TimeUnit.SECONDS));
+            uuid = Optional.ofNullable(awaitWhileRunning(future, GitHubTask::isRunning));
             uuid.ifPresent(contributor::setUniqueId);
         }
 
         if (uuid.isPresent()) {
             CompletableFuture<PlayerSkin> future = PlayerSkin.fromPlayerUUID(Slimefun.instance(), uuid.get());
-            Optional<String> skin = Optional.of(future.get().getProfile().getBase64Texture());
+            Optional<String> skin = Optional.of(awaitWhileRunning(future, GitHubTask::isRunning).getProfile().getBase64Texture());
             skins.put(contributor.getMinecraftName(), skin.orElse(""));
             return skin.orElse(null);
         } else {
@@ -160,4 +169,28 @@ class GitHubTask implements Runnable {
         }
     }
 
+    private static boolean isRunning() {
+        Slimefun plugin = Slimefun.instance();
+        return plugin != null && plugin.isEnabled();
+    }
+
+    // Bukkit cancels queued lookup tasks on disable without completing their futures.
+    // Only this async worker waits; shutdown never waits for network on the server thread.
+    static <T> T awaitWhileRunning(CompletableFuture<T> future, BooleanSupplier running)
+            throws InterruptedException, ExecutionException, TimeoutException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+        try {
+            while (running.getAsBoolean()) {
+                try {
+                    return future.get(Math.min(TimeUnit.MILLISECONDS.toNanos(250),
+                            deadline - System.nanoTime()), TimeUnit.NANOSECONDS);
+                } catch (TimeoutException timeout) {
+                    if (System.nanoTime() >= deadline) throw timeout;
+                }
+            }
+            throw new CancellationException("Slimefun is shutting down");
+        } finally {
+            if (!future.isDone()) future.cancel(false);
+        }
+    }
 }
