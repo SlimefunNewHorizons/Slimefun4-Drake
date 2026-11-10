@@ -1,6 +1,7 @@
 package io.github.thebusybiscuit.slimefun4.implementation.tasks;
 
 import java.util.Collection;
+import io.github.thebusybiscuit.slimefun4.core.services.PerfFlags;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -92,6 +93,7 @@ public class TickerTask implements Runnable {
             }
 
             running = true;
+            PerfFlags.refresh();
             Slimefun.getProfiler().start();
             Set<BlockTicker> tickers = new HashSet<>();
 

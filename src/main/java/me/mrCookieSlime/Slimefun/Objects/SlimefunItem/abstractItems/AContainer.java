@@ -28,6 +28,7 @@ import io.github.thebusybiscuit.slimefun4.core.attributes.MachineProcessHolder;
 import io.github.thebusybiscuit.slimefun4.core.handlers.BlockBreakHandler;
 import io.github.thebusybiscuit.slimefun4.core.machines.MachineProcessor;
 import io.github.thebusybiscuit.slimefun4.core.networks.energy.EnergyNetComponentType;
+import io.github.thebusybiscuit.slimefun4.core.services.PerfFlags;
 import io.github.thebusybiscuit.slimefun4.implementation.handlers.SimpleBlockBreakHandler;
 import io.github.thebusybiscuit.slimefun4.implementation.operations.CraftingOperation;
 import io.github.thebusybiscuit.slimefun4.utils.ChestMenuUtils;
@@ -391,7 +392,39 @@ public abstract class AContainer extends SlimefunItem implements InventoryBlock,
         }
     }
 
+    private boolean inputsEmpty(BlockMenu inv) {
+        for (int slot : getInputSlots()) {
+            if (inv.getItemInSlot(slot) != null) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private int recipesChecked = -1;
+    private boolean zeroInput;
+
+    /** Una receta sin entradas coincidiria con la maquina vacia; muy raro, se cachea por tamano de lista. */
+    private boolean hasZeroInputRecipe() {
+        if (recipesChecked != recipes.size()) {
+            zeroInput = false;
+            for (MachineRecipe r : recipes) {
+                if (r.getInput().length == 0) {
+                    zeroInput = true;
+                    break;
+                }
+            }
+            recipesChecked = recipes.size();
+        }
+        return zeroInput;
+    }
+
     protected MachineRecipe findNextRecipe(BlockMenu inv) {
+        if (PerfFlags.idleSkip && inputsEmpty(inv) && !hasZeroInputRecipe()) {
+            PerfFlags.IDLE_SKIPPED.increment();
+            return null; // igual que el bucle: sin entradas ninguna receta coincide
+        }
+
         Map<Integer, ItemStack> inventory = new HashMap<>();
 
         for (int slot : getInputSlots()) {
