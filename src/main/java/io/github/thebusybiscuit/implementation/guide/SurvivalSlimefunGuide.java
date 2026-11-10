@@ -1,6 +1,7 @@
 package io.github.thebusybiscuit.slimefun4.implementation.guide;
 
 import java.util.ArrayList;
+import org.bukkit.inventory.meta.ItemMeta;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -575,11 +576,39 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
             return false;
         };
 
+        /*
+         * Ingrediente bloqueado por investigacion: el clic lo investiga (coste de XP habitual) y, al aprenderlo,
+         * vuelve a esta misma receta. Solo en recetas de items Slimefun y en modo supervivencia.
+         */
+        MenuClickHandler researchHandler = null;
+        if (item instanceof SlimefunItem owner && isSurvivalMode()) {
+            researchHandler = (pl, slot, itemstack, action) -> {
+                try {
+                    int idx = indexOfSlot(slot);
+                    SlimefunItem ingredient = idx < 0 ? null : researchableIngredient(pl, profile, recipe[idx]);
+
+                    if (ingredient != null) {
+                        ingredient.getResearch().unlockFromGuide(this, pl, profile, ingredient, p2 -> displayItem(profile, owner, false));
+                    } else if (itemstack != null && itemstack.getType() != Material.BARRIER) {
+                        displayItem(profile, itemstack, 0, true);
+                    }
+                } catch (Exception | LinkageError x) {
+                    printErrorMessage(pl, x);
+                }
+                return false;
+            };
+        }
+
         boolean isSlimefunRecipe = item instanceof SlimefunItem;
 
         for (int i = 0; i < 9; i++) {
             ItemStack recipeItem = getDisplayItem(p, isSlimefunRecipe, recipe[i]);
-            menu.addItem(recipeSlots[i], recipeItem, clickHandler);
+            if (researchHandler != null && researchableIngredient(p, profile, recipe[i]) != null) {
+                recipeItem = withUnlockLore(recipeItem, researchableIngredient(p, profile, recipe[i]).getResearch());
+                menu.addItem(recipeSlots[i], recipeItem, researchHandler);
+            } else {
+                menu.addItem(recipeSlots[i], recipeItem, clickHandler);
+            }
 
             if (recipeItem != null && item instanceof MultiBlockMachine) {
                 for (Tag<Material> tag : MultiBlock.getSupportedTags()) {
@@ -777,6 +806,48 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
     }
 
     @ParametersAreNonnullByDefault
+    private int indexOfSlot(int slot) {
+        for (int i = 0; i < recipeSlots.length; i++) {
+            if (recipeSlots[i] == slot) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /** El SlimefunItem del ingrediente si esta bloqueado SOLO por una investigacion pendiente que el jugador puede intentar. */
+    private static SlimefunItem researchableIngredient(Player p, PlayerProfile profile, ItemStack ingredient) {
+        if (ingredient == null) {
+            return null;
+        }
+
+        SlimefunItem sf = SlimefunItem.getByItem(ingredient);
+        Research research = sf == null ? null : sf.getResearch();
+
+        if (research == null || !research.isEnabled() || profile.hasUnlocked(research) || !hasPermission(p, sf)) {
+            return null;
+        }
+
+        return sf;
+    }
+
+    private static ItemStack withUnlockLore(ItemStack display, Research research) {
+        ItemMeta meta = display.getItemMeta();
+
+        if (meta == null) {
+            return display;
+        }
+
+        List<String> lore = meta.getLore() == null ? new ArrayList<>() : new ArrayList<>(meta.getLore());
+        lore.add("");
+        lore.add(ChatColor.translateAlternateColorCodes((char) 38, "&a> Click to unlock"));
+        lore.add(ChatColor.translateAlternateColorCodes((char) 38, "&7Cost: &b" + research.getCost() + " Level(s)"));
+        meta.setLore(lore);
+        ItemStack copy = display.clone();
+        copy.setItemMeta(meta);
+        return copy;
+    }
+
     private static @Nonnull ItemStack getDisplayItem(Player p, boolean isSlimefunRecipe, ItemStack item) {
         if (isSlimefunRecipe) {
             SlimefunItem slimefunItem = SlimefunItem.getByItem(item);

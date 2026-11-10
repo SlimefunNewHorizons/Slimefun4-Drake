@@ -6,6 +6,11 @@ import java.util.UUID;
 
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import io.github.bakedlibs.dough.items.ItemUtils;
+import io.github.thebusybiscuit.slimefun4.core.services.PerfFlags;
+import io.github.thebusybiscuit.slimefun4.utils.itemstack.ItemStackWrapper;
+import me.mrCookieSlime.Slimefun.api.item_transport.ItemTransportFlow;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryAction;
@@ -77,9 +82,88 @@ public class MenuListener implements Listener {
                     e.setCancelled(!handler.onClick((Player) e.getWhoClicked(), e.getSlot(), e.getCurrentItem(), new ClickAction(e.isRightClick(), e.isShiftClick())));
                 }
             } else {
+                if (e.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY && PerfFlags.shiftClickInput
+                    && menu.getPlayerInventoryClickHandler().onClick((Player) e.getWhoClicked(), e.getSlot(), e.getCurrentItem(), new ClickAction(e.isRightClick(), e.isShiftClick()))
+                    && shiftInsertIntoInputs(e, menu)) {
+                    return;
+                }
+
                 e.setCancelled(!menu.getPlayerInventoryClickHandler().onClick((Player) e.getWhoClicked(), e.getSlot(), e.getCurrentItem(), new ClickAction(e.isRightClick(), e.isShiftClick())));
             }
         }
+    }
+
+    /**
+     * Shift-click desde el inventario del jugador hacia una maquina Slimefun: vanilla repartia el stack por CUALQUIER
+     * ranura libre del menu (salida, barra de progreso...). Aqui solo se usan las ranuras de entrada que el preset
+     * declara para el item (mismas que usa la red de carga). Lo que no cabe se queda en el inventario del jugador.
+     * Todo ocurre en este evento, ya cancelado, sobre clones: el cursor no se toca y no hay segunda escritura vanilla.
+     *
+     * @return true si el evento quedo gestionado; false para dejar el comportamiento vanilla (menu sin ranuras de
+     *         entrada declaradas, p. ej. GUIs de addons que no usan el transporte de items)
+     */
+    private boolean shiftInsertIntoInputs(InventoryClickEvent e, ChestMenu chestMenu) {
+        ItemStack clicked = e.getCurrentItem();
+
+        if (!(chestMenu instanceof DirtyChestMenu menu) || menu.getPreset() == null || clicked == null || clicked.getType() == Material.AIR || e.getClickedInventory() == null) {
+            return false;
+        }
+
+        int[] slots;
+        try {
+            slots = menu.getPreset().getSlotsAccessedByItemTransport(menu, ItemTransportFlow.INSERT, ItemStackWrapper.wrap(clicked));
+        } catch (RuntimeException | LinkageError x) {
+            return false;
+        }
+
+        if (slots == null || slots.length == 0) {
+            return false;
+        }
+
+        e.setCancelled(true);
+
+        int remaining = clicked.getAmount();
+        ItemStackWrapper wrapper = ItemStackWrapper.wrap(clicked);
+        int menuMax = menu.toInventory().getMaxStackSize();
+
+        // 1) completar stacks parciales del mismo item; 2) ranuras vacias, en el orden declarado por la maquina
+        for (int pass = 0; pass < 2 && remaining > 0; pass++) {
+            for (int slot : slots) {
+                if (remaining <= 0) {
+                    break;
+                }
+
+                ItemStack inSlot = menu.getItemInSlot(slot);
+
+                if (pass == 0 && inSlot != null && inSlot.getType() != Material.AIR) {
+                    int max = Math.min(inSlot.getMaxStackSize(), menuMax);
+                    if (inSlot.getAmount() < max && ItemUtils.canStack(wrapper, inSlot)) {
+                        int moved = Math.min(max - inSlot.getAmount(), remaining);
+                        ItemStack grown = inSlot.clone();
+                        grown.setAmount(inSlot.getAmount() + moved);
+                        menu.replaceExistingItem(slot, grown);
+                        remaining -= moved;
+                    }
+                } else if (pass == 1 && (inSlot == null || inSlot.getType() == Material.AIR)) {
+                    int moved = Math.min(Math.min(clicked.getMaxStackSize(), menuMax), remaining);
+                    ItemStack placed = clicked.clone();
+                    placed.setAmount(moved);
+                    menu.replaceExistingItem(slot, placed);
+                    remaining -= moved;
+                }
+            }
+        }
+
+        if (remaining != clicked.getAmount()) {
+            menu.markDirty();
+            // getCurrentItem es el espejo vivo del slot pulsado: reducir su cantidad es la unica escritura al jugador.
+            clicked.setAmount(Math.max(remaining, 0));
+            if (remaining <= 0) {
+                e.setCurrentItem(null);
+            }
+        }
+
+        return true;
     }
 
     /**

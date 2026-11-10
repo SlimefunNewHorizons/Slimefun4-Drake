@@ -16,6 +16,13 @@ public final class PerfFlags {
     /** slimefun.idle-skip: las maquinas AContainer sin ningun item de entrada no recorren la lista de recetas. */
     public static volatile boolean idleSkip = false;
 
+    /**
+     * slimefun.shift-click-input (default TRUE): el shift-click desde el inventario del jugador hacia una maquina Slimefun
+     * solo rellena las ranuras de entrada que la maquina declara (getSlotsAccessedByItemTransport INSERT). Poner false
+     * devuelve el comportamiento vanilla (cualquier ranura libre del menu).
+     */
+    public static volatile boolean shiftClickInput = true;
+
     /** Cuantas busquedas de receta se evitaron (visible en pruebas y depuracion). */
     public static final LongAdder IDLE_SKIPPED = new LongAdder();
 
@@ -31,9 +38,12 @@ public final class PerfFlags {
                 return;
             }
             lastModified = m;
-            idleSkip = m != 0 && YamlConfiguration.loadConfiguration(FILE).getBoolean("slimefun.idle-skip", false);
+            YamlConfiguration cfg = m == 0 ? null : YamlConfiguration.loadConfiguration(FILE);
+            idleSkip = cfg != null && cfg.getBoolean("slimefun.idle-skip", false);
+            shiftClickInput = cfg == null || cfg.getBoolean("slimefun.shift-click-input", true);
         } catch (Throwable t) {
             idleSkip = false;
+            shiftClickInput = true;
         }
     }
 }

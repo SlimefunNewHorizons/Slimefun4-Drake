@@ -234,16 +234,26 @@ public class Research implements Keyed {
      */
     @ParametersAreNonnullByDefault
     public void unlockFromGuide(SlimefunGuideImplementation guide, Player player, PlayerProfile profile, SlimefunItem sfItem, ItemGroup itemGroup, int page) {
+        unlockFromGuide(guide, player, profile, sfItem, pl -> guide.openItemGroup(profile, itemGroup, page));
+    }
+
+    /**
+     * Igual que {@link #unlockFromGuide(SlimefunGuideImplementation, Player, PlayerProfile, SlimefunItem, ItemGroup, int)}
+     * pero con un destino arbitrario tras aprender la investigacion (p. ej. volver a la pagina de receta desde la que
+     * se hizo clic en un ingrediente bloqueado). Mismo coste de XP, mismo evento y misma guarda de investigacion en curso.
+     */
+    @ParametersAreNonnullByDefault
+    public void unlockFromGuide(SlimefunGuideImplementation guide, Player player, PlayerProfile profile, SlimefunItem sfItem, java.util.function.Consumer<Player> afterUnlock) {
         if (!Slimefun.getRegistry().getCurrentlyResearchingPlayers().contains(player.getUniqueId())) {
             if (profile.hasUnlocked(this)) {
-                guide.openItemGroup(profile, itemGroup, page);
+                afterUnlock.accept(player);
             } else {
                 PlayerPreResearchEvent event = new PlayerPreResearchEvent(player, this, sfItem);
                 Bukkit.getPluginManager().callEvent(event);
 
                 if (!event.isCancelled()) {
                     if (this.canUnlock(player)) {
-                        guide.unlockItem(player, sfItem, pl -> guide.openItemGroup(profile, itemGroup, page));
+                        guide.unlockItem(player, sfItem, afterUnlock);
                     } else {
                         Slimefun.getLocalization().sendMessage(player, "messages.not-enough-xp", true);
                     }
