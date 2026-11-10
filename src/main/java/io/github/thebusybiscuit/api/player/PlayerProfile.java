@@ -69,6 +69,7 @@ public class PlayerProfile {
     private boolean markedForDeletion = false;
 
     private final GuideHistory guideHistory = new GuideHistory(this);
+    private final GuideHistory laboratoryGuideHistory = new GuideHistory(this);
 
     private final HashedArmorpiece[] armor = { new HashedArmorpiece(), new HashedArmorpiece(), new HashedArmorpiece(), new HashedArmorpiece() };
 
@@ -376,6 +377,10 @@ public class PlayerProfile {
      */
     public @Nonnull GuideHistory getGuideHistory() {
         return guideHistory;
+    }
+
+    public @Nonnull GuideHistory getLaboratoryGuideHistory() {
+        return laboratoryGuideHistory;
     }
 
     public static boolean fromUUID(@Nonnull UUID uuid, @Nonnull Consumer<PlayerProfile> callback) {

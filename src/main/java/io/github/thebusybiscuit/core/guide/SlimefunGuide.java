@@ -63,7 +63,11 @@ public final class SlimefunGuide {
         if (optional.isPresent()) {
             PlayerProfile profile = optional.get();
             SlimefunGuideImplementation guide = Slimefun.getRegistry().getSlimefunGuide(mode);
-            profile.getGuideHistory().openLastEntry(guide);
+            if (mode == SlimefunGuideMode.CHEAT_MODE) {
+                profile.getLaboratoryGuideHistory().openLastEntry(guide);
+            } else {
+                profile.getGuideHistory().openLastEntry(guide);
+            }
         } else {
             openMainMenuAsync(p, mode, 1);
         }

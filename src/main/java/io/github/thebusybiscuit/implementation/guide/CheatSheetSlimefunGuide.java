@@ -24,7 +24,7 @@ import me.mrCookieSlime.CSCoreLibPlugin.general.Inventory.ChestMenu;
 
 /**
  * This is an admin-variant of the {@link SurvivalSlimefunGuide} which allows a {@link Player}
- * to spawn in a {@link SlimefunItem} via click rather than showing their {@link Recipe}.
+ * to inspect a {@link Recipe} and explicitly claim a {@link SlimefunItem}.
  * 
  * @author TheBusyBiscuit
  *
@@ -34,7 +34,11 @@ public class CheatSheetSlimefunGuide extends SurvivalSlimefunGuide {
     private final ItemStack item;
 
     public CheatSheetSlimefunGuide() {
-        super(false, true);
+        this(false);
+    }
+
+    public CheatSheetSlimefunGuide(boolean bookmarksEnabled) {
+        super(false, true, bookmarksEnabled);
 
         item = new SlimefunGuideItem(this, "&cSlimefun Guide &4(Cheat Sheet)");
     }

@@ -107,7 +107,7 @@ public final class SlimefunRegistry {
         boolean bookmarksEnabled = !cfg.contains("guide.bookmarks") || cfg.getBoolean("guide.bookmarks");
         GuideBookmarks.initialize(plugin);
         guides.put(SlimefunGuideMode.SURVIVAL_MODE, new SurvivalSlimefunGuide(showVanillaRecipes, showHiddenItemGroupsInSearch, bookmarksEnabled));
-        guides.put(SlimefunGuideMode.CHEAT_MODE, new CheatSheetSlimefunGuide());
+        guides.put(SlimefunGuideMode.CHEAT_MODE, new CheatSheetSlimefunGuide(bookmarksEnabled));
 
         researchRanks.addAll(cfg.getStringList("research-ranks"));
 

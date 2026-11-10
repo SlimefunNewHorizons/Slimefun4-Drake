@@ -234,16 +234,22 @@ public class Research implements Keyed {
      */
     @ParametersAreNonnullByDefault
     public void unlockFromGuide(SlimefunGuideImplementation guide, Player player, PlayerProfile profile, SlimefunItem sfItem, ItemGroup itemGroup, int page) {
+        unlockFromGuide(guide, player, profile, sfItem, pl -> guide.openItemGroup(profile, itemGroup, page));
+    }
+
+    /** Runs the usual research event and XP checks, then returns to the requesting guide page. */
+    @ParametersAreNonnullByDefault
+    public void unlockFromGuide(SlimefunGuideImplementation guide, Player player, PlayerProfile profile, SlimefunItem sfItem, Consumer<Player> callback) {
         if (!Slimefun.getRegistry().getCurrentlyResearchingPlayers().contains(player.getUniqueId())) {
             if (profile.hasUnlocked(this)) {
-                guide.openItemGroup(profile, itemGroup, page);
+                callback.accept(player);
             } else {
                 PlayerPreResearchEvent event = new PlayerPreResearchEvent(player, this, sfItem);
                 Bukkit.getPluginManager().callEvent(event);
 
                 if (!event.isCancelled()) {
                     if (this.canUnlock(player)) {
-                        guide.unlockItem(player, sfItem, pl -> guide.openItemGroup(profile, itemGroup, page));
+                        guide.unlockItem(player, sfItem, callback);
                     } else {
                         Slimefun.getLocalization().sendMessage(player, "messages.not-enough-xp", true);
                     }

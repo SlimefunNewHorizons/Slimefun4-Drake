@@ -119,6 +119,11 @@ public class GuideHistory {
         queue.add(new GuideEntry<>(searchTerm, 0));
     }
 
+    /** Records a custom guide page so Back returns to the same view. */
+    public void addPage(@Nonnull Runnable openPage) {
+        refresh(openPage, 0);
+    }
+
     private <T> void refresh(@Nonnull T object, int page) {
         Validate.notNull(object, "Cannot add a null Entry to the GuideHistory!");
         Validate.isTrue(page >= 0, "page must not be negative!");
@@ -194,6 +199,8 @@ public class GuideHistory {
             guide.displayItem(profile, item, false);
         } else if (entry.getIndexedObject() instanceof ItemStack stack) {
             guide.displayItem(profile, stack, entry.getPage(), false);
+        } else if (entry.getIndexedObject() instanceof Runnable openPage) {
+            openPage.run();
         } else if (entry.getIndexedObject() instanceof String query) {
             guide.openSearch(profile, query, false);
         } else {

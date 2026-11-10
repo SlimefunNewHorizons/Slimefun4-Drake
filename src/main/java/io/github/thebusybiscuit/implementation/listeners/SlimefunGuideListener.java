@@ -99,8 +99,11 @@ public class SlimefunGuideListener implements Listener {
                     return;
                 }
             }
-            player.getInventory().addItem(guide.clone());
-            player.sendMessage("§aLaboratory catalog received. Right-click it to browse every Slimefun item.");
+            if (player.getInventory().addItem(guide.clone()).isEmpty()) {
+                player.sendMessage("§aLaboratory catalog received. Open the book or use /sf cheat.");
+            } else {
+                player.sendMessage("§eYour inventory is full. Use /sf cheat to open the laboratory catalog.");
+            }
         }, 5L);
     }
 
