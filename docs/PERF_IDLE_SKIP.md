@@ -11,8 +11,8 @@ maquinas con items dentro.
 slimefun:
   idle-skip: true   # default false
 ```
-Se relee al inicio de cada ciclo del TickerTask (requiere el kernel DrakesPurpur; en Paper plano queda false).
-Desactivar = volver a `false`, sin reinicio.
+El plugin vigila la fecha de `drakes-data/perf.yml` en cada ciclo del TickerTask y solo reparsea si cambio:
+activar/desactivar no requiere reinicio (y no depende del kernel; sin archivo queda false). Estado en vivo: `PerfFlags.idleSkip`.
 
 **Medido** (microbenchmark `TestIdleSkip`, `mvn -o test -Dtest=TestIdleSkip -DargLine=-Dsf.bench=true`, JDK 25, MockBukkit,
 solo `findNextRecipe` de una maquina ociosa):
