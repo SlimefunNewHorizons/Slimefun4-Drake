@@ -1,6 +1,7 @@
 package io.github.thebusybiscuit.slimefun4.implementation.guide;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import org.bukkit.inventory.meta.ItemMeta;
 import java.util.LinkedList;
 import java.util.List;
@@ -9,6 +10,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
+
+import javax.annotation.Nullable;
+import io.github.thebusybiscuit.slimefun4.api.items.groups.SubItemGroup;
 
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -115,9 +119,13 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
      * @return a {@link List} of visible {@link ItemGroup} instances
      */
     protected @Nonnull List<ItemGroup> getVisibleItemGroups(@Nonnull Player p, @Nonnull PlayerProfile profile) {
-        List<ItemGroup> groups = new LinkedList<>();
+        List<ItemGroup> groups = new ArrayList<>();
 
         for (ItemGroup group : Slimefun.getRegistry().getAllItemGroups()) {
+            if (group instanceof SubItemGroup) {
+                continue;
+            }
+
             try {
                 if (group instanceof FlexItemGroup flexItemGroup) {
                     if (flexItemGroup.isVisible(p, profile, getMode())) {
@@ -137,6 +145,7 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
             }
         }
 
+        groups.sort(Comparator.comparingInt(ItemGroup::getTier));
         return groups;
     }
 
@@ -245,7 +254,7 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
         ChestMenu menu = create(p);
         createHeader(p, profile, menu);
 
-        addBackButton(menu, 1, p, profile);
+        addBackButton(menu, 1, p, profile, itemGroup);
 
         int pages = (itemGroup.getItems().size() - 1) / MAX_ITEM_GROUPS + 1;
 
@@ -782,6 +791,10 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
     }
 
     private void addBackButton(ChestMenu menu, int slot, Player p, PlayerProfile profile) {
+        addBackButton(menu, slot, p, profile, null);
+    }
+
+    private void addBackButton(ChestMenu menu, int slot, Player p, PlayerProfile profile, @Nullable ItemGroup currentGroup) {
         GuideHistory history = profile.getGuideHistory();
 
         if (isSurvivalMode() && history.size() > 1) {
@@ -796,6 +809,12 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
                 return false;
             });
 
+        } else if (currentGroup instanceof SubItemGroup subItemGroup && subItemGroup.getParent() != null) {
+            menu.addItem(slot, new CustomItemStack(ChestMenuUtils.getBackButton(p, "", ChatColor.GRAY + Slimefun.getLocalization().getMessage(p, "guide.back.guide"))));
+            menu.addMenuClickHandler(slot, (pl, s, is, action) -> {
+                subItemGroup.getParent().open(p, profile, getMode());
+                return false;
+            });
         } else {
             menu.addItem(slot, new CustomItemStack(ChestMenuUtils.getBackButton(p, "", ChatColor.GRAY + Slimefun.getLocalization().getMessage(p, "guide.back.guide"))));
             menu.addMenuClickHandler(slot, (pl, s, is, action) -> {

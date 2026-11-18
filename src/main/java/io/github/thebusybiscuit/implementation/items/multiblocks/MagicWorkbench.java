@@ -133,10 +133,26 @@ public class MagicWorkbench extends AbstractCraftingTable {
     }
 
     private boolean isCraftable(Inventory inv, ItemStack[] recipe) {
+        if (recipe == null || recipe.length == 0) {
+            return false;
+        }
+
+        boolean hasIngredients = false;
+        for (ItemStack ingredient : recipe) {
+            if (ingredient != null && ingredient.getType() != Material.AIR) {
+                hasIngredients = true;
+                break;
+            }
+        }
+        if (!hasIngredients) {
+            return false;
+        }
+
         for (int j = 0; j < inv.getContents().length; j++) {
-            if (!SlimefunUtils.isItemSimilar(inv.getContents()[j], recipe[j], true, true, false)) {
-                if (SlimefunItem.getByItem(recipe[j]) instanceof SlimefunBackpack) {
-                    if (!SlimefunUtils.isItemSimilar(inv.getContents()[j], recipe[j], false, true, false)) {
+            ItemStack required = (j < recipe.length) ? recipe[j] : null;
+            if (!SlimefunUtils.isItemSimilar(inv.getContents()[j], required, true, true, false)) {
+                if (SlimefunItem.getByItem(required) instanceof SlimefunBackpack) {
+                    if (!SlimefunUtils.isItemSimilar(inv.getContents()[j], required, false, true, false)) {
                         return false;
                     }
                 } else {

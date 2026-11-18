@@ -1,6 +1,5 @@
 package io.github.thebusybiscuit.slimefun4.implementation.guide;
 
-import java.util.LinkedList;
 import java.util.List;
 
 import javax.annotation.Nonnull;
@@ -8,15 +7,11 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.Recipe;
 
 import io.github.thebusybiscuit.slimefun4.api.items.ItemGroup;
 import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;
-import io.github.thebusybiscuit.slimefun4.api.items.groups.FlexItemGroup;
 import io.github.thebusybiscuit.slimefun4.api.player.PlayerProfile;
-import io.github.thebusybiscuit.slimefun4.core.guide.SlimefunGuide;
 import io.github.thebusybiscuit.slimefun4.core.guide.SlimefunGuideMode;
-import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 import io.github.thebusybiscuit.slimefun4.utils.ChestMenuUtils;
 import io.github.thebusybiscuit.slimefun4.utils.itemstack.SlimefunGuideItem;
 
@@ -51,15 +46,7 @@ public class CheatSheetSlimefunGuide extends SurvivalSlimefunGuide {
      */
     @Override
     protected List<ItemGroup> getVisibleItemGroups(@Nonnull Player p, @Nonnull PlayerProfile profile) {
-        List<ItemGroup> groups = new LinkedList<>();
-
-        for (ItemGroup group : Slimefun.getRegistry().getAllItemGroups()) {
-            if (!(group instanceof FlexItemGroup flexItemGroup) || flexItemGroup.isVisible(p, profile, getMode())) {
-                groups.add(group);
-            }
-        }
-
-        return groups;
+        return super.getVisibleItemGroups(p, profile);
     }
 
     @Override

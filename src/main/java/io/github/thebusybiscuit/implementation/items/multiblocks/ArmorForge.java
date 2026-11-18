@@ -64,8 +64,24 @@ public class ArmorForge extends AbstractCraftingTable {
     }
 
     private boolean isCraftable(Inventory inv, ItemStack[] recipe) {
+        if (recipe == null || recipe.length == 0) {
+            return false;
+        }
+
+        boolean hasIngredients = false;
+        for (ItemStack ingredient : recipe) {
+            if (ingredient != null && ingredient.getType() != Material.AIR) {
+                hasIngredients = true;
+                break;
+            }
+        }
+        if (!hasIngredients) {
+            return false;
+        }
+
         for (int j = 0; j < inv.getContents().length; j++) {
-            if (!SlimefunUtils.isItemSimilar(inv.getContents()[j], recipe[j], true)) {
+            ItemStack required = (j < recipe.length) ? recipe[j] : null;
+            if (!SlimefunUtils.isItemSimilar(inv.getContents()[j], required, true)) {
                 return false;
             }
         }
