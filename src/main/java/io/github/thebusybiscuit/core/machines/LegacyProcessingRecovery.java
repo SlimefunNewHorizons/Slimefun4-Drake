@@ -31,7 +31,7 @@ import me.mrCookieSlime.Slimefun.api.inventory.BlockMenu;
  * <p>Patrón heredado de Slimefun: {@code findNextRecipe(menu)} <b>consume los ingredientes al empezar</b> y deja la
  * receta solo en un mapa en memoria ({@code processing: Map<Block, MachineRecipe>}). Si el servidor se reinicia a mitad
  * de proceso, esos ítems desaparecen: es la causa de «se me perdieron los libros / encantamientos tras el reinicio».
- * Las máquinas que usan {@link MachineProcessor} ya tienen su propio reembolso; esta clase cubre las que no.
+ * Las máquinas que usan {@code MachineProcessor} ya tienen su propio reembolso; esta clase cubre las que no.
  *
  * <p>Estrategia: <b>completar la operación</b>, no reembolsar. Se entregan los {@code getOutput()} que la máquina ya
  * había prometido a las ranuras de salida. Así no hace falta saber qué consumió cada máquina (algunas consumen solo si
