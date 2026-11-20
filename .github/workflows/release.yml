@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Build and test
+        run: mvn -B -ntp verify -DlegacyMockBukkitTests
+      - name: Collect jar, checksum and coverage
+        id: pack
+        run: |
+          JAR="$(ls target/*.jar | grep -v -e original -e sources -e javadoc | head -n1)"
+          mkdir -p dist && cp "$JAR" dist/
+          (cd dist && sha256sum *.jar > SHA256SUMS.txt)
+          COV="not available"
+          if [ -f target/site/jacoco/jacoco.csv ]; then
+            COV="$(awk -F, 'NR>1{m+=$8;c+=$9} END{if(m+c>0) printf "%.1f%% line coverage (JaCoCo)", 100*c/(m+c)}' target/site/jacoco/jacoco.csv)"
+          fi
+          echo "cov=$COV" >> "$GITHUB_OUTPUT"
+          echo "### Build: $COV" >> "$GITHUB_STEP_SUMMARY"
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --generate-notes \
+            --notes "Test coverage of this build: ${{ steps.pack.outputs.cov }}. Verify the jar with SHA256SUMS.txt."
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'workflow_dispatch'
+        with: { name: slimefun6-build, path: dist/ }

@@ -16,6 +16,11 @@
 
 **A maintained Slimefun core for Minecraft 1.21 → 26.2, built to run with the largest community addon collection we could load together.**
 
+<a href="https://github.com/SlimefunNewHorizons/Slimefun6/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/SlimefunNewHorizons/Slimefun6/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+<a href="https://github.com/SlimefunNewHorizons/Slimefun6/releases"><img alt="Release" src="https://img.shields.io/github/v/release/SlimefunNewHorizons/Slimefun6?include_prereleases"></a>
+<img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-blue">
+<img alt="Minecraft" src="https://img.shields.io/badge/Minecraft-1.21%20%E2%86%92%2026.2-green">
+
 </div>
 
 > ### 🏰 Play it live

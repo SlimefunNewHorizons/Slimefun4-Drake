@@ -1,6 +1,6 @@
 # Contributing Guidelines & Engineering Standards
 
-Welcome to **Slimefun4-Drake**! This repository is part of DrakesCraft Labs: Core de Slimefun adaptado, securizado contra duplicaciones y optimizado para DrakesCraft.
+Welcome to **Slimefun 6**! This repository is part of DrakesCraft Labs: Core de Slimefun adaptado, securizado contra duplicaciones y optimizado para DrakesCraft.
 
 ---
 

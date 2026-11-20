@@ -46,13 +46,13 @@
 
         <!-- Security Patches (2026 Standards) -->
         <commons-lang3.version>3.20.0</commons-lang3.version>
-        <guava.version>33.6.0-jre</guava.version>
+        <guava.version>33.7.2-jre</guava.version>
         <spring.version>6.2.18</spring.version>
         <commons-io.version>2.22.0</commons-io.version>
-        <jackson.version>2.21.4</jackson.version>
+        <jackson.version>2.21.7</jackson.version>
         <jackson.annotations.version>2.22</jackson.annotations.version>
-        <log4j2.version>2.26.0</log4j2.version>
-        <json.version>20231013</json.version>
+        <log4j2.version>2.26.1</log4j2.version>
+        <json.version>20260719</json.version>
         <plexus-utils.version>4.0.3</plexus-utils.version>
         <maven-shade.plexus-utils.version>3.6.1</maven-shade.plexus-utils.version>
         <maven.shade.plugin.version>3.6.2</maven.shade.plugin.version>

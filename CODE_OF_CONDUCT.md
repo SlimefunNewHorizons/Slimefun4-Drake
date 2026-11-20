@@ -2,7 +2,7 @@
 
 ## Our Pledge
 
-We as members, contributors, and leaders of the **Slimefun4-Drake** repository in the **SlimefunNewHorizons / DrakesCraft Labs** ecosystem pledge to make participation in our community, plugins, issues, and pull requests a harassment-free, respectful, and technically rigorous experience for everyone.
+We as members, contributors, and leaders of the **Slimefun 6** repository in the **SlimefunNewHorizons / DrakesCraft Labs** ecosystem pledge to make participation in our community, plugins, issues, and pull requests a harassment-free, respectful, and technically rigorous experience for everyone.
 
 ---
 
