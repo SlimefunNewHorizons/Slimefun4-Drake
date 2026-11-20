@@ -12,6 +12,8 @@ Este repositorio es el fork de `Slimefun/Slimefun4` mantenido por [SlimefunNewHo
 
 La historia del repositorio anterior (`Slimefun4-Drake`) se conserva en la rama `legacy/slimefun4-drake-1.21`. Nuestra historia no desciende de la de upstream, asi que no se puede fusionar con ella; upstream queda en `experimental` como referencia.
 
+El desarrollo de upstream termino: en su mensaje de despedida (Discord de Slimefun, `#announcements`) el equipo original dijo que Slimefun 1.21 es su ultima version oficial, que el repositorio de GitHub se archivara a fin de ano y que quien quiera continuarlo "en espiritu o con su propio fork" es bienvenido. Slimefun 6 es nuestra continuacion, con gracias a TheBusyBiscuit, Walshy y todos los colaboradores que lo construyeron.
+
 ## En produccion (Temporada 2, medido el 2026-11-20)
 
 * Purpur 26.2 build 141, Java 25.
@@ -22,6 +24,10 @@ La historia del repositorio anterior (`Slimefun4-Drake`) se conserva en la rama 
 ## Versiones
 
 La linea Universal 26.x es una sola base de codigo que se compila y carga desde Minecraft **1.21** hasta **26.2**: se compila contra la API Paper `1.21.11` con bytecode Java 21 y corre en Java 21+. No se soportan versiones anteriores a 1.21.
+
+## Sitios web
+
+[drakescraft.cl](https://drakescraft.cl) (sitio principal) · [web.drakescraft.cl](https://web.drakescraft.cl) (portal, guia y [tienda](https://web.drakescraft.cl/store.html)) · [astra.drakescraft.cl](https://astra.drakescraft.cl) (datos y dossiers del servidor) · [pack.drakescraft.cl](https://pack.drakescraft.cl) (pack de texturas) · [maven.drakescraft.cl](https://maven.drakescraft.cl) (repositorio Maven) · [Discord](https://discord.gg/rv3vtXZTk7)
 
 ## El ecosistema DrakesCraft
 

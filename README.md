@@ -34,6 +34,8 @@ This repository is the `Slimefun/Slimefun4` fork maintained by [SlimefunNewHoriz
 
 The history of the previous standalone repository (`Slimefun4-Drake`) is kept on the branch `legacy/slimefun4-drake-1.21`. Our history is not a descendant of upstream's, so it cannot be merged into it; upstream is tracked on `experimental` for reference.
 
+Upstream development ended: in its farewell announcement (Slimefun Discord, `#announcements`) the original team said Slimefun 1.21 is its last official build, that the GitHub repository will be archived at the end of the year, and that anyone who wants to continue Slimefun "in spirit or by creating their own fork" is welcome. Slimefun 6 is our continuation of it, with thanks to TheBusyBiscuit, Walshy and every contributor who built it.
+
 ## Running in production (Season 2, measured 2026-11-20)
 
 | Item | Value |
@@ -46,6 +48,17 @@ The history of the previous standalone repository (`Slimefun4-Drake`) is kept on
 ## Version support
 
 The Universal 26.x line is one code base that is built and loaded from Minecraft **1.21** up to **26.2**. The jar is compiled against the Paper `1.21.11` API with Java 21 bytecode and runs on Java 21+ (production runs Java 25). Branch details: see "Universal 26.x line" below. Versions older than 1.21 are not supported.
+
+## Websites
+
+| Site | What you find there |
+| :--- | :--- |
+| [drakescraft.cl](https://drakescraft.cl) | Main site of the DrakesCraft network. |
+| [web.drakescraft.cl](https://web.drakescraft.cl) | Web portal and in-game guide; [store](https://web.drakescraft.cl/store.html). |
+| [astra.drakescraft.cl](https://astra.drakescraft.cl) | Astra, the public web for the server's data and dossiers. |
+| [pack.drakescraft.cl](https://pack.drakescraft.cl) | Resource pack downloads. |
+| [maven.drakescraft.cl](https://maven.drakescraft.cl) | Maven repository with our core and library artifacts. |
+| [Discord](https://discord.gg/rv3vtXZTk7) | Community, support and announcements. |
 
 ## The DrakesCraft ecosystem
 
