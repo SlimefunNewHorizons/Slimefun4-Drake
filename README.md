@@ -10,51 +10,168 @@
 
 <div align="center">
 
-<img src="banner.svg" alt="Slimefun4-Drake banner" width="920" />
+<img src="banner.svg" alt="Slimefun 6 banner" width="920" />
 
-# Slimefun4-Drake Core
+# Slimefun 6 — DrakesCraft Core
 
-**The Java 21 Slimefun core maintained for DrakesCraft on Paper/Purpur 1.21.11.**
+**A maintained Slimefun core for Minecraft 1.21 → 26.2, built to run with the largest community addon collection we could load together.**
 
 </div>
 
-> ### 🏰 Join the Official DrakesCraft Community!
-> 
-> * 🎮 **Server IP**: `mc.drakescraft.cl` *(Java 1.21.11 & Bedrock)*
-> * 💬 **Official Discord**: [discord.gg/drakescraft](https://discord.gg/rv3vtXZTk7)
-> * 🌐 **Web & Guide**: [web.drakescraft.cl](https://web.drakescraft.cl) — 🛒 **Store**: [web.drakescraft.cl/store](https://web.drakescraft.cl/store.html)
-> 
-> *Play with this addon and 80+ more optimized expansions live on our technical survival network!*
+> ### 🏰 Play it live
+>
+> * 🎮 **Server IP**: `mc.drakescraft.cl` *(Java & Bedrock)*
+> * 💬 **Discord**: [discord.gg/drakescraft](https://discord.gg/rv3vtXZTk7)
+> * 🌐 **Web & Guide**: [web.drakescraft.cl](https://web.drakescraft.cl)
+>
+> *This core runs in production on DrakesCraft Season 2 together with the 110 Slimefun addons listed below.*
 
 ---
 
-## Purpose
+## What this is
 
-Slimefun4-Drake owns the reliable base layer for recipes, categories, guides, research, block storage, cargo networks, energy networks and addon loading. It is the compatibility boundary for the DrakesCraft Slimefun ecosystem.
+This repository is the `Slimefun/Slimefun4` fork maintained by [SlimefunNewHorizons](https://github.com/SlimefunNewHorizons). It carries the core we run in production, ported from the original code base, plus the compatibility work needed so a very large number of community addons load together on current Minecraft. The original project is credited in [`docs/UPSTREAM_ATTRIBUTION.md`](docs/UPSTREAM_ATTRIBUTION.md) and the code stays under GPL-3.0.
 
-The survival guide includes native per-player bookmarks. Players can right-click
-an unlocked item in a category or search result to save it, then open the star
-button in the guide header for a paginated quick-access list. Bookmarks persist
-as stable Slimefun item IDs in `guide-bookmarks.yml`, so addon recipe or texture
-updates do not serialize stale `ItemStack` data. The feature is controlled by
-`guide.bookmarks` and defaults to enabled for existing installations.
+The history of the previous standalone repository (`Slimefun4-Drake`) is kept on the branch `legacy/slimefun4-drake-1.21`. Our history is not a descendant of upstream's, so it cannot be merged into it; upstream is tracked on `experimental` for reference.
 
-The runtime is hybrid. `Slimefun-Rust` is the shared acceleration layer for
-deterministic work across this core, addons and DrakesCraft-owned plugins. Java
-remains authoritative for Bukkit state and supplies a transparent fallback.
+## Running in production (Season 2, measured 2026-11-20)
 
-## Version compatibility
+| Item | Value |
+| :--- | :--- |
+| Server | Purpur 26.2 build 141, Java 25 |
+| Core | `Slimefun 11.0-Universal-26.x-SNAPSHOT` (this repo, branch `main`) |
+| Addons reported by `/sf versions` | **110** |
+| Consolidated suites | 9 suite jars, 8 of them register as addons ([Drakes-Suites](https://github.com/SlimefunNewHorizons/Drakes-Suites)) bundling ~90 more addon modules |
 
-| Line | Branch | Minecraft | Java | Compile-time Paper API | Status |
-|---|---|---|---|---|---|
-| Production | `main` | Paper/Purpur 1.21.11 | 21 | `1.21.11-R0.1-SNAPSHOT` | production |
-| Universal 26.x | `port-26x` | Paper/Purpur 26.2 (same codebase as production 1.21.11) | 21 bytecode (major 65); runs on 21+ | `1.21.11-R0.1-SNAPSHOT` (`build-parent/pom.xml`, `paper.version`) | test (verified on Paper/Purpur 26.2) |
+## Version support
 
-The Universal core is `11.0-Universal-26.x-SNAPSHOT` (package `io.github.thebusybiscuit.slimefun4`, `plugin.yml` `api-version: 1.21`). Production (`main`) uses the package `com.github.drakescraft_labs.slimefun4`.
+The Universal 26.x line is one code base that is built and loaded from Minecraft **1.21** up to **26.2**. The jar is compiled against the Paper `1.21.11` API with Java 21 bytecode and runs on Java 21+ (production runs Java 25). Branch details: see "Universal 26.x line" below. Versions older than 1.21 are not supported.
 
-**Minecraft versions older than 1.21.11 are not supported and not tested.** The `MinecraftVersion` enum inherits 1.16+ logic from upstream, but nothing below 1.21.11 is guaranteed to work.
+## Addons loaded together in production
 
-Addons for the 26.x line are obtained with `ai-hub/scripts/portar_addons.py`.
+Names and versions are copied from the `Installed Addons` list printed by `/sf versions` on the production server, not from documentation. The nine consolidated suites come first; each bundles several addon modules (inventory per suite in [Drakes-Suites](https://github.com/SlimefunNewHorizons/Drakes-Suites#runtime-snapshot-season-2-2026-11-20)). The second table lists everything else the server reports, including plugins that register with Slimefun but are not strictly addons.
+
+### Consolidated suites registered as addons (8)
+
+| Addon | Version reported |
+| :--- | :--- |
+| DrakesBio | 2.0.0-26.X-SNAPSHOT |
+| DrakesCombat | 2.0.0-26.X-SNAPSHOT |
+| DrakesGenerators | 2.0.0-26.X-SNAPSHOT |
+| DrakesMagic | 2.0.0-26.X-SNAPSHOT |
+| DrakesMultiverse | 2.0.0-26.X-SNAPSHOT |
+| DrakesServer | 2.0.0-26.X-SNAPSHOT |
+| DrakesTech | 2.0.0-26.X-SNAPSHOT |
+| DrakesUtility | 2.0.0-26.X-SNAPSHOT |
+
+### Other addons and Slimefun-aware plugins (102)
+
+| Addon | Version reported |
+| :--- | :--- |
+| AdvancedTech | 1.0.0 |
+| AlchimiaVitae | 1.1.1 |
+| AuraSkills | 2.4.0 |
+| AxGraves | 1.32.1-Drake.1 |
+| BetterChests | Dev - ? |
+| BetterReactor | 1.3.0 |
+| BreweryX | 3.7.0;port-26x |
+| Bump | UNOFFICIAL |
+| ChestTerminal | 1.21-Drake-SNAPSHOT |
+| ColoredEnderChests | 1.20.6-Drake-SNAPSHOT |
+| CompressionCraft | UNOFFICIAL |
+| Coronalis | UNOFFICIAL |
+| CringleBosses | 1.0.0 |
+| CrystamaeHistoria | 1.0.1 |
+| Cultivation | 3.3 |
+| DankTech2 | MODIFIED |
+| DemonicExpansion | 1.0.0 |
+| DiosesDrakes | 0.6.0 |
+| DrakesBosses | 1.0.0 |
+| DrakesCrates | 2.0 |
+| DrakesSlimeMarket | 1.2.0 |
+| DrakesVotes | 1.0.0 |
+| Drugfun | 1.0.0 |
+| DyeBench | UNOFFICIAL |
+| DyedBackpacks | 1.20.6-Drake-SNAPSHOT |
+| DynaTech | 1.21-Drake-v7 |
+| EcoPower | 1.20.6-Universal-26.x-SNAPSHOT |
+| ElectricSpawners | 1.21.1-Drake |
+| ElementManipulation | 1.1.1-UNIVERSAL-26x |
+| EMCTech | MODIFIED |
+| EquivalencyTech | modified |
+| ExoticGarden | 1.3-UNIVERSAL-26x-SNAPSHOT |
+| ExtraGear | 1.20.6-Drake-SNAPSHOT |
+| ExtraHeads | 11.0-Drake-1.21.1-SNAPSHOT |
+| ExtraTools | 1.2 |
+| FastMachines | 11.0-Drake-1.21.1-SNAPSHOT |
+| FlowerPower | 1.0.0 |
+| FluffyMachines | 1.0.0 |
+| FNAmplifications | Unoffical-4.2.4 |
+| FoxyMachines | 1.21.11-Drake.1 |
+| Galaxyfun | 11.0-Universal-26.x-Galaxyfun-SNAPSHOT |
+| Gastronomicon | 1.21.11-Drake.1-UNIVERSAL-26x-SNAPSHOT |
+| GeneticChickengineering | 1.1.DEV |
+| GeyserHeads | 1.2 |
+| GlobiaMachines | 1.0.0 |
+| GuizhanLibPlugin | 2.5.0 |
+| HeadLimiter | UNOFFICIAL |
+| HotbarPets | 1.20.6-Drake-SNAPSHOT |
+| IDreamOfEasy | DEV |
+| InfernalExpansion | 1.0 |
+| InfinityExpansion | 1.20.6-UNIVERSAL-26x-SNAPSHOT |
+| Liquid | UNOFFICIAL |
+| LiteXpansion | 1.21-Drake-v2 |
+| Magic8Ball | UNOFFICIAL |
+| MagicXpansion | 0.1.0-UNIVERSAL-26x-SNAPSHOT |
+| MiniBlocks | UNOFFICIAL |
+| MobCapturer | 11.0-Drake-1.21.1-SNAPSHOT |
+| MultiverseCreatures | 5.1-RELEASE |
+| MultiverseNets | 6.2 |
+| Netheopoiesis | MODIFIED |
+| NetworksV6-Drake | 11-SNAPSHOT |
+| Nexcavate | 1.0-SNAPSHOT |
+| NotEnoughAddons | UNOFFICIAL |
+| Obsidian-Armor | 1.0.0 |
+| ObsidianExpansion | PRIVATE |
+| Odysseia | 1.1.3 |
+| PotionExpansion | 1.0.0 |
+| PrivateStorage | UNOFFICIAL |
+| Quaptics | 0 |
+| RandomExpansion | 1.0.0 |
+| RelicsOfCthonia | 1.21.11-Drake.1 |
+| RykenSlimeCustomizer | 20 |
+| SaneCrafting | 0.1 |
+| SensibleToolbox | 1.22-Drake-SNAPSHOT |
+| SFCalc | 1.21-Drake-v1 |
+| SfChunkInfo | Unoffical-1.11-SNAPSHOT.1 |
+| SFMobDrops | 1.20.6-Drake-SNAPSHOT |
+| SFPortalGunsExtension | 1.1.0 |
+| SimpleMaterialGenerators | 1.0.0 |
+| SimpleStorage | MODIFIED |
+| SimpleUtils | MODIFIED |
+| SlimeChem | 1.21-Drake-v7 |
+| SlimeFrame | 1.7.0 |
+| Slimefun-Disc | 1.5.DEV |
+| SlimefunAdvancements | MODIFIED |
+| SlimefunLuckyBlocks | 11.0-Drake-1.21.1-SNAPSHOT |
+| SlimefunOreChunks | UNOFFICIAL |
+| SlimefunTranslation | 11.0-Drake-1.21.1-SNAPSHOT |
+| SlimefunWarfare | 1.0.0-drake |
+| SlimeHUD | 1.3.1 |
+| SlimeTinker | 1.2.1-Drake |
+| SlimyBees | 1.0.0-UNOFFICIAL |
+| SlimyRepair | 1.0.0 |
+| SlimyTreeTaps | 11.0-Universal-26.x-SNAPSHOT |
+| SmallSpace | MODED |
+| SoulJars | 1.21-Drake-v1 |
+| SpiritsUnchained | UNOFFICIAL |
+| Supreme | 1.21.11-Drake.1 |
+| TranscEndence | DevTest-33 |
+| VillagerTrade | UNOFFICIAL |
+| VillagerUtil | MODIFIED |
+| WorldEditSlimefun | UNOFFICIAL |
+
+---
 
 ## Runtime contract
 
@@ -80,9 +197,9 @@ Category pages and search results both pass through the same checks.
 - `/sf give` remains a staff operation. Odysseia blocks paid pass holders from
   using it and owns guide expiry, transfer prevention, and legacy audits.
 
-## Universal 26.x line (branch `port-26x`)
+## Universal 26.x line (branch `main`)
 
-> `main` is production **1.21.11** and does **not** include anything from this section. `port-26x` is the Universal line for Paper/Purpur 26.2 (see [Version compatibility](#version-compatibility)).
+> `main` is the Universal line (1.21 → 26.2) and is what runs in production. The older Java-package line (`com.github.drakescraft_labs.slimefun4`, Paper 1.21.11 only) is preserved on `legacy/slimefun4-drake-1.21`.
 
 - **Opt-in storage backends (`SfStore`)**: `storage.backend` = `file` (disk with fsync, default), `sqlite`, `mysql` or `postgres`. Keys: `sqlite-file`, `jdbc-url`, `jdbc-user`, `jdbc-password`. SQL backends are wrapped in `CachedSfStore`: writes are asynchronous and everything is flushed on shutdown. The first time SQL is used, data is imported from disk (the files are not touched); if SQL fails, it falls back to disk. Changing backend requires a restart.
 - **New commands**: `/sf tick` (tick freeze), `/sf storage [status|export]`, `/sf balance [addon]`, `/sf itemid`, `/sf addons` (versions and item count per addon).
@@ -150,8 +267,8 @@ Release and snapshot builds of this project are published at **https://maven.dra
 
 | Artifact (`com.github.drakescraft_labs`) | Version | Minecraft | Java | Source branch |
 |---|---|---|---|---|
-| `slimefun-core` | `11.0-Drake-1.21.11-SNAPSHOT` | 1.21.11 | 21 | `main` of Slimefun4-Drake |
-| `slimefun-core` | `11.0-Universal-26.x-SNAPSHOT` | 26.2 | 25 | `port-26x` of Slimefun4-Drake |
+| `slimefun-core` | `11.0-Drake-1.21.11-SNAPSHOT` | 1.21.11 | 21 | `legacy/slimefun4-drake-1.21` of this repo |
+| `slimefun-core` | `11.0-Universal-26.x-SNAPSHOT` | 26.2 | 25 | `main` of this repo |
 | `dough-core` | `1.3.1-DRAKE-v11-SNAPSHOT` | 1.21.11 | 21 | `main` of dough-core |
 | `dough-core` | `1.3.1-Universal-26.x-SNAPSHOT` | 26.2 | 25 | `port-26x` of dough-core |
 | `SefiLib` | `0.3.0-Drake-1.21.11` | 1.21.11 | 21 | `main` of SefiLib |
