@@ -47,6 +47,25 @@ The history of the previous standalone repository (`Slimefun4-Drake`) is kept on
 
 The Universal 26.x line is one code base that is built and loaded from Minecraft **1.21** up to **26.2**. The jar is compiled against the Paper `1.21.11` API with Java 21 bytecode and runs on Java 21+ (production runs Java 25). Branch details: see "Universal 26.x line" below. Versions older than 1.21 are not supported.
 
+## The DrakesCraft ecosystem
+
+This core is one piece of a stack. Each link below is its own repository under [SlimefunNewHorizons](https://github.com/SlimefunNewHorizons).
+
+| Project | What it is |
+| :--- | :--- |
+| [**Drakes-Suites** (StarSuites)](https://github.com/SlimefunNewHorizons/Drakes-Suites) | Monorepo that consolidates dozens of Slimefun addons into 9 jars (Core, Tech, Bio, Magic, Generators, Utility, Combat, Server, Multiverse), each addon an on/off module with its own `modules/*.yml`. Evolved directly from the Slimefun 4 Drake core. |
+| [**DrakesPurpur**](https://github.com/SlimefunNewHorizons/DrakesPurpur) | Our Purpur 26.2 fork ("monolith"): custom kernel, the StarSuites embedded and Slimefun on top. Includes the Horizon hybrid engine, a Java 25 ↔ Rust bridge. Marked experimental by its own README. |
+| [**DrakeStar Launcher**](https://github.com/SlimefunNewHorizons/DrakeStar-Launcher) | The DrakesCraft game launcher (Tauri/Rust): one PLAY button for the online server, or a local single-player/LAN mode that starts the DrakesPurpur monolith on your PC. |
+| [**DrakeStar Fused**](https://github.com/SlimefunNewHorizons/drakestar-fused) | Alpha bridge mod that runs Bukkit, Purpur and Slimefun-Rust inside Minecraft's integrated server (Fabric, Forge, NeoForge). |
+| [**Slimefun-Rust**](https://github.com/SlimefunNewHorizons/Slimefun-Rust) | Rust workspace with the native acceleration code for Slimefun and a set of addons, used through Java's FFM API. |
+| [**Slimefun-Texture-Drake**](https://github.com/SlimefunNewHorizons/Slimefun-Texture-Drake) | Resource pack for Slimefun and its addons (1.21.5 → 26.2). |
+| [**maven-repo**](https://github.com/SlimefunNewHorizons/maven-repo) | Public Maven repository (`maven.drakescraft.cl`) for the artifacts above. |
+| [**drakes-slimefun-labs**](https://github.com/SlimefunNewHorizons/drakes-slimefun-labs) | Migration lab: `dough-core` and large-scale addon porting. |
+
+## What we do with Rust
+
+The runtime is hybrid: **Java stays authoritative** for Bukkit state, and Rust accelerates deterministic, CPU-heavy work through Java's Foreign Function & Memory API (Java 25 in production). Every native path has an automatic Java fallback, so a missing or failing native library does not stop the server. On the production server the log shows `libslimefun_ffi.so`, `libodysseia_ffi.so` and `libdrakes_hybrid_ffi.so` loading at startup. Details and current status of each native path live in [Slimefun-Rust](https://github.com/SlimefunNewHorizons/Slimefun-Rust) and [DrakesPurpur](https://github.com/SlimefunNewHorizons/DrakesPurpur); we do not claim speedups here that those repositories do not document.
+
 ## Addons loaded together in production
 
 Names and versions are copied from the `Installed Addons` list printed by `/sf versions` on the production server, not from documentation. The nine consolidated suites come first; each bundles several addon modules (inventory per suite in [Drakes-Suites](https://github.com/SlimefunNewHorizons/Drakes-Suites#runtime-snapshot-season-2-2026-11-20)). The second table lists everything else the server reports, including plugins that register with Slimefun but are not strictly addons.

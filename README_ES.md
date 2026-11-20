@@ -23,6 +23,22 @@ La historia del repositorio anterior (`Slimefun4-Drake`) se conserva en la rama 
 
 La linea Universal 26.x es una sola base de codigo que se compila y carga desde Minecraft **1.21** hasta **26.2**: se compila contra la API Paper `1.21.11` con bytecode Java 21 y corre en Java 21+. No se soportan versiones anteriores a 1.21.
 
+## El ecosistema DrakesCraft
+
+| Proyecto | Que es |
+| :--- | :--- |
+| [**Drakes-Suites** (StarSuites)](https://github.com/SlimefunNewHorizons/Drakes-Suites) | Monorepo que consolida decenas de addons de Slimefun en 9 jars; cada addon es un modulo activable con su `modules/*.yml`. Evolucion directa de este core. |
+| [**DrakesPurpur**](https://github.com/SlimefunNewHorizons/DrakesPurpur) | Nuestro fork de Purpur 26.2 ("monolito"): kernel propio, StarSuites embebidas y Slimefun encima, con el motor hibrido Horizon (puente Java 25 ↔ Rust). Experimental segun su propio README. |
+| [**DrakeStar Launcher**](https://github.com/SlimefunNewHorizons/DrakeStar-Launcher) | Launcher de DrakesCraft (Tauri/Rust): un boton JUGAR para el servidor online o modo local que levanta el monolito en tu PC. |
+| [**DrakeStar Fused**](https://github.com/SlimefunNewHorizons/drakestar-fused) | Mod puente alfa que corre Bukkit, Purpur y Slimefun-Rust dentro del servidor integrado de Minecraft. |
+| [**Slimefun-Rust**](https://github.com/SlimefunNewHorizons/Slimefun-Rust) | Workspace Rust con el codigo nativo de aceleracion para Slimefun y varios addons, via la API FFM de Java. |
+| [**Slimefun-Texture-Drake**](https://github.com/SlimefunNewHorizons/Slimefun-Texture-Drake) | Pack de texturas de Slimefun y sus addons. |
+| [**maven-repo**](https://github.com/SlimefunNewHorizons/maven-repo) | Repositorio Maven publico (`maven.drakescraft.cl`). |
+
+## Que hacemos con Rust
+
+El runtime es hibrido: **Java sigue siendo la autoridad** del estado de Bukkit y Rust acelera trabajo determinista y pesado por la API FFM de Java (Java 25 en produccion). Todo camino nativo tiene fallback automatico a Java. En produccion el log muestra `libslimefun_ffi.so`, `libodysseia_ffi.so` y `libdrakes_hybrid_ffi.so` cargando al arrancar. No afirmamos mejoras de rendimiento que esos repositorios no documenten.
+
 ## Addons cargados juntos
 
 Los 8 jars de suites: DrakesBio, DrakesCombat, DrakesGenerators, DrakesMagic, DrakesMultiverse, DrakesServer, DrakesTech, DrakesUtility.
