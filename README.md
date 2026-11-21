@@ -26,7 +26,7 @@
 > ### 🏰 Play it live
 >
 > * 🎮 **Server IP**: `mc.drakescraft.cl` *(Java & Bedrock)*
-> * 💬 **Discord**: [discord.gg/drakescraft](https://discord.gg/rv3vtXZTk7)
+> * 💬 **Discord**: [discord.gg/rv3vtXZTk7](https://discord.gg/rv3vtXZTk7)
 > * 🌐 **Web & Guide**: [web.drakescraft.cl](https://web.drakescraft.cl)
 >
 > *This core runs in production on DrakesCraft Season 2 together with the 110 Slimefun addons listed below.*
