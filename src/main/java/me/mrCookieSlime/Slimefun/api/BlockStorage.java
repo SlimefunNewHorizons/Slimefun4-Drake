@@ -964,7 +964,7 @@ public class BlockStorage {
             return;
         }
 
-        Config cfg = storage.blocksCache.computeIfAbsent(key, k -> new Config(PATH_BLOCKS + l.getWorld().getName() + '/' + key + ".sfb"));
+        Config cfg = storage.blocksCache.computeIfAbsent(key, k -> loadBlockCacheConfig(l.getWorld().getName(), k));
         cfg.setValue(serializeLocation(l), value);
 
         if (updateTicker) {
@@ -979,6 +979,27 @@ public class BlockStorage {
                 Slimefun.getTickerTask().enableTicker(l);
             }
         }
+    }
+
+    /**
+     * Loads the current {@code .sfb} block file from the active {@link SfStores} backend
+     * (SQL/disk/cache) instead of reading legacy on-disk files directly, which would
+     * overwrite all machines persisted since the storage backend migration.
+     */
+    @Nonnull
+    static Config loadBlockCacheConfig(@Nonnull String worldName, @Nonnull String itemId) {
+        File file = new File(PATH_BLOCKS + worldName + '/' + itemId + ".sfb");
+        String vpath = file.getPath().replace('\\', '/');
+        String stored = SfStores.get().read(vpath);
+        YamlConfiguration yaml = new YamlConfiguration();
+        if (stored != null && !stored.isEmpty()) {
+            try {
+                yaml.loadFromString(stored);
+            } catch (org.bukkit.configuration.InvalidConfigurationException ex) {
+                Slimefun.logger().log(Level.WARNING, ex, () -> "Failed to parse stored block file from SfStore: " + vpath);
+            }
+        }
+        return new Config(file, yaml);
     }
 
     @Nullable

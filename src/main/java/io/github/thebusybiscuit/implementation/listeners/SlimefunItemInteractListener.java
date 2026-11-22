@@ -3,6 +3,7 @@ package io.github.thebusybiscuit.slimefun4.implementation.listeners;
 import java.util.Optional;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import org.bukkit.Bukkit;
@@ -159,7 +160,12 @@ public class SlimefunItemInteractListener implements Listener {
     @ParametersAreNonnullByDefault
     private void openInventory(Player p, SlimefunItem item, Block clickedBlock, PlayerRightClickEvent event) {
         try {
-            if (!p.isSneaking() || event.getItem().getType() == Material.AIR) {
+            ItemStack mainHand = p.getInventory().getItemInMainHand();
+            ItemStack offHand = p.getInventory().getItemInOffHand();
+            boolean holdingPlaceableWhileSneaking = p.isSneaking()
+                    && (isPlaceableBlock(event.getItem()) || isPlaceableBlock(mainHand) || isPlaceableBlock(offHand));
+
+            if (!holdingPlaceableWhileSneaking && (!p.isSneaking() || event.getItem().getType() == Material.AIR)) {
                 event.getInteractEvent().setCancelled(true);
 
                 if (BlockStorage.hasUniversalInventory(item.getId())) {
@@ -183,6 +189,10 @@ public class SlimefunItemInteractListener implements Listener {
         } catch (Exception | LinkageError x) {
             item.error("An Exception was caught while trying to open the Inventory", x);
         }
+    }
+
+    private static boolean isPlaceableBlock(@Nullable ItemStack item) {
+        return item != null && !item.getType().isAir() && item.getType().isBlock();
     }
 
 }

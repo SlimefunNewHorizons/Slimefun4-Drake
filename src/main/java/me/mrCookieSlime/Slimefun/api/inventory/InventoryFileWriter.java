@@ -53,7 +53,16 @@ final class InventoryFileWriter {
      */
     @Nonnull
     static YamlConfiguration load(@Nonnull File file) {
-        YamlConfiguration cfg = YamlConfiguration.loadConfiguration(file);
+        YamlConfiguration cfg = new YamlConfiguration();
+        String vpath = path(file);
+        String stored = SfStores.get().read(vpath);
+        if (stored != null && !stored.isEmpty()) {
+            try {
+                cfg.loadFromString(stored);
+            } catch (org.bukkit.configuration.InvalidConfigurationException ex) {
+                Slimefun.logger().log(Level.WARNING, ex, () -> "Failed to parse stored inventory file from SfStore: " + vpath);
+            }
+        }
         cfg.options().copyDefaults(true);
 
         return cfg;
