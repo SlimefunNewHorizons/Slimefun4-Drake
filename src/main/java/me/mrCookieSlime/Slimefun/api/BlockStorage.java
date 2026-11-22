@@ -809,6 +809,9 @@ public class BlockStorage {
         String id = cfg.getString("id");
 
         if (previousId != null && !previousId.equals(id)) {
+            if (id == null) {
+                warnIdLost(l, previousId, "setBlockInfo sin 'id'");
+            }
             refreshCache(storage, l, previousId, null, false);
         }
 
@@ -865,7 +868,32 @@ public class BlockStorage {
     }
 
     public static void clearBlockInfo(Location l, boolean destroy) {
+        if (!destroy) {
+            BlockStorage storage = getStorage(l.getWorld());
+
+            if (storage != null && storage.hasInventory(l)) {
+                warnIdLost(l, getLocationInfo(l, "id"), "clearBlockInfo(destroy=false) con inventario");
+            }
+        }
+
         Slimefun.getTickerTask().queueDelete(l, destroy);
+    }
+
+    /**
+     * Ticket 111: maquinas que "se vuelven vanilla" = su entrada .sfb desaparece pero el bloque y
+     * el .sfi siguen ahi. Los dos unicos caminos que hacen eso sin romper el bloque se registran
+     * con el llamador para poder atribuir la proxima perdida.
+     */
+    static void warnIdLost(Location l, @Nullable String previousId, String path) {
+        String caller = StackWalker.getInstance().walk(frames -> frames
+            .map(StackWalker.StackFrame::toStackTraceElement)
+            .filter(e -> !e.getClassName().equals(BlockStorage.class.getName()))
+            .limit(3)
+            .map(StackTraceElement::toString)
+            .reduce((x, y) -> x + " <- " + y)
+            .orElse("?"));
+        Slimefun.logger().log(Level.WARNING, "[BlockStorage] {0} pierde su id {1} sin romperse ({2}); llamador: {3}",
+            new Object[] { serializeLocation(l), previousId, path, caller });
     }
 
     public static void clearAllBlockInfoAtChunk(Chunk chunk, boolean destroy) {

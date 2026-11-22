@@ -2,6 +2,10 @@ package me.mrCookieSlime.Slimefun.api;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
 
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -87,6 +91,44 @@ class TestBlockStorageIdChange {
         );
         Assertions.assertEquals("CROP_STICKS", BlockStorage.getLocationInfo(l, "id"));
         Assertions.assertEquals("pacox77", BlockStorage.getLocationInfo(l, "owner"));
+    }
+
+    @Test
+    void testLosingIdWithoutBreakingIsLogged() {
+        World world = server.addSimpleWorld("id_lost_world");
+        BlockStorage.getOrCreate(world);
+        Location l = new Location(world, 7, 64, 7);
+        BlockStorage.addBlockInfo(l, "id", "CROP_STICKS");
+        Assertions.assertTrue(BlockStorage.hasBlockInfo(l));
+
+        List<String> warnings = new ArrayList<>();
+        Handler handler = new Handler() {
+            @Override
+            public void publish(LogRecord record) {
+                if (record.getMessage().startsWith("[BlockStorage]")) {
+                    warnings.add(String.valueOf(record.getParameters()[1]) + '|' + record.getParameters()[3]);
+                }
+            }
+
+            @Override
+            public void flush() {}
+
+            @Override
+            public void close() {}
+        };
+        Slimefun.logger().addHandler(handler);
+
+        try {
+            // Ticket 111: un json sin 'id' sobre una maquina borra su entrada .sfb sin tocar el bloque.
+            BlockStorage.setBlockInfo(l, "{\"owner\":\"x\"}", false);
+        } finally {
+            Slimefun.logger().removeHandler(handler);
+        }
+
+        Assertions.assertFalse(BlockStorage.hasBlockInfo(l));
+        Assertions.assertEquals(1, warnings.size(), "la perdida del id debe quedar registrada");
+        Assertions.assertTrue(warnings.get(0).startsWith("CROP_STICKS|"));
+        Assertions.assertTrue(warnings.get(0).contains("TestBlockStorageIdChange"), "el WARN debe nombrar al llamador");
     }
 
     private static void flushStore() {
