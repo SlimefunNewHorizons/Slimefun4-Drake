@@ -69,6 +69,7 @@ public class BlockStorage {
     private final ChunkLocationIndex locationsByChunk = new ChunkLocationIndex();
     private final Map<Location, BlockMenu> inventories = new ConcurrentHashMap<>();
     private final Map<String, Config> blocksCache = new ConcurrentHashMap<>();
+    private final Object blocksCacheLock = new Object();
     private final Map<Location, LoadedBlockSource> blockSources = new HashMap<>();
     private final Set<LoadedBlockSource> compactedSources = new HashSet<>();
 
@@ -491,36 +492,40 @@ public class BlockStorage {
 
         int remaining = maxChangesToSave <= 0 ? Integer.MAX_VALUE : maxChangesToSave;
 
-        // Lote: un solo writeAll (fsync en bloque en disco, una transacción en SQL)
-        Map<String, String> batch = new HashMap<>();
-        List<String> batchKeys = new ArrayList<>();
-        List<String> deletes = new ArrayList<>();
-        Iterator<Map.Entry<String, Config>> blockIt = blocksCache.entrySet().iterator();
-        while (blockIt.hasNext() && remaining > 0) {
-            Map.Entry<String, Config> entry = blockIt.next();
-            Config cfg = entry.getValue();
-            String vpath = cfg.getFile().getPath().replace('\\', '/');
+        // Lote: un solo writeAll (fsync en bloque en disco, una transacción en SQL).
+        // Se usa blocksCacheLock (y NO el monitor de BlockStorage) para evitar deadlock
+        // con refreshCache() en el hilo principal cuando BlockMenu.saveAll() espera CraftFuture.get().
+        synchronized (blocksCacheLock) {
+            Map<String, String> batch = new HashMap<>();
+            List<String> batchKeys = new ArrayList<>();
+            List<String> deletes = new ArrayList<>();
+            Iterator<Map.Entry<String, Config>> blockIt = blocksCache.entrySet().iterator();
+            while (blockIt.hasNext() && remaining > 0) {
+                Map.Entry<String, Config> entry = blockIt.next();
+                Config cfg = entry.getValue();
+                String vpath = cfg.getFile().getPath().replace('\\', '/');
 
-            if (cfg.getKeys().isEmpty()) {
-                deletes.add(vpath);
-            } else {
-                batch.put(vpath, cfg.getConfiguration().saveToString());
+                if (cfg.getKeys().isEmpty()) {
+                    deletes.add(vpath);
+                } else {
+                    batch.put(vpath, cfg.getConfiguration().saveToString());
+                }
+                batchKeys.add(entry.getKey());
+                remaining--;
             }
-            batchKeys.add(entry.getKey());
-            remaining--;
-        }
 
-        try {
-            for (String vpath : deletes) {
-                SfStores.get().delete(vpath);
+            try {
+                for (String vpath : deletes) {
+                    SfStores.get().delete(vpath);
+                }
+                SfStores.get().writeAll(batch);
+                // Solo si todo el lote se persistió se descartan; si no, quedan en cola para reintentar.
+                for (String key : batchKeys) {
+                    blocksCache.remove(key);
+                }
+            } catch (IOException x) {
+                Slimefun.logger().log(Level.SEVERE, x, () -> "Could not persist BlockStorage batch (" + batch.size() + " files)");
             }
-            SfStores.get().writeAll(batch);
-            // Solo si todo el lote se persistió se descartan; si no, quedan en cola para reintentar.
-            for (String key : batchKeys) {
-                blocksCache.remove(key);
-            }
-        } catch (IOException x) {
-            Slimefun.logger().log(Level.SEVERE, x, () -> "Could not persist BlockStorage batch (" + batch.size() + " files)");
         }
 
         remaining = BlockMenu.saveAll(inventories, remaining);
@@ -964,7 +969,7 @@ public class BlockStorage {
             return;
         }
 
-        synchronized (storage) {
+        synchronized (storage.blocksCacheLock) {
             Config cfg = storage.blocksCache.computeIfAbsent(key, k -> loadBlockCacheConfig(storage, l.getWorld().getName(), k));
             cfg.setValue(serializeLocation(l), value);
         }
