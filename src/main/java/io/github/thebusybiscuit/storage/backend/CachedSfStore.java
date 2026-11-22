@@ -184,6 +184,12 @@ public class CachedSfStore implements SfStore {
     }
 
     @Override
+    public boolean snapshotTo(@Nonnull java.io.File target) throws IOException {
+        flush(); // la copia debe incluir lo que sigue en cola
+        return delegate.snapshotTo(target);
+    }
+
+    @Override
     public void flush() {
         if (closed && !writer.isAlive()) {
             return;

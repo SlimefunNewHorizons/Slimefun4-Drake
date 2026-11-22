@@ -321,6 +321,21 @@ public class SqlSfStore implements SfStore {
         return n;
     }
 
+    /** SQLite: {@code VACUUM INTO} da una copia consistente aun con WAL y escrituras en curso. */
+    @Override
+    public synchronized boolean snapshotTo(@Nonnull java.io.File target) throws IOException {
+        if (!sqlite) {
+            return false;
+        }
+        try (PreparedStatement ps = conn().prepareStatement("VACUUM INTO ?")) {
+            ps.setString(1, target.getAbsolutePath());
+            ps.execute();
+            return true;
+        } catch (SQLException e) {
+            throw new IOException("VACUUM INTO " + target, e);
+        }
+    }
+
     @Override
     public synchronized void close() {
         try {

@@ -20,6 +20,7 @@ import javax.annotation.Nonnull;
 import org.apache.commons.lang.Validate;
 
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
+import io.github.thebusybiscuit.slimefun4.storage.backend.SfStores;
 
 /**
  * This Service creates a Backup of your Slimefun world data on every server shutdown.
@@ -130,6 +131,20 @@ public class BackupService implements Runnable {
             }
         } catch (Exception e) {
             Slimefun.logger().log(Level.WARNING, "Failed to backup stored-chunks/chunks.sfc", e);
+        }
+        // Storage SQLite (storage.backend=sqlite): los directorios de arriba quedan congelados tras la importación
+        File snapshot = new File(directory, "slimefun-snapshot.db.tmp");
+        try {
+            Files.deleteIfExists(snapshot.toPath());
+            if (SfStores.get().snapshotTo(snapshot)) {
+                output.putNextEntry(new ZipEntry("slimefun.db"));
+                Files.copy(snapshot.toPath(), output);
+                output.closeEntry();
+            }
+        } catch (Exception e) {
+            Slimefun.logger().log(Level.WARNING, "Failed to backup the Slimefun SQL storage", e);
+        } finally {
+            Files.deleteIfExists(snapshot.toPath());
         }
     }
 

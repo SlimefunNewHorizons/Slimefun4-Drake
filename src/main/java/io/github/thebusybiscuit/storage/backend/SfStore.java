@@ -49,6 +49,14 @@ public interface SfStore {
     /** Recorre los ficheros directos de {@code dir}: nombre (sin directorio) y contenido. */
     void forEach(@Nonnull String dir, @Nonnull BiConsumer<String, String> action);
 
+    /**
+     * Copia consistente del almacén completo a {@code target} (no debe existir), para los respaldos.
+     * @return {@code false} si el backend no es un fichero único (disco: lo cubren los zips de directorios).
+     */
+    default boolean snapshotTo(@Nonnull java.io.File target) throws IOException {
+        return false;
+    }
+
     default void close() {
     }
 }

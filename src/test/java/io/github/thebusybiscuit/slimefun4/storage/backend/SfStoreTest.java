@@ -62,6 +62,19 @@ class SfStoreTest {
     }
 
     @Test
+    void sqliteSnapshotIncludesQueuedWrites(@TempDir Path dir) throws Exception {
+        CachedSfStore store = new CachedSfStore(new SqlSfStore("jdbc:sqlite:" + dir.resolve("live.db"), null, null));
+        store.write("data-storage/Slimefun/stored-blocks/w/A.sfb", "a: 1\n");
+        assertTrue(store.snapshotTo(dir.resolve("snap.db").toFile()));
+        store.close();
+
+        SqlSfStore copy = new SqlSfStore("jdbc:sqlite:" + dir.resolve("snap.db"), null, null);
+        assertEquals("a: 1\n", copy.read("data-storage/Slimefun/stored-blocks/w/A.sfb"));
+        copy.close();
+        assertFalse(new FileSfStore().snapshotTo(dir.resolve("none.db").toFile()));
+    }
+
+    @Test
     void fileBatch(@TempDir Path dir) throws Exception {
         FileSfStore store = new FileSfStore();
         Map<String, String> batch = new HashMap<>();
