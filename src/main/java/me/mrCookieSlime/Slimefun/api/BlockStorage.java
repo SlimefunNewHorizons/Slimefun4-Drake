@@ -964,8 +964,10 @@ public class BlockStorage {
             return;
         }
 
-        Config cfg = storage.blocksCache.computeIfAbsent(key, k -> loadBlockCacheConfig(l.getWorld().getName(), k));
-        cfg.setValue(serializeLocation(l), value);
+        synchronized (storage) {
+            Config cfg = storage.blocksCache.computeIfAbsent(key, k -> loadBlockCacheConfig(storage, l.getWorld().getName(), k));
+            cfg.setValue(serializeLocation(l), value);
+        }
 
         if (updateTicker) {
             SlimefunItem item = SlimefunItem.getById(key);
@@ -988,18 +990,58 @@ public class BlockStorage {
      */
     @Nonnull
     static Config loadBlockCacheConfig(@Nonnull String worldName, @Nonnull String itemId) {
+        return loadBlockCacheConfig(null, worldName, itemId);
+    }
+
+    /**
+     * Loads the current {@code .sfb} block file from the active {@link SfStores} backend.
+     * If the backend returns {@code null}/empty (e.g. transient SQL read failure) or invalid YAML,
+     * reconstructs all live blocks of {@code itemId} from {@code storage.storage} in memory so
+     * saving never wipes out existing machines of that ID.
+     */
+    @Nonnull
+    static Config loadBlockCacheConfig(@Nullable BlockStorage storage, @Nonnull String worldName, @Nonnull String itemId) {
         File file = new File(PATH_BLOCKS + worldName + '/' + itemId + ".sfb");
         String vpath = file.getPath().replace('\\', '/');
         String stored = SfStores.get().read(vpath);
         YamlConfiguration yaml = new YamlConfiguration();
+        boolean loaded = false;
+        boolean parseFailed = false;
+
         if (stored != null && !stored.isEmpty()) {
             try {
                 yaml.loadFromString(stored);
+                loaded = true;
             } catch (org.bukkit.configuration.InvalidConfigurationException ex) {
-                Slimefun.logger().log(Level.WARNING, ex, () -> "Failed to parse stored block file from SfStore: " + vpath);
+                parseFailed = true;
+                blockStorageLogger().log(Level.WARNING, ex, () -> "Failed to parse stored block file from SfStore: " + vpath);
             }
         }
+
+        if (!loaded && storage != null) {
+            int rebuilt = 0;
+            for (Map.Entry<Location, Config> entry : storage.storage.entrySet()) {
+                Location loc = entry.getKey();
+                Config blockCfg = entry.getValue();
+                if (loc != null && loc.getWorld() != null && blockCfg != null && itemId.equals(blockCfg.getString("id"))) {
+                    String serialized = serializeBlockInfo(blockCfg);
+                    if (serialized != null) {
+                        yaml.set(serializeLocation(loc), serialized);
+                        rebuilt++;
+                    }
+                }
+            }
+            if (rebuilt > 1 || (rebuilt > 0 && parseFailed)) {
+                int count = rebuilt;
+                blockStorageLogger().log(Level.WARNING, () -> "Reconstructed " + count + " live block(s) from memory for " + vpath + " after empty/failed SfStore read");
+            }
+        }
+
         return new Config(file, yaml);
+    }
+
+    private static Logger blockStorageLogger() {
+        return Slimefun.instance() != null ? Slimefun.logger() : Logger.getLogger(BlockStorage.class.getName());
     }
 
     @Nullable

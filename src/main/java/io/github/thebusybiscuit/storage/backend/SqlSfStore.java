@@ -159,8 +159,16 @@ public class SqlSfStore implements SfStore {
                 return rs.next() ? rs.getString(1) : null;
             }
         } catch (SQLException e) {
+            logWarning("Error al leer de SQL (" + path + ")", e);
             return null;
         }
+    }
+
+    private static void logWarning(String message, Throwable cause) {
+        java.util.logging.Logger logger = io.github.thebusybiscuit.slimefun4.implementation.Slimefun.instance() != null
+            ? io.github.thebusybiscuit.slimefun4.implementation.Slimefun.logger()
+            : java.util.logging.Logger.getLogger(SqlSfStore.class.getName());
+        logger.log(java.util.logging.Level.WARNING, message, cause);
     }
 
     @Override
