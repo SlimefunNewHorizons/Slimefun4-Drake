@@ -90,6 +90,7 @@ public class HeatedPressureChamber extends AContainer {
         registerRecipe(30, new ItemStack[] { SlimefunItems.BLISTERING_INGOT, SlimefunItems.CARBONADO }, new ItemStack[] { SlimefunItems.BLISTERING_INGOT_2 });
         registerRecipe(60, new ItemStack[] { SlimefunItems.BLISTERING_INGOT_2, new ItemStack(Material.NETHER_STAR) }, new ItemStack[] { SlimefunItems.BLISTERING_INGOT_3 });
         registerRecipe(90, new ItemStack[] { SlimefunItems.PLUTONIUM, SlimefunItems.URANIUM }, new ItemStack[] { SlimefunItems.BOOSTED_URANIUM });
+        registerRecipe(60, new ItemStack[] { new CustomItemStack(SlimefunItems.URANIUM, 2), SlimefunItems.REINFORCED_ALLOY_INGOT }, new ItemStack[] { SlimefunItems.NEPTUNIUM });
         registerRecipe(60, new ItemStack[] { SlimefunItems.NETHER_ICE, SlimefunItems.PLUTONIUM }, new ItemStack[] { new CustomItemStack(SlimefunItems.ENRICHED_NETHER_ICE, 4) });
         registerRecipe(45, new ItemStack[] { SlimefunItems.ENRICHED_NETHER_ICE }, new ItemStack[] { new CustomItemStack(SlimefunItems.NETHER_ICE_COOLANT_CELL, 8) });
         registerRecipe(8, new ItemStack[] { SlimefunItems.MAGNESIUM_DUST, SlimefunItems.SALT }, new ItemStack[] { SlimefunItems.MAGNESIUM_SALT });

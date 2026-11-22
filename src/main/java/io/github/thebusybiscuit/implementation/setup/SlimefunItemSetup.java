@@ -2503,8 +2503,8 @@ public final class SlimefunItemSetup {
         new SlimefunItemStack(SlimefunItems.NETHER_ICE_COOLANT_CELL, 8))
         .register(plugin);
 
-        new RadioactiveItem(itemGroups.resources, Radioactivity.HIGH, SlimefunItems.NEPTUNIUM, RecipeType.NUCLEAR_REACTOR,
-        new ItemStack[] {SlimefunItems.URANIUM, null, null, null, null, null, null, null, null})
+        new RadioactiveItem(itemGroups.resources, Radioactivity.VERY_DEADLY, SlimefunItems.NEPTUNIUM, RecipeType.HEATED_PRESSURE_CHAMBER,
+        new ItemStack[] {new SlimefunItemStack(SlimefunItems.URANIUM, 2), SlimefunItems.REINFORCED_ALLOY_INGOT, null, null, null, null, null, null, null})
         .register(plugin);
 
         new RadioactiveItem(itemGroups.resources, Radioactivity.VERY_HIGH, SlimefunItems.PLUTONIUM, RecipeType.NUCLEAR_REACTOR,
