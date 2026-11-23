@@ -13,6 +13,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.Map;
 import java.util.logging.Level;
 
@@ -37,7 +41,7 @@ abstract class GitHubConnector {
 
     private static final String API_URL = "https://api.github.com/";
     private static final String USER_AGENT = "Slimefun4 (https://github.com/Slimefun)";
-    private static final HttpClient client = HttpClient.newHttpClient();
+    private static final HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
 
     protected final GitHubService github;
     private final String url;
@@ -116,10 +120,12 @@ abstract class GitHubConnector {
                 .orElse("");
             URI uri = new URI(url + params);
 
-            HttpResponse<String> response = client.send(
-                HttpRequest.newBuilder(uri).header("User-Agent", USER_AGENT).build(),
+            // Async + espera interrumpible: al apagar, el worker del scheduler sale en <=250 ms
+            // en vez de quedar colgado en la red (Nag "not properly shutting down its async tasks").
+            HttpResponse<String> response = GitHubTask.awaitWhileRunning(client.sendAsync(
+                HttpRequest.newBuilder(uri).header("User-Agent", USER_AGENT).timeout(Duration.ofSeconds(30)).build(),
                 HttpResponse.BodyHandlers.ofString()
-            );
+            ), GitHubTask::isRunning);
             JsonElement element = JsonUtils.parseString(response.body());
 
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
@@ -139,7 +145,11 @@ abstract class GitHubConnector {
                     }
                 }
             }
-        } catch (IOException | InterruptedException | JsonParseException | URISyntaxException e) {
+        } catch (CancellationException shuttingDown) {
+            // Slimefun se esta deshabilitando: no tocar cache ni callbacks
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (ExecutionException | TimeoutException | JsonParseException | URISyntaxException e) {
             if (github.isLoggingEnabled()) {
                 Slimefun.logger().log(Level.WARNING, "Could not connect to GitHub in time.", e);
             }

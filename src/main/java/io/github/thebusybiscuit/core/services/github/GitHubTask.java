@@ -169,7 +169,7 @@ class GitHubTask implements Runnable {
         }
     }
 
-    private static boolean isRunning() {
+    static boolean isRunning() {
         Slimefun plugin = Slimefun.instance();
         return plugin != null && plugin.isEnabled();
     }
