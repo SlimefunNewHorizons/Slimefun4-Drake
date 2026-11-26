@@ -3,6 +3,14 @@ name: Javadocs
 on:
   push:
     paths:
+    - 'build-parent/**'
+    - '.github/workflows/javadocs.yml'
+    - 'src/**'
+    - 'pom.xml'
+  pull_request:
+    paths:
+    - 'build-parent/**'
+    - '.github/workflows/javadocs.yml'
     - 'src/**'
     - 'pom.xml'
 
