@@ -86,6 +86,8 @@ guide:
   show-vanilla-recipes: true
   receive-on-first-join: true
   show-hidden-item-groups-in-search: false
+  # Enable previous/next buttons to browse all matching items. False keeps the legacy 35-result limit.
+  search-pagination: false
   # Guarda accesos rapidos por jugador en guide-bookmarks.yml.
   bookmarks: true
   # false: categorias y objetos en el orden nativo de Slimefun (progresion).

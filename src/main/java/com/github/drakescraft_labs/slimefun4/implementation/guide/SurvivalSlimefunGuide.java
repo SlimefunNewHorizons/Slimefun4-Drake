@@ -437,6 +437,10 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
     @Override
     @ParametersAreNonnullByDefault
     public void openSearch(PlayerProfile profile, String input, boolean addToHistory) {
+        openSearch(profile, input, addToHistory, 1);
+    }
+
+    private void openSearch(PlayerProfile profile, String input, boolean addToHistory, int page) {
         Player p = profile.getPlayer();
 
         if (p == null) {
@@ -466,11 +470,14 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
             .thenComparing(item -> normalizeSearchText(item.getItemName()))
             .thenComparing(SlimefunItem::getId));
 
+        boolean paginated = Slimefun.getCfg().getBoolean("guide.search-pagination");
+        int pageSize = paginated ? MAX_ITEM_GROUPS : 35;
+        int pages = paginated ? Math.max(1, (results.size() - 1) / pageSize + 1) : 1;
+        int safePage = Math.max(1, Math.min(page, pages));
+        int start = (safePage - 1) * pageSize;
         int index = 9;
-        for (SlimefunItem slimefunItem : results) {
-            if (index == 44) {
-                break;
-            }
+        for (int target = start; target < Math.min(start + pageSize, results.size()); target++) {
+            SlimefunItem slimefunItem = results.get(target);
 
             ItemStack itemstack = new CustomItemStack(decorateBookmarkedItem(p, slimefunItem), meta -> {
                 ItemGroup itemGroup = slimefunItem.getItemGroup();
@@ -485,7 +492,7 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
                 try {
                     if (bookmarksEnabled && isSurvivalMode() && action.isRightClicked()) {
                         toggleBookmark(pl, slimefunItem);
-                        openSearch(profile, input, false);
+                        openSearch(profile, input, false, safePage);
                     } else if (!isSurvivalMode()) {
                         if (slimefunItem instanceof MultiBlockMachine) {
                             Slimefun.getLocalization().sendMessage(pl, "guide.cheat.no-multiblocks");
@@ -503,6 +510,23 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
             });
 
             index++;
+        }
+
+        if (paginated) {
+            menu.addItem(46, ChestMenuUtils.getPreviousButton(p, safePage, pages));
+            menu.addMenuClickHandler(46, (pl, slot, item, action) -> {
+                if (safePage > 1) {
+                    openSearch(profile, input, false, safePage - 1);
+                }
+                return false;
+            });
+            menu.addItem(52, ChestMenuUtils.getNextButton(p, safePage, pages));
+            menu.addMenuClickHandler(52, (pl, slot, item, action) -> {
+                if (safePage < pages) {
+                    openSearch(profile, input, false, safePage + 1);
+                }
+                return false;
+            });
         }
 
         menu.open(p);
