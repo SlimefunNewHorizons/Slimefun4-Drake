@@ -4,6 +4,13 @@
 > **Créditos y licencia.** Port y mantenimiento por [JackStar6677-1](https://github.com/JackStar6677-1) y [DrakesCraft Labs](https://github.com/SlimefunNewHorizons). Autores originales: [JackStar6677](https://github.com/JackStar6677), [Chagui68](https://github.com/Chagui68), The Slimefun 4 Community (plugin.yml). Licencia original: **GNU General Public License v3.0**. Detalle en [docs/UPSTREAM_ATTRIBUTION.md](docs/UPSTREAM_ATTRIBUTION.md).
 <!-- credits:end -->
 
+<!-- legacy-notice:start -->
+> [!WARNING]
+> **Legacy / Superseded Repository (Not Archived)**
+> **EN:** Historical Season 1 Slimefun4 core (its git history is also preserved in `Slimefun6`'s `legacy/slimefun4-drake-1.21` branch). Active development has moved to [SlimefunNewHorizons/Slimefun6](https://github.com/SlimefunNewHorizons/Slimefun6) (`1.21 → 26.2`, Java 25). This repository is intentionally kept unarchived for historical reference, upstream attribution, and git history.
+>
+> **ES:** Núcleo histórico Slimefun4 de Temporada 1 (su historial también se conserva en la rama `legacy/slimefun4-drake-1.21` de `Slimefun6`). El desarrollo activo continúa en [SlimefunNewHorizons/Slimefun6](https://github.com/SlimefunNewHorizons/Slimefun6) (`1.21 → 26.2`, Java 25). Este repositorio se mantiene intencionalmente sin archivar como referencia histórica, atribución upstream e historial de git.
+<!-- legacy-notice:end -->
 > **Branches / Ramas.** `main`: Paper/Purpur 1.21.11 (Java 21). `port-26x`: Paper/Purpur 26.x (production: Purpur 26.2, Java 25). If another section of this README says otherwise, this note prevails. / Si otra seccion de este README dice otra cosa, prevalece esta nota.
 
 
