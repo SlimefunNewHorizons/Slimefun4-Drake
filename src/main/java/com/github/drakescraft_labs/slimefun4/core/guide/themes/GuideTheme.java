@@ -9,7 +9,7 @@ import org.bukkit.Material;
 
 /**
  * A theme groups the item groups of several addons under one entry of the Slimefun Guide
- * (for example "Technology & Machines" or "Magic & Arcana") instead of listing every group by load order.
+ * (for example "Technology &amp; Machines" or "Magic &amp; Arcana") instead of listing every group by load order.
  *
  * @param id
  *            Stable identifier used in the config and in the generated NamespacedKey
