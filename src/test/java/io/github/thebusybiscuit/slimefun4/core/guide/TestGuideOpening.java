@@ -37,6 +37,8 @@ class TestGuideOpening {
     public static void load() {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(Slimefun.class);
+        // Slimefun's unit-test startup does not register inventory listeners.
+        new me.mrCookieSlime.CSCoreLibPlugin.general.Inventory.MenuListener(plugin);
     }
 
     @AfterAll
@@ -112,6 +114,52 @@ class TestGuideOpening {
         guide.openSearch(profile, coloredTerm, false);
         // Assert we can open with a coloured search term
         Assertions.assertTrue(player.getOpenInventory().getTopInventory().contains(testItem.getItem()), "Failed on colored query");
+    }
+
+    @Test
+    @DisplayName("Search pages expose every match without losing the last slot or duplicating history")
+    void testSearchPagination() throws InterruptedException {
+        var player = server.addPlayer();
+        PlayerProfile profile = TestUtilities.awaitProfile(player);
+        SlimefunGuideImplementation guide = new SurvivalSlimefunGuide(false, false);
+        String query = "paginationprobe";
+        for (int i = 0; i < 73; i++) {
+            SlimefunItem item = TestUtilities.mockSlimefunItem(plugin, "PAGINATION_PROBE_" + i,
+                new CustomItemStack(Material.IRON_INGOT, query + " " + i));
+            item.register(plugin);
+        }
+
+        Slimefun.getCfg().setValue("guide.search-pagination", true);
+        try {
+            guide.openSearch(profile, query, true);
+            int historySize = profile.getGuideHistory().size();
+            java.util.Set<String> seen = new java.util.HashSet<>();
+            for (int page = 0; page < 3; page++) {
+                var inventory = player.getOpenInventory().getTopInventory();
+                for (int slot = 9; slot < 45; slot++) {
+                    SlimefunItem match = SlimefunItem.getByItem(inventory.getItem(slot));
+                    if (match != null) {
+                        Assertions.assertTrue(seen.add(match.getId()), "Duplicate result across pages");
+                    }
+                }
+                Assertions.assertEquals(Math.min(36 * (page + 1), 73), seen.size());
+                player.simulateInventoryClick(player.getOpenInventory(), 52);
+            }
+            Assertions.assertEquals(historySize, profile.getGuideHistory().size());
+            Assertions.assertTrue(player.getOpenInventory().getTopInventory().getItem(9)
+                .getItemMeta().getDisplayName().contains(query));
+            player.simulateInventoryClick(player.getOpenInventory(), 46);
+            Assertions.assertNotNull(player.getOpenInventory().getTopInventory().getItem(44));
+
+            Slimefun.getCfg().setValue("guide.search-pagination", false);
+            guide.openSearch(profile, query, false);
+            for (int slot = 9; slot < 44; slot++) {
+                Assertions.assertNotNull(SlimefunItem.getByItem(player.getOpenInventory().getTopInventory().getItem(slot)));
+            }
+            Assertions.assertNull(player.getOpenInventory().getTopInventory().getItem(44));
+        } finally {
+            Slimefun.getCfg().setValue("guide.search-pagination", false);
+        }
     }
 
     @Test

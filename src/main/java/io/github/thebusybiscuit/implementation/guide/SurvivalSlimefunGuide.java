@@ -349,6 +349,10 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
     @Override
     @ParametersAreNonnullByDefault
     public void openSearch(PlayerProfile profile, String input, boolean addToHistory) {
+        openSearch(profile, input, addToHistory, 1);
+    }
+
+    private void openSearch(PlayerProfile profile, String input, boolean addToHistory, int page) {
         Player p = profile.getPlayer();
 
         if (p == null) {
@@ -366,46 +370,69 @@ public class SurvivalSlimefunGuide implements SlimefunGuideImplementation {
         createHeader(p, profile, menu);
         addBackButton(menu, 1, p, profile);
 
-        int index = 9;
-        // Find items and add them
+        List<SlimefunItem> results = new ArrayList<>();
         for (SlimefunItem slimefunItem : Slimefun.getRegistry().getEnabledSlimefunItems()) {
-            if (index == 44) {
-                break;
-            }
-
             if (!slimefunItem.isHidden() && isItemGroupAccessible(p, slimefunItem) && isSearchFilterApplicable(slimefunItem, searchTerm)) {
-                ItemStack itemstack = new CustomItemStack(decorateBookmarkedItem(p, slimefunItem), meta -> {
-                    ItemGroup itemGroup = slimefunItem.getItemGroup();
-                    List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
-                    lore.add(ChatColor.DARK_GRAY + "\u21E8 " + ChatColor.WHITE + itemGroup.getDisplayName(p));
-                    meta.setLore(lore);
-                    meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, VersionedItemFlag.HIDE_ADDITIONAL_TOOLTIP);
-                });
-
-                menu.addItem(index, itemstack);
-                menu.addMenuClickHandler(index, (pl, slot, itm, action) -> {
-                    try {
-                        if (bookmarksEnabled && isSurvivalMode() && action.isRightClicked()) {
-                            toggleBookmark(pl, slimefunItem);
-                            openSearch(profile, input, false);
-                        } else if (!isSurvivalMode()) {
-                            if (slimefunItem instanceof MultiBlockMachine) {
-                                Slimefun.getLocalization().sendMessage(pl, "guide.cheat.no-multiblocks");
-                            } else {
-                                CheatPolicy.claim(pl, slimefunItem, action.isShiftClicked());
-                            }
-                        } else {
-                            displayItem(profile, slimefunItem, true);
-                        }
-                    } catch (Exception | LinkageError x) {
-                        printErrorMessage(pl, slimefunItem, x);
-                    }
-
-                    return false;
-                });
-
-                index++;
+                results.add(slimefunItem);
             }
+        }
+
+        boolean paginated = Slimefun.getCfg().getBoolean("guide.search-pagination");
+        int pageSize = paginated ? MAX_ITEM_GROUPS : 35;
+        int pages = paginated ? Math.max(1, (results.size() - 1) / pageSize + 1) : 1;
+        int safePage = Math.max(1, Math.min(page, pages));
+        int start = (safePage - 1) * pageSize;
+        int index = 9;
+        for (int target = start; target < Math.min(start + pageSize, results.size()); target++) {
+            SlimefunItem slimefunItem = results.get(target);
+            ItemStack itemstack = new CustomItemStack(decorateBookmarkedItem(p, slimefunItem), meta -> {
+                ItemGroup itemGroup = slimefunItem.getItemGroup();
+                List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+                lore.add(ChatColor.DARK_GRAY + "\u21E8 " + ChatColor.WHITE + itemGroup.getDisplayName(p));
+                meta.setLore(lore);
+                meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, VersionedItemFlag.HIDE_ADDITIONAL_TOOLTIP);
+            });
+
+            menu.addItem(index, itemstack);
+            menu.addMenuClickHandler(index, (pl, slot, itm, action) -> {
+                try {
+                    if (bookmarksEnabled && isSurvivalMode() && action.isRightClicked()) {
+                        toggleBookmark(pl, slimefunItem);
+                        openSearch(profile, input, false, safePage);
+                    } else if (!isSurvivalMode()) {
+                        if (slimefunItem instanceof MultiBlockMachine) {
+                            Slimefun.getLocalization().sendMessage(pl, "guide.cheat.no-multiblocks");
+                        } else {
+                            CheatPolicy.claim(pl, slimefunItem, action.isShiftClicked());
+                        }
+                    } else {
+                        displayItem(profile, slimefunItem, true);
+                    }
+                } catch (Exception | LinkageError x) {
+                    printErrorMessage(pl, slimefunItem, x);
+                }
+
+                return false;
+            });
+
+            index++;
+        }
+
+        if (paginated) {
+            menu.addItem(46, ChestMenuUtils.getPreviousButton(p, safePage, pages));
+            menu.addMenuClickHandler(46, (pl, slot, item, action) -> {
+                if (safePage > 1) {
+                    openSearch(profile, input, false, safePage - 1);
+                }
+                return false;
+            });
+            menu.addItem(52, ChestMenuUtils.getNextButton(p, safePage, pages));
+            menu.addMenuClickHandler(52, (pl, slot, item, action) -> {
+                if (safePage < pages) {
+                    openSearch(profile, input, false, safePage + 1);
+                }
+                return false;
+            });
         }
 
         menu.open(p);
